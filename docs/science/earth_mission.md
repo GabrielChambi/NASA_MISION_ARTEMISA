@@ -1,68 +1,33 @@
-# Scientific Documentation — Earth Visibility, 3D Topocentric Telemetry & Mission Resilience Lab (Plan B)
+﻿# Visibilidad terrestre y módulos avanzados
 
-## 1. Lunar Topocentric Observer Ephemerides (JPL Horizons Body 399)
+La implementación actual utiliza el servicio común de NASA descrito en [mission_planner.md](mission_planner.md). Esta revisión sustituye las coordenadas y ejemplos del primer Plan B: las regiones contienen muchos píxeles, pero la aplicación evalúa los dos puntos del catálogo compartido.
 
-To determine direct line-of-sight visibility of the **Earth (NAIF ID `399`)** from a candidate landing site on the lunar surface (`Moon`, NAIF ID `301`), `api/app/earth/horizons.py` queries the official **NASA JPL Horizons API** (`https://ssd.jpl.nasa.gov/api/horizons.api`) using topocentric observer mode:
+| Punto | Latitud | Longitud este | Elevación | Altura del observador de ejemplo |
+| --- | --- | --- | --- | --- |
+| Site01 | −89,46315776° | 222,49801509° | 1944,767 m | 2 m |
+| Site04 | −89,76674148° | 188,10719092° | 767,979 m | 2 m |
 
-- `EPHEM_TYPE = 'OBSERVER'`
-- `COMMAND = '399'` (Earth center, planetary ephemeris `DE441`)
-- `CENTER = 'coord@301'` (topocentric site on Moon body `301`)
-- `COORD_TYPE = 'GEODETIC'`
-- `SITE_COORD = 'lon_east_deg,lat_deg,height_km'`
-- `QUANTITIES = '4,20'` (apparent topocentric Azimuth & Elevation in degrees, plus observer-to-target range $\Delta$ in AU and range-rate $\dot{\Delta}$ in km/s)
-- `TIME_TYPE = 'UT'`, `CSV_FORMAT = 'YES'`, `ANG_FORMAT = 'DEG'`
+NASA/JPL Horizons usa observador topocéntrico lunar coord@301, target 399, coordenadas geodésicas con elevación + altura. Q4 proporciona azimut/elevación aparente sin refracción; Q20 aporta distancia y velocidad radial medidas. La URL original, instante de recuperación y caché acompañan el resultado. El núcleo valida la rejilla UTC completa, el cuerpo y el marco mean-Earth.
 
-### Verified Candidate Sites (NASA GSFC PGDA · LRO-LOLA 5 m/pixel Product 78)
+## Resultado de contraste guardado
 
-Coordinates are extracted directly from the NASA GSFC Planetary Geodynamics Data Archive (`https://pgda.gsfc.nasa.gov/products/78`, Barker et al. 2021 / Mazarico et al. 2011) in the `MOON_ME` reference frame (reference radius $R = 1737.4\text{ km}$):
+A las 00:00 UTC del 14 de diciembre de 2026, con observador 2 m:
 
-| Site ID | Name | Latitude (`deg`) | East Longitude (`deg`) | Surface Elevation $Z$ (`m`) | South Polar Stereographic $(X, Y)$ |
-|---|---|---:|---:|---:|---|
-| `site01` | Connecting ridge | `-89.463521°` | `222.128578° E` | `1934.32 m` | `X = -10912.5 m, Y = -12065.0 m` |
-| `site04` | Shackleton rim | `-89.771917°` | `203.293771° E` | `1731.37 m` | `X = -2735.0 m, Y = -6352.5 m` |
+| Punto | Azimut Tierra | Elevación Tierra | Distancia Tierra |
+| --- | --- | --- | --- |
+| Site01 | 133,057924° | −1,436344° | 403 241,38 km |
+| Site04 | 167,454807° | −1,297333° | 403 237,14 km |
 
-### Independent Verification Case (Auditable against JPL Horizons)
+Son regresiones contra respuestas originales NASA, no una validación con un segundo motor. Los seis contrastes JPL independientes del núcleo se conservan en data/prepared/validation.json. El contraste SPICE del marco sigue pendiente.
 
-For epoch `2026-12-14T00:00:00Z` and `2026-12-15T00:00:00Z` with `observer_height_m = 2.0 m`:
+## Terreno, ventanas y comparación
 
-- **Site01 (`222.128578, -89.463521, 1.93632 km`)**:
-  - `2026-12-14 00:00 UT`: $\text{Az} = 133.427399^\circ$, $\text{El} = -1.438614^\circ$, $\Delta = 0.0026955026\text{ AU} = 403,241.45\text{ km}$ → `earth_visible = false` (below $0^\circ$ flat horizon).
-  - `2026-12-15 00:00 UT`: $\text{Az} = 132.185934^\circ$, $\text{El} = -0.042867^\circ$ → `earth_visible = false` (still $0.043^\circ$ below flat horizon).
-- **Site04 (`203.293771, -89.771917, 1.73337 km`)**:
-  - `2026-12-14 00:00 UT`: $\text{Az} = 152.267344^\circ$, $\text{El} = -1.271667^\circ$, $\Delta = 0.0026954687\text{ AU} = 403,236.38\text{ km}$ → `earth_visible = false`.
-  - `2026-12-15 00:00 UT`: $\text{Az} = 151.018961^\circ$, $\text{El} = +0.117899^\circ$ → `earth_visible = true` (Earth rises above flat horizon ~3 hours earlier at Shackleton rim than at Connecting ridge due to their $0.31^\circ$ latitude offset along the Earth libration direction).
+El criterio es elevación del centro terrestre > horizonte LOLA + margen. Se mantiene la igualdad como oculta y los intervalos semiabiertos con muestra izquierda. El horizonte es parcial y depende de la altura. Si falta, se devuelve error; no se ofrece horizonte plano como sustitución.
 
-## 2. Geometric Visibility Criterion & Semi-Open Window Convention
+GET /api/earth entrega el contrato común. POST /api/earth conserva EarthResponse del módulo avanzado: 72 muestras para 72 intervalos horarios y las métricas de la misma serie NASA que GET presenta con 73 puntos incluyendo el extremo final. Las mallas avanzadas usan el derivado local común de 65 × 65.
 
-At each sample timestamp $t_i \in [\text{start\_utc}, \text{end\_utc})$:
+POST /api/compare usa idénticos parámetros para ambos astros y lugares, intersección de ventanas y escenarios con nuevas fechas. La regla de ranking se declara en su respuesta; no certifica seguridad.
 
-$$\text{earth\_visible}(t_i) \iff \text{elevation\_deg}(t_i) > \text{local\_horizon\_deg}(\text{az}(t_i)) + \text{clearance\_deg}$$
+Los controles avanzados comparten la misión y los criterios con el inicio. Se invalidan respuestas anteriores al cambiar parámetros. El antiguo archivo seed_ephemeris.json y los recortes 21 × 21 se conservan como material histórico, fuera de las rutas activas.
 
-- Strict inequality (`>`) is used consistently for both Solar (`sun_elevation_deg > local_horizon_deg`) and Earth visibility.
-- Each sample $t_i$ represents the semi-open interval $[t_i, t_i + \Delta t)$.
-- If a sample is missing from the series, `quality` is marked `"degraded"` and **no synthetic point is interpolated**; contiguous windows do not bridge across missing timestamps.
-- In `terrain` mode, if `api.app.core.horizon` is not verified, the service explicitly returns `quality = "terrain_unavailable"`, preserves `requested_horizon_mode = "terrain"`, and serves `effective_horizon_mode = "flat"` ($0^\circ$).
-
-## 3. 3D Topocentric Coordinate Frame (`ENU`) & LRO-LOLA 3D Surface Patches
-
-To support real-time 3D visualization without recalculating trigonometry in the UI:
-
-$$\mathbf{u}_{\text{ENU}} = \begin{bmatrix} x_{\text{east}} \\ y_{\text{north}} \\ z_{\text{up}} \end{bmatrix} = \begin{bmatrix} \cos(\text{el})\sin(\text{az}) \\ \cos(\text{el})\cos(\text{az}) \\ \sin(\text{el}) \end{bmatrix}, \quad \|\mathbf{u}_{\text{ENU}}\| = 1$$
-
-Each `/api/earth` and `/api/compare` response also embeds a real $21 \times 21$ ($1\text{ km} \times 1\text{ km}$ at $50\text{ m}$ grid spacing) elevation grid sampled directly from NASA GSFC PGDA `Site01_final_adj_5mpp_surf.tif` and `Site04_final_adj_5mpp_surf.tif`.
-
-## 4. Scientific Scope & Operational Limitations
-
-- **Geometric visibility only:** Line of sight to Earth center (`399`) does not model RF link budget, atmospheric attenuation on Earth, DSN station handovers, or spacecraft structural masking.
-- **Heuristic comparison:** Site ranking orders candidates by (1) number of satisfied minimum constraints, (2) joint temporal overlap (`Solar ∩ Earth`), and (3) deterministic `site_id` tie-breaker. If any required series is `unavailable`, `meets_constraints` is `"unknown"` and no winner is declared.
-
-## 5. Official NASA Goddard (PGDA LRO-LOLA) & JPL Horizons Data Architecture
-
-| NASA Source | Contents | Mission Purpose in LUNAR ORACLE | Extracted Site Telemetry (`Site01` / `Site04`) |
-|---|---|---|---|
-| **LOLA 5 m/pixel** (`*_final_adj_5mpp_surf.tif`) | Real lunar surface elevation $Z$ in meters (`MOON_ME`) | Build the 3D terrain mesh and local horizon obstructions | `Site01`: $1934.32\text{ m}$ (`1815.6..1957.4 m`)<br>`Site04`: $1731.37\text{ m}$ (`1511.4..1738.3 m`) |
-| **LOLA Slope Maps** (`*_final_adj_5mpp_slp.tif`) | Surface terrain slope in degrees | Evaluate landing site steepness and surface characteristics | `Site01`: $3.435^\circ$ center ($7.52^\circ$ mean)<br>`Site04`: $2.534^\circ$ center ($15.79^\circ$ mean) |
-| **LOLA Uncertainty Maps** (`*_final_adj_5mpp_toterr.tif`) | RMS vertical $Z$ error in meters from co-adjusted tracks & clones | Display precision boundaries in 3D & telemetry | `Site01`: $\pm 0.388\text{ m}$ center ($\pm 0.422\text{ m}$ median)<br>`Site04`: $\pm 0.118\text{ m}$ center ($\pm 0.281\text{ m}$ median) |
-| **LOLA South Pole 80 m/pixel** | Regional polar relief DEM | Detect distant massifs blocking low-elevation horizon | Integrated via `core/horizon.py` protocol |
-| **JPL Horizons** (`DE441`) | Topocentric Sun (`10`) & Earth (`399`) Az/El by UTC date & site | Calculate solar illumination, Earth LoS windows & 3D ENU vectors | Verified on `2026-12-01`..`2026-12-22` at 30-min steps |
-| **LROC / Moon Trek** | Visual lunar imagery & polar basemaps | Visual explorer context & 3D shading | South Polar Stereographic `MOON_ME` alignment |
+Ver Tierra no garantiza enlace RF: faltan estación, antena, potencia, presupuesto de enlace y operación. Los colores de elevación no son hielo ni luz instantánea.

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import importlib
 import math
 from datetime import datetime, timedelta, timezone
 from typing import Any, Callable, Optional
@@ -25,37 +24,15 @@ HorizonEvaluator = Callable[[float], float]
 
 
 def resolve_horizon_evaluator(
-    site_id: str,
-    requested_mode: HorizonMode,
-    custom_horizon_fn: Optional[HorizonEvaluator] = None,
+    site_id: str, requested_mode: HorizonMode,
+    custom_horizon_fn: Optional[HorizonEvaluator] = None, observer_height_m: float = 2,
 ) -> tuple[HorizonEvaluator, HorizonMode, bool, Optional[str]]:
-    """
-    Resolve local horizon elevation h(az) in degrees.
-    In 'flat' mode, returns 0.0 deg everywhere.
-    In 'terrain' mode, checks custom_horizon_fn or Member A's api.app.core.horizon service
-    ONLY when verified. If unavailable, explicitly serves flat (0.0 deg) and flags
-    terrain_unavailable without silently altering user's requested preference.
-    """
-    if requested_mode == "flat":
-        return (lambda _az: 0.0), "flat", True, None
-
-    if custom_horizon_fn is not None:
-        return custom_horizon_fn, "terrain", True, None
-
-    try:
-        horizon_mod = importlib.import_module("api.app.core.horizon")
-        if hasattr(horizon_mod, "get_verified_horizon_evaluator"):
-            fn = horizon_mod.get_verified_horizon_evaluator(site_id)
-            if callable(fn):
-                return fn, "terrain", True, None
-    except ModuleNotFoundError:
-        pass
-
-    warning = (
-        "Terrain horizon unavailable: verified LOLA horizon profile from core.horizon is not active; "
-        "serving explicit 0.0° flat horizon approximation while preserving requested_horizon_mode='terrain'."
-    )
-    return (lambda _az: 0.0), "flat", False, warning
+    """Use the same partial LOLA profile and height as the canonical pipeline."""
+    if requested_mode == "flat": return (lambda _az: 0.0), "flat", True, None
+    if custom_horizon_fn is not None: return custom_horizon_fn, "terrain", True, None
+    from ..core.horizon import horizon_at
+    info=horizon_at(site_id,0,observer_height_m,requested_mode)
+    return (lambda az: horizon_at(site_id,az,observer_height_m,requested_mode)['elevation_deg']),"terrain",True," ".join(info['warnings'])
 
 
 def build_horizon_ring_profile(horizon_fn: HorizonEvaluator, step_deg: int = 10) -> list[HorizonProfilePoint]:
@@ -253,6 +230,11 @@ def compute_earth_visibility(
       3. Evaluate geometric line of sight to Earth center and semi-open windows.
       4. Attach 3D ENU vectors and LOLA 3D surface mesh for 3D visualization.
     """
+    if custom_raw_samples is None and custom_horizon_fn is None:
+        import asyncio
+        from ..mission_bridge import earth_payload
+        return EarthResponse.model_validate(asyncio.run(earth_payload(req.model_dump())))
+
     site = get_site_metadata(req.site_id, observer_height_m=req.observer_height_m)
 
     base_start = parse_strict_utc(req.start_utc, "start_utc")
@@ -264,7 +246,7 @@ def compute_earth_visibility(
     eff_end_utc = format_utc_z(eff_end_dt)
 
     horizon_fn, effective_horizon_mode, terrain_ok, terrain_warning = resolve_horizon_evaluator(
-        site.site_id, req.horizon_mode, custom_horizon_fn=custom_horizon_fn
+        site.site_id, req.horizon_mode, custom_horizon_fn=custom_horizon_fn, observer_height_m=req.observer_height_m
     )
 
     if custom_raw_samples is not None:

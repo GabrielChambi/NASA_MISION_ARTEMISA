@@ -1,164 +1,114 @@
-# LUNAR ORACLE · Lunar Landing Site Navigator
+﻿# LUNAR ORACLE · Lunar Landing Site Navigator
 
-Exploración del polo sur lunar con **datos reales NASA LOLA y efemérides NASA/JPL Horizons**, acompañada de una misión 3D interactiva. Interfaz en inglés; documentación de desarrollo en español.
+Planifica una misión al polo sur lunar con **topografía NASA LOLA y efemérides NASA/JPL Horizons**. El inicio muestra el mapa 3D, compara dos puntos y fechas, y reproduce un descenso vertical calculado con física.
 
-[Abrir el sistema](https://lunar-oracle-mission-control.gptcompartir.chatgpt.site) · [Metodología científica](docs/science/solar.md) · [Cobertura del Plan A](docs/IMPLEMENTATION_STATUS.md)
+![Planificador lunar](docs/images/mission-planner.png)
 
-La web es pública: abre directamente en Mission Control, sin iniciar sesión en ChatGPT. El acceso se comprobó en un contexto de navegador sin cookies ni sesión. Mantener el acceso público al actualizar el despliegue de Sites.
+## Empezar
 
-El repositorio contiene el frontend, backend Python, adaptador para publicación, datos derivados reproducibles y pruebas. No se necesita una clave NASA para usar Horizons.
+    git clone https://github.com/GabrielChambi/NASA_MISION_ARTEMISA.git
+    cd NASA_MISION_ARTEMISA
+    npm.cmd --prefix frontend ci
+    python -m venv api/.venv
+    api/.venv/Scripts/python.exe -m pip install -r api/requirements.txt
+    npm.cmd run dev:full
 
-![Mission Control 3D](docs/images/mission-control-3d.png)
+**Web:** http://127.0.0.1:5173/ · **API:** http://127.0.0.1:8000/docs
 
-## Nuevo atlas regional NASA
+Requisitos: Node 22.12+ (probado con 24.14), Python 3.11, Git. Las pruebas de navegador usan Google Chrome y Playwright. En Linux/macOS usar npm, python3 y api/.venv/bin/python. El lanzador inicia ambos servicios; cerrarlo detiene los procesos.
 
-Desde la pantalla de inicio, pulsar **Explore NASA data** → **Lunar explorer**. La vista principal ahora muestra el polo sur en 3D, construido desde el DEM regional LOLA: cráteres con nombres oficiales IAU/USGS, colores de elevación, rotación, zoom, perspectiva/polo/acercamiento, selección de Site01/Site04 y línea temporal del Sol y la Tierra con resultados reales.
+Se entra directamente al planificador, sin cuenta ChatGPT ni clave NASA. El [sitio público existente](https://lunar-oracle-mission-control.gptcompartir.chatgpt.site) conserva su último despliegue; **esta revisión está en GitHub y localmente, pendiente de publicación**. El conector Sites devuelve “Sites project not found” al solicitar escritura al proyecto existente. No se creó otro sitio ni se modificó su audiencia.
 
-![Atlas regional del polo sur](docs/images/polar-atlas.png)
+## Usar el sistema
 
-La malla es una versión ligera del raster de 80 m (791 m por vértice en escritorio); la exageración vertical se indica y puede ponerse en 1×. Los cálculos de ventanas mantienen sus DEM y perfiles científicos separados. [Método, procedencia y límites del atlas](docs/science/polar_atlas.md).
+1. Elige Connecting ridge / Site01 o Shackleton rim / Site04 en el mapa o selector.
+2. Define fechas **UTC**, altura, muestreo y horizonte. Pulsa **Calcular con NASA**; ambos puntos usan condiciones idénticas.
+3. Desliza el tiempo: mapa, posiciones del Sol y la Tierra, horizonte y despeje muestran la misma muestra NASA.
+4. Ajusta luz mínima, Tierra visible mínima, pendiente máxima y margen terrestre. Las ventanas y razones se recalculan desde las series alineadas.
+5. Pulsa **Simular descenso**. La nave se mueve sobre las coordenadas del punto; altura, velocidad, masa, propelente y empuje salen de la integración física. Puedes pausar, acelerar o recorrer el tiempo.
+6. Al tocar el terreno, el mapa centra y marca el contacto. Empuje o combustible insuficientes producen **impacto**, no éxito.
+7. **Descargar evidencia** guarda fechas, criterios, muestras, procedencia, comparación y la integración en JSON. **Datos y método** abre los módulos avanzados y su exportación CSV.
 
-Para regenerar el atlas y los datos de compatibilidad de los módulos nuevos de main:
+Los pasos superiores son accesos directos. En móvil el mapa aparece primero. Fechas, altura, horizonte, muestreo, retraso y criterios son compartidos con los módulos avanzados de main.
 
-```powershell
-api/.venv/Scripts/python.exe api/scripts/prepare_polar_atlas.py
-api/.venv/Scripts/python.exe api/scripts/prepare_hosted_mission.py
-```
+## Qué es medido y qué es modelado
 
-Validación adicional (servidores activos): `node frontend/scripts/verify-atlas.mjs`. La rama main descargada incorpora también EarthMissionSuite, Site Comparison y Mission Resilience Lab; el paquete de producción incluye la compatibilidad POST necesaria para esos módulos.
+| Parte | Procedencia / alcance |
+| --- | --- |
+| Relieve 3D | NASA LOLA regional, fuente 80 m; malla de ~791 m y curvatura lunar |
+| Puntos y pendiente | Píxeles centrales de GeoTIFF NASA de 5 m; no lugares aprobados de aterrizaje |
+| Sol y Tierra | API NASA/JPL Horizons, observador lunar coord@301, respuesta y consulta trazables |
+| Horizonte | Perfil LOLA por azimut y altura 1/2/5 m; búsqueda finita, **cobertura parcial** |
+| Ventanas | Centro del astro sobre horizonte; margen para Tierra; intervalos semiabiertos |
+| Comparación | Criterios del usuario, intersección, luz y Tierra; empates explícitos |
+| Descenso | Gravedad central JPL, empuje limitado, masa e Isp; **nave hipotética editable** |
+| Nave en mapa | Posición calculada sobre coordenadas fijas; símbolo ampliado sin escala física |
 
-## Qué funciona
+La fecha inicial **14–17 diciembre 2026**, altura **2 m**, paso **60 min**, dispone de respuestas NASA originales incluidas. También el escenario +12 h. Otras consultas requieren conexión JPL o una entrada exacta en caché. Si falla NASA o falta horizonte, se informa sin sustituir cifras.
 
-- **Mission Control 3D:** cohete y plataforma construidos con geometría, ignición, ascenso, viaje Tierra–Luna, descenso y aterrizaje. La región seleccionada determina el destino y su malla usa el DEM NASA preparado. Tierra y Luna tienen texturas oficiales con procedencia en [ASSET_CREDITS.md](frontend/src/components/scene/ASSET_CREDITS.md).
-- **Lunar Explorer:** mapa polar 2D, selección de Connecting ridge / Site01 y Shackleton rim / Site04, coordenadas transformadas desde sus GeoTIFF, cobertura, elevación, pendiente e incertidumbre de altura.
-- **Solar Observatory:** azimut, elevación y horizonte; inspección UTC, ventanas, horas visibles y mayor período sin visibilidad.
-- **Earth Visibility:** consulta real de la Tierra desde la superficie lunar y sus ventanas geométricas.
-- **Compare Sites:** ambos sitios con las mismas fechas, altura, muestreo y modelo de horizonte; diferencias explicadas sin puntuación de seguridad opaca.
-- **Escenarios:** retrasos de fecha, alturas de observador y horizonte plano o de terreno disparan consultas/cálculos con los nuevos parámetros, no simples cambios de etiquetas.
-- **Scientific Evidence:** inventario de siete productos, estado de adquisición, URLs, procedencia, supuestos y limitaciones. Exportación CSV de muestras.
-- **Calidad:** estados de carga/error, cancelación de consultas obsoletas, caché exacta de resultados reales, UTC explícito, responsive y preferencia de movimiento reducido.
+Ejemplo con horizonte LOLA parcial: Site01 ofrece **72 h de Sol, 29 h de Tierra, 29 h simultáneas**, pendiente **3,80°**; Site04 ofrece **72 h de Sol y 0 h de Tierra**, pendiente **32,74°**. Son resultados para estos píxeles, fechas y altura; no una recomendación certificada.
 
-La trayectoria y el tiempo del viaje 3D son **cinematográficos**, no una solución de dinámica orbital. El combustible, clima y checklist de lanzamiento son demostraciones visuales. Las curvas científicas proceden de Horizons y los perfiles del terreno de LOLA; no se rellenan errores con números inventados.
+El descenso integra las ecuaciones de movimiento y consumo con RK4 cada 0,1 s. Sus parámetros de nave son de ejemplo, no especificaciones Artemis. No calcula la trayectoria orbital Tierra–Luna, estabilidad de patas, energía eléctrica ni presupuesto de radio. [Método y pruebas](docs/science/mission_planner.md).
 
-## Ejecución local completa · Windows
+## Verificar
 
-Requisitos: Git, Node.js 22.12+ (comprobado con 24.14), Python 3.11 y, para las pruebas de navegador, Google Chrome.
+    npm.cmd run build:hosted
+    api/.venv/Scripts/python.exe -m pytest api/tests -q
+    npm.cmd run test:science
 
-```powershell
-git clone https://github.com/GabrielChambi/NASA_MISION_ARTEMISA.git
-cd NASA_MISION_ARTEMISA
-npm.cmd --prefix frontend ci
-python -m venv api/.venv
-api/.venv/Scripts/python.exe -m pip install -r api/requirements.txt
-npm.cmd run dev:full
-```
+    # Producción local con API integrada, sin Python
+    npm.cmd --prefix frontend run preview:hosted
 
-Web: **http://127.0.0.1:5173/**. API: **http://127.0.0.1:8000/**. Documentación interactiva: **http://127.0.0.1:8000/docs**. `dev:full` inicia ambos servicios y los detiene al cerrar la sesión. Si un puerto ya está ocupado, cerrar el proceso anterior antes de iniciarlo.
+    # Otra terminal, URL predeterminada 4173
+    node frontend/scripts/verify-planner.mjs
 
-En Linux/macOS usar `npm`, `python3` y `api/.venv/bin/python` en los comandos equivalentes; el lanzador detecta la plataforma.
+La compilación Worker incluye frontend y API con los mismos registros NASA. El comando preview sin “hosted” sirve sólo frontend y necesita Python. Para verificar los módulos avanzados:
 
-Para iniciar por separado:
+    $env:LUNAR_ORACLE_TEST_URL='http://127.0.0.1:4173/'
+    node frontend/scripts/verify-atlas.mjs
+    node frontend/scripts/verify-science.mjs
+    node frontend/scripts/verify-main-integration.mjs
 
-```powershell
-# Terminal 1, desde la raíz
-api/.venv/Scripts/python.exe -m uvicorn api.app.main:app --host 127.0.0.1 --port 8000
-# Terminal 2, desde la raíz
-npm.cmd run dev
-```
-
-Vite dirige `/api` al backend local. La fecha predeterminada (1–8 diciembre 2026, paso 60 minutos, altura 1 m) dispone de respuestas **reales precalculadas** para ambos cuerpos y sitios. Otras fechas, pasos o alturas requieren conexión a JPL o una entrada exacta en caché. `retrieved_at`, `cache_hit` y la URL original identifican su procedencia.
-
-## Validación y compilación
-
-```powershell
-npm.cmd run build
-api/.venv/Scripts/python.exe -m pytest api/tests -q
-npm.cmd run test:science
-
-# Con los dos servidores locales activos
-node frontend/scripts/verify-home.mjs
-node frontend/scripts/verify-science.mjs
-```
-
-Las pruebas Python cubren catálogo, UTC, parser JPL, ventanas semiabiertas, igualdad con el horizonte, nodata, interpolación circular y fallos explícitos. Las pruebas del adaptador contrastan muestras y métricas contra los resultados Python/NASA. La comprobación de interfaz cubre selección, curvas Sol/Tierra, comparación, horizonte, errores 503, reintento y móvil. `artifacts/` conserva capturas locales y queda fuera de Git.
-
-Las seis consultas independientes de contraste JPL y su tolerancia están registradas en `data/prepared/validation.json`. Es validación contra la salida de JPL, no contra un segundo motor astrodinámico.
-
-## Publicación y vista previa sin Python
-
-```powershell
-npm.cmd run build:hosted
-npm.cmd --prefix frontend run preview:hosted
-```
-
-Abrir **http://127.0.0.1:4173/**. Este paquete sirve frontend y API mediante un Worker ESM. Lleva las mismas derivaciones NASA y respuestas previas; consulta Horizons para parámetros nuevos, con timeout, validación y errores explícitos. `frontend/scripts/build-hosted.mjs` incorpora los activos locales y los datos científicos en `frontend/dist/server/index.js`. La configuración de Sites mantiene la identidad existente y no contiene secretos.
-
-`npm.cmd run preview` sirve la compilación estática con proxy a la API Python; requiere que el backend esté activo. El modo publicado no depende de una API Python alojada en este ordenador.
+**45 pruebas Python y 30 Node.** Se contrastan coordenadas, UTC, muestras, rango medido, ventanas, fallos, altura y física. La caída libre se compara con conservación de energía; el consumo con la integral de empuje; el contacto con reducción del paso. El navegador comprueba fechas, criterios, contacto/impacto, evidencia JSON, fallos sin resultados obsoletos y tamaños 360/390/768/1500 px. Las capturas locales quedan en artifacts/, fuera de Git.
 
 ## Datos y reproducibilidad
 
-```powershell
-# Preparar de nuevo los siete productos NASA y perfiles
-api/.venv/Scripts/python.exe api/scripts/acquire_nasa.py
-# Consultas reales, caché y contrastes JPL
-api/.venv/Scripts/python.exe api/scripts/prepare_ephemeris.py
-```
+    # Siete productos NASA y perfiles
+    api/.venv/Scripts/python.exe api/scripts/acquire_nasa.py
+    # Respuestas originales y seis consultas de contraste JPL
+    api/.venv/Scripts/python.exe api/scripts/prepare_ephemeris.py
+    # Atlas con nombres IAU/USGS
+    api/.venv/Scripts/python.exe api/scripts/prepare_polar_atlas.py
+    # 14–17 diciembre y escenario +12 h
+    api/.venv/Scripts/python.exe api/scripts/prepare_hosted_mission.py
 
-Los originales grandes se guardan en `data/raw/` y no se suben a Git. El repositorio sí incluye catálogo, inventario, vistas 65×65, horizontes de 360 azimuts a alturas 1/2/5 m y las respuestas JPL originales usadas por la demostración. El primer reprocesado completo descarga varios cientos de MB. No requiere descargar todos los clones de incertidumbre de NASA.
+Los originales grandes, varios cientos de MB, quedan en data/raw/, fuera de Git. Se versionan catálogos, SHA-256, derivados, horizontes y respuestas JPL. El atlas verifica su binario al cargar. Las cachés emparejan todos los parámetros; el antiguo archivo semilla de B ya no alimenta las rutas activas.
 
-Fuentes: [LOLA regiones](https://pgda.gsfc.nasa.gov/products/78), [GeoTIFF 5 m](https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/), [DEM regional 80 m](https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/LDEM_80S_80MPP_ADJ.TIF), [Horizons API](https://ssd-api.jpl.nasa.gov/doc/horizons.html), [manual Horizons](https://ssd.jpl.nasa.gov/horizons/manual.html), [SPICE](https://naif.jpl.nasa.gov/naif/).
+Fuentes: [NASA LOLA / PGDA](https://pgda.gsfc.nasa.gov/products/78), [DEM regional](https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/LDEM_80S_80MPP_ADJ.TIF), [Horizons API](https://ssd-api.jpl.nasa.gov/doc/horizons.html), [nomenclatura USGS](https://planetarynames.wr.usgs.gov/GIS_Downloads), [gravedad JPL](https://ssd.jpl.nasa.gov/astro_par.html), [propulsión NASA Glenn](https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/specific-impulse/).
 
-## Arquitectura y puntos de entrada
+## Dónde continuar
 
-```text
-frontend/
-  src/App.tsx                      # Mission Control y montaje
-  src/components/LaunchScene3D.tsx  # Secuencia 3D
-  src/features/mission/            # Contexto y navegación científica
-  src/features/sites/              # Explorador polar
-  src/features/solar/              # Curvas y cliente de API Sol/Tierra
-  worker/science.mjs               # Adaptador publicado, con pruebas de paridad
-  scripts/                         # Build y verificaciones
-api/
-  app/main.py                      # FastAPI
-  app/core/                        # Catálogo y horizonte compartido
-  app/solar/                       # Horizons, ventanas y servicio común
-  scripts/                         # Adquisición NASA y preparación
-  tests/
-data/catalog/                      # Sitios e inventario con procedencia
-data/prepared/                     # Datos derivados y respuestas NASA
-docs/science/solar.md               # Método y límites implementados
-scripts/dev-full.mjs                # Arranque conjunto
-```
+    frontend/src/App.tsx                          Montaje con contexto
+    frontend/src/features/mission/MissionPlanner.tsx  Flujo principal
+    frontend/src/features/mission/missionAnalysis.ts Ventanas y criterios
+    frontend/src/features/mission/descentPhysics.ts  Física determinista
+    frontend/src/features/mission/MissionContext.tsx Misión compartida
+    frontend/src/features/sites/PolarTerrainAtlas.tsx Atlas y contacto
+    frontend/src/features/earth/                 Observatorio avanzado
+    frontend/worker/science.mjs                  API GET publicada
+    frontend/worker/mission.mjs                  Compatibilidad POST
+    api/app/solar/                              Servicio NASA común
+    api/app/mission_bridge.py                   Compatibilidad Python
+    data/catalog/                              Sitios e inventario
+    data/prepared/                             Derivados y registros NASA
+    docs/science/                              Métodos y evidencias
 
-Campos compartidos: `siteIds`, `startUtc`, `endUtc`, `stepMinutes`, `horizonMode`, `delayHours`. Se añade `observerHeightM`. No renombrarlos en integraciones posteriores.
+Mantener los campos compartidos siteIds, startUtc, endUtc, stepMinutes, horizonMode, delayHours y observerHeightM al integrar funciones. Los criterios y la procedencia deben seguir explícitos.
 
-## API implementada
+Rutas GET: /api/sites, /api/solar, /api/earth, /api/horizon, /api/sites/{id}/terrain, /api/terrain, /api/datasets, /api/methodology y /api/health. POST /api/earth y /api/compare conservan el contrato de main con el servicio común. GET Earth devuelve el contrato común; include_range=true solicita rango y velocidad radial medidos.
 
-| Método y ruta | Resultado |
-| --- | --- |
-| `GET /api/health` | Disponibilidad y datos preparados |
-| `GET /api/sites` | Sitios, coordenadas, medidas y procedencia |
-| `GET /api/solar` | Efemérides y ventanas del Sol |
-| `GET /api/earth` | Efemérides y ventanas de la Tierra |
-| `GET /api/sites/{site_id}/terrain` | Malla reducida de alturas reales |
-| `GET /api/terrain?site_id=...` | Alias de terreno |
-| `GET /api/horizon` | Perfil preparado por sitio/altura |
-| `GET /api/datasets` | Inventario de los siete productos |
-| `GET /api/methodology` | Método, fuentes y límites |
+## Límites y pendientes
 
-Ejemplo: `/api/solar?site_id=site04&start_utc=2026-12-01T00:00:00Z&end_utc=2026-12-08T00:00:00Z&step_minutes=60&horizon_mode=terrain&observer_height_m=1`.
+Los perfiles y el mapa son finitos y muestreados; no detectan todos los obstáculos ni propagan incertidumbre probabilística. Falta contraste independiente SPICE. Las transiciones de visibilidad no son exactas entre muestras. Seleccionar coordenadas arbitrarias exige reprocesar elevación y horizonte; ahora se admiten los dos píxeles conocidos.
 
-Las respuestas científicas incluyen `status`, `meta`, `samples`, `windows` y `summary`. Parámetros inválidos devuelven 422; fallo de JPL o datos ausentes, 503. Nunca se emite una curva ficticia como resultado válido. La comparación y los retrasos reutilizan estos servicios con parámetros idénticos o desplazados, respectivamente.
-
-## Límites y siguientes pasos
-
-- Los marcadores son píxeles de referencia regionales dentro del DEM, **no puntos de aterrizaje aprobados por NASA**. Cambiar a coordenadas arbitrarias exige volver a calcular cobertura, elevación y horizonte; todavía no se admite ese flujo.
-- El horizonte de terreno sigue siendo **parcial**: búsqueda finita, muestreo radial y posibles obstáculos subpíxel. No certifica seguridad, energía eléctrica ni un enlace RF.
-- Los productos de pendiente e incertidumbre se conservan como medidas de fuente; no se ha propagado esa incertidumbre hasta bandas probabilísticas del horizonte.
-- La convención lunar mean-Earth está documentada; falta validación independiente con SPICE. Las ventanas son muestreadas, con incertidumbre de transición de hasta un paso.
-- La revisión de una PR del integrante B y la presentación final requieren coordinación del equipo; no se inventa evidencia de esa colaboración.
-
-Continuar con validación SPICE, selección de puntos dentro del DEM, propagación de incertidumbre y revisión cruzada. [El plan inicial](docs/DEVELOPMENT_PLAN.md) se conserva como contexto; el estado comprobado actual está en [IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md).
-
-Se utilizó IA como asistencia de programación. El fondo generado de la primera versión se conserva como activo histórico, pero **ya no se usa como escena inicial**. Elegir una licencia propia del proyecto antes de presentarlo como software de código abierto; las fuentes y dependencias conservan sus condiciones correspondientes.
+La simulación vertical no certifica seguridad ni sustituye software de vuelo. La secuencia cinematográfica anterior permanece en LaunchScene3D.tsx como código histórico, fuera del inicio. El [plan original](docs/DEVELOPMENT_PLAN.md) es contexto; el [estado verificado](docs/IMPLEMENTATION_STATUS.md) describe la implementación. Se usó IA para programación; fuentes y dependencias conservan sus condiciones. Definir licencia del proyecto antes de presentarlo como código abierto.

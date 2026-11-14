@@ -1,19 +1,12 @@
 from __future__ import annotations
 
-import hashlib
-import json
 import math
-from datetime import datetime, timedelta, timezone
-from pathlib import Path
-from typing import Any, Optional
-import httpx
+from datetime import datetime, timezone
+from typing import Any
 
-from .models import AU_TO_KM, SiteMetadata, format_utc_z, parse_strict_utc
+from .models import AU_TO_KM, SiteMetadata, format_utc_z
 
 HORIZONS_API_URL = "https://ssd.jpl.nasa.gov/api/horizons.api"
-_HERE = Path(__file__).resolve().parent
-_SEED_PATH = _HERE / "seed_ephemeris.json"
-_CACHE_DIR = _HERE / ".cache"
 
 _MONTH_MAP = {
     "Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4, "May": 5, "Jun": 6,
@@ -84,8 +77,9 @@ def parse_horizons_observer_text(raw_text: str) -> list[dict[str, Any]]:
         except (ValueError, IndexError):
             continue
 
-        delta_au = 0.002569555
-        deldot_km_s = 0.0
+        if len(cols)<7: raise ValueError('Measured range and range rate are required.')
+        delta_au = float('nan')
+        deldot_km_s = float('nan')
         if len(cols) >= 7:
             try:
                 delta_au = float(cols[5])
@@ -93,6 +87,8 @@ def parse_horizons_observer_text(raw_text: str) -> list[dict[str, Any]]:
             except ValueError:
                 pass
 
+        if not math.isfinite(delta_au) or delta_au<=0 or not math.isfinite(deldot_km_s):
+            raise ValueError('Invalid measured NASA range.')
         range_km = round(delta_au * AU_TO_KM, 2)
         samples.append(
             {
@@ -141,37 +137,6 @@ def build_horizons_params(
     }
 
 
-def _try_seed_lookup(
-    site_id: str,
-    target_command: str,
-    start_dt: datetime,
-    end_dt: datetime,
-    step_minutes: int,
-) -> Optional[list[dict[str, Any]]]:
-    """Check if the requested range is covered by the pre-verified JPL Horizons 30-min seed archive."""
-    if step_minutes % 30 != 0 or not _SEED_PATH.exists():
-        return None
-    try:
-        seed_data = json.loads(_SEED_PATH.read_text(encoding="utf-8"))
-    except Exception:
-        return None
-
-    for key, raw_text in seed_data.items():
-        if not key.startswith(f"{site_id}:{target_command}:"):
-            continue
-        all_samples = parse_horizons_observer_text(raw_text)
-        by_ts = {s["t_utc"]: s for s in all_samples}
-        expected_ts: list[str] = []
-        cur = start_dt
-        # Semi-open interval [start_utc, end_utc)
-        while cur < end_dt:
-            expected_ts.append(format_utc_z(cur))
-            cur += timedelta(minutes=step_minutes)
-        if expected_ts and all(ts in by_ts for ts in expected_ts):
-            return [by_ts[ts] for ts in expected_ts]
-    return None
-
-
 def fetch_topocentric_ephemeris(
     site: SiteMetadata,
     start_utc: str,
@@ -184,48 +149,10 @@ def fetch_topocentric_ephemeris(
     Fetch topocentric ephemeris samples for the semi-open interval [start_utc, end_utc).
     Returns (samples, cache_hit).
     """
-    start_dt = parse_strict_utc(start_utc, "start_utc")
-    end_dt = parse_strict_utc(end_utc, "end_utc")
-
-    # 1. Check verified seed archive
-    seeded = _try_seed_lookup(site.site_id, target_command, start_dt, end_dt, step_minutes)
-    if seeded is not None:
-        return seeded, True
-
-    # 2. Check local disk cache
-    _CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    cache_key_raw = (
-        f"{site.site_id}:{target_command}:{site.lon_east_deg:.5f}:{site.lat_deg:.5f}:"
-        f"{site.elevation_m + site.observer_height_m:.2f}:{format_utc_z(start_dt)}:"
-        f"{format_utc_z(end_dt)}:{step_minutes}"
-    )
-    cache_hash = hashlib.sha256(cache_key_raw.encode("utf-8")).hexdigest()[:24]
-    cache_file = _CACHE_DIR / f"{cache_hash}.json"
-    if cache_file.exists():
-        try:
-            cached_samples = json.loads(cache_file.read_text(encoding="utf-8"))
-            return cached_samples, True
-        except Exception:
-            pass
-
-    # 3. Query live NASA JPL Horizons API
-    params = build_horizons_params(target_command, site, start_dt, end_dt, step_minutes)
-    with httpx.Client(timeout=timeout_s) as client:
-        resp = client.get(HORIZONS_API_URL, params=params)
-        resp.raise_for_status()
-        payload = resp.json()
-
-    result_text = payload.get("result", "")
-    parsed_all = parse_horizons_observer_text(result_text)
-
-    # Filter strictly to semi-open interval [start_dt, end_dt)
-    end_iso = format_utc_z(end_dt)
-    start_iso = format_utc_z(start_dt)
-    filtered = [s for s in parsed_all if start_iso <= s["t_utc"] < end_iso]
-
-    try:
-        cache_file.write_text(json.dumps(filtered), encoding="utf-8")
-    except Exception:
-        pass
-
-    return filtered, False
+    import asyncio
+    from ..mission_bridge import body_result
+    q=dict(start_utc=start_utc,end_utc=end_utc,step_minutes=step_minutes,horizon_mode='flat',
+           observer_height_m=site.observer_height_m)
+    data=asyncio.run(body_result(q,site.site_id,int(target_command),0))
+    return [{**s,'enu_vector':az_el_to_enu_vector(s['azimuth_deg'],s['elevation_deg'])}
+            for s in data['samples'][:-1]],data['meta']['cache_hit']

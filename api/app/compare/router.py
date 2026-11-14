@@ -1,20 +1,14 @@
-from __future__ import annotations
-
-from fastapi import APIRouter, HTTPException
-import httpx
-
+﻿from fastapi import APIRouter
+from fastapi.responses import JSONResponse
+from ..core.horizon import HorizonUnavailable
+from ..mission_bridge import compare_payload
 from .models import CompareRequest, CompareResponse
-from .service import compare_sites
 
-router = APIRouter(prefix="/api/compare", tags=["compare"])
+router=APIRouter(prefix='/api/compare',tags=['compare'])
 
-
-@router.post("", response_model=CompareResponse)
-def post_compare_sites(req: CompareRequest) -> CompareResponse:
-    try:
-        return compare_sites(req)
-    except httpx.HTTPError as exc:
-        raise HTTPException(
-            status_code=503,
-            detail=f"External ephemeris service (JPL Horizons) temporarily unreachable: {exc}",
-        ) from exc
+@router.post('',response_model=CompareResponse)
+async def post_compare_sites(req:CompareRequest):
+    try: return await compare_payload(req.model_dump())
+    except ValueError as exc:
+        if isinstance(exc,HorizonUnavailable): raise
+        return JSONResponse(status_code=422,content={'status':'unavailable','message':str(exc)})

@@ -25,14 +25,14 @@ class CompareRequest(BaseModel):
     )
     start_utc: str = Field(default="2026-12-14T00:00:00Z", description="Base interval start in ISO-8601 UTC")
     end_utc: str = Field(default="2026-12-17T00:00:00Z", description="Base interval end in ISO-8601 UTC")
-    step_minutes: int = Field(default=60, ge=30, le=180, description="Sampling step in minutes (30-180)")
+    step_minutes: int = Field(default=60, ge=5, le=1440, description="Sampling step in minutes (5-1440)")
     horizon_mode: HorizonMode = Field(default="flat", description="Horizon model: 'flat' or 'terrain'")
-    clearance_deg: float = Field(default=0.0, ge=0.0, le=15.0, description="Earth elevation clearance in degrees")
+    clearance_deg: float = Field(default=0.0, ge=0.0, le=20.0, description="Earth elevation clearance in degrees")
     delay_hours: float = Field(default=0.0, ge=0.0, le=24.0, description="Scenario launch delay in hours (0-24)")
-    observer_height_m: float = Field(default=2.0, ge=0.0, le=50.0, description="Observer height above surface in meters")
-    minimum_solar_hours: float = Field(default=36.0, ge=0.0, le=336.0, description="Minimum required solar illumination hours")
+    observer_height_m: float = Field(default=2.0, ge=0.0, le=100.0, description="Observer height above surface in meters")
+    minimum_solar_hours: float = Field(default=36.0, ge=0.0, le=744.0, description="Minimum required solar illumination hours")
     minimum_earth_visible_hours: float = Field(
-        default=36.0, ge=0.0, le=336.0, description="Minimum required Earth line-of-sight hours"
+        default=36.0, ge=0.0, le=744.0, description="Minimum required Earth line-of-sight hours"
     )
 
     @field_validator("site_ids")
@@ -63,8 +63,8 @@ class CompareRequest(BaseModel):
         if end_dt <= start_dt:
             raise ValueError("end_utc must be strictly greater than start_utc")
         duration_hours = (end_dt - start_dt).total_seconds() / 3600.0
-        if duration_hours < 1.0 or duration_hours > 336.0:
-            raise ValueError("Comparison interval duration must be between 1 and 336 hours")
+        if duration_hours < 1.0 or duration_hours > 744.0:
+            raise ValueError("Comparison interval duration must be between 1 and 744 hours")
         return self
 
 

@@ -1,34 +1,24 @@
-# Cobertura del Plan A y datos NASA
+﻿# Estado de implementación · LUNAR ORACLE
 
-Estado comprobado de esta implementación; el documento original se interpreta como especificación de producto, no como evidencia de tareas ya realizadas.
+La revisión sustituye la portada con telemetría decorativa por un planificador en español. El inicio muestra una malla 3D NASA. Las pruebas del documento aportado y la física se detallan en [mission_planner.md](science/mission_planner.md).
 
-| ID | Entrega | Estado / evidencia |
-| --- | --- | --- |
-| A-F1 | Shell y navegación | Implementado: Mission Control, Explorer, Solar, Earth, Compare, Evidence |
-| A-F2 | Mapa polar y dos sitios | Implementado: coordenadas verificadas, selección y MissionContext |
-| A-F3 | Solar y cronología | Implementado: curvas, muestras UTC, horizonte, ventanas y exportación CSV |
-| A-F4 | Responsive y estados | Comprobado: cinco tamaños en inicio, cinco vistas científicas a 390 px; errores/reintentos |
-| A-B1 | Catálogo y DEM | `/api/sites`, límites/CRS del GeoTIFF, pixel/altura trazables |
-| A-B2 | Solar y contrato | `/api/solar` con meta, samples, windows, summary y errores |
-| A-B3 | Horizonte compartido | Plano o terreno, interpolación circular y perfiles a 1/2/5 m, caché exacta |
-| A-B4 | Health y fallos | `/api/health`, timeout/HTTP/JSON/tabla inválida → unavailable |
-| A-S1 | Efemérides reales | Series Sol/Tierra y seis consultas independientes de contraste JPL |
-| A-S2 | LOLA y horizonte | 5 m local + 80 m regional, 360 rayos, curvatura, nodata y cobertura parcial explícita |
-| A-S3 | Ventanas y métricas | Intervalos semiabiertos con muestra izquierda; endpoint final sin duración extra |
-| A-Q1 | Pruebas científicas | Pruebas Python: ventanas, UTC, formato, igualdad, perfil y errores |
-| A-Q2 | UI y API | Build, pytest, navegador y paridad Python/Worker |
-| A-Q3 | Método y fuentes | `docs/science/solar.md`, inventario y respuestas originales de JPL |
-| A-Q4 | Revisión de B / pitch | Pendiente externo: no se ha proporcionado una PR de B ni se afirma haberla revisado |
+| Entrega | Estado comprobado |
+| --- | --- |
+| Inicio | Mapa, fechas UTC, criterios, comparación y descenso |
+| Catálogo y selección | Dos píxeles; coordenadas iguales en mapa y GET/POST |
+| Sol y Tierra | NASA, horizonte, despeje y reloj sincronizado |
+| Ventanas | Intervalos semiabiertos, duración, intersección y huecos |
+| Comparación y escenarios | Condiciones idénticas, reglas y diferencia con cálculo previo |
+| Descenso | Gravedad lunar, empuje, Isp, masa y tanque; contacto/impacto/timeout |
+| Contacto en mapa | Marcador, coordenadas y cámara sobre el objetivo |
+| Evidencia | JSON con misión, criterios, NASA y física; CSV avanzado |
+| Integración de main | Earth/Compare con misión compartida y servicio canónico |
+| Robustez | Cancelación, invalidación, error sin sustitución y reintento |
+| Verificación | Build, 45 Python, 30 Node y navegador |
+| Móvil | 360/390/768/1500 px; mapa primero |
+| GitHub | Revisión preparada para main |
+| Sites | Publicación pendiente: “Sites project not found” al pedir escritura |
 
-## Extras solicitados e integrados
+El antiguo lanzamiento se conserva como código histórico, fuera del inicio. La semilla B no alimenta endpoints activos. Se corrigieron coordenadas estáticas y sustituciones de rango/horizonte.
 
-- Inicio renderizado en 3D, sin usar el antiguo fondo fotográfico.
-- Selección de región enlazada con la secuencia de viaje y aterrizaje.
-- Terreno de aterrizaje derivado de NASA; imágenes oficiales de los planetas con créditos.
-- Consultas de la Tierra 399 y observatorio real reutilizando el motor común.
-- Comparación solar entre sitios y escenarios de retraso/altura/horizonte recalculados.
-- Adaptador de publicación con la misma procedencia y pruebas de igualdad con Python.
-
-## Qué no significa «implementado»
-
-El relieve tiene cobertura y muestreo finitos. Los productos de incertidumbre no se propagan a una simulación probabilística completa. No hay certificación de aterrizaje, cálculo de energía, enlace RF ni transformación SPICE independiente validada. La animación es ilustrativa y no representa una trayectoria orbital calculada. El estado de adquisición de cada producto se registra por separado en `/api/datasets`.
+Implementado no significa validación oficial: horizonte parcial, transiciones muestreadas, contraste SPICE pendiente y nave hipotética. No se certifica seguridad, energía, enlace RF ni trayectoria Tierra–Luna.

@@ -25,6 +25,17 @@ try{
   assert.ok(body.sites.every(s=>s.samples.length===72))
   await page.getByRole('region',{name:'Site Comparison',exact:true}).waitFor()
   await page.locator('.b-suite-container').screenshot({path:fileURLToPath(new URL('../../artifacts/main-comparison-integration.png',import.meta.url))})
+  assert.equal(await page.locator('#b-start-utc').inputValue(),await workspace.getByLabel('Start date UTC',{exact:true}).inputValue())
+  const shifted=page.waitForResponse(r=>r.url().endsWith('/api/earth')&&r.request().method()==='POST'&&r.status()===200&&r.request().postDataJSON().start_utc==='2026-12-14T12:00:00Z')
+  await page.locator('#b-start-utc').fill('2026-12-14T12:00')
+  await shifted
+  assert.equal(await workspace.getByLabel('Start date UTC',{exact:true}).inputValue(),'2026-12-14T12:00')
+  await page.locator('#b-min-earth').fill('24')
+  await workspace.getByRole('button',{name:'Volver al planificador',exact:true}).click()
+  assert.equal(await page.getByLabel('Inicio de misión UTC',{exact:true}).inputValue(),'2026-12-14T12:00')
+  assert.equal(await page.getByLabel('Tierra visible mínima',{exact:true}).inputValue(),'24')
+  await page.waitForFunction(()=>document.querySelector('[data-testid="mission-data-status"]')?.getAttribute('data-state')==='ready')
+  console.log('PASS shared mission: advanced date and visibility requirements return unchanged to the main planner')
   assert.deepEqual(errors,[])
   console.log('PASS updated main integration: POST Earth observatory renders, POST site comparison receives actual NASA results, both sites and 72-hour windows intact; no runtime errors.')
 }finally{await browser.close()}

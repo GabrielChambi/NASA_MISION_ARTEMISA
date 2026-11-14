@@ -50,7 +50,7 @@ try{
   assert.equal(await atlas.getByRole('button',{name:'Sun & Earth',exact:true}).getAttribute('aria-pressed'),'true')
   const slider=atlas.getByRole('slider',{name:'Terrain ephemeris time'})
   await slider.fill('24')
-  assert.ok((await atlas.locator('.atlas-timeline time').innerText()).includes('2026-12-02'))
+  assert.ok((await atlas.locator('.atlas-timeline time').innerText()).includes('2026-12-15'))
   await atlas.getByRole('button',{name:'Reset terrain view'}).click()
   await atlas.getByRole('button',{name:'Elevation color',exact:true}).click()
   await atlas.getByLabel('Vertical exaggeration').selectOption('3')

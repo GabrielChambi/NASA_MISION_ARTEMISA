@@ -8,8 +8,8 @@ const average=values=>values.reduce((a,b)=>a+b,0)/values.length
 
 function parameters(body,compare){
   const q={site_id:'site04',site_ids:['site01','site04'],start_utc:'2026-12-14T00:00:00Z',end_utc:'2026-12-17T00:00:00Z',step_minutes:60,horizon_mode:'flat',clearance_deg:0,delay_hours:0,observer_height_m:2,minimum_solar_hours:36,minimum_earth_visible_hours:36,...body}
-  for(const [key,min,max] of [['clearance_deg',0,15],['delay_hours',0,24],['observer_height_m',0,50],['minimum_solar_hours',0,336],['minimum_earth_visible_hours',0,336]]) if(typeof q[key]!=='number'||!Number.isFinite(q[key])||q[key]<min||q[key]>max)throw new ScienceError(`${key} must be between ${min} and ${max}.`)
-  if(!Number.isInteger(q.step_minutes)||q.step_minutes<30||q.step_minutes>180)throw new ScienceError('step_minutes must be 30–180 for mission analysis.')
+  for(const [key,min,max] of [['clearance_deg',0,20],['delay_hours',0,24],['observer_height_m',0,100],['minimum_solar_hours',0,744],['minimum_earth_visible_hours',0,744]]) if(typeof q[key]!=='number'||!Number.isFinite(q[key])||q[key]<min||q[key]>max)throw new ScienceError(`${key} must be between ${min} and ${max}.`)
+  if(!Number.isInteger(q.step_minutes)||q.step_minutes<5||q.step_minutes>1440)throw new ScienceError('step_minutes must be 5–1440 for mission analysis.')
   if(compare&&(!Array.isArray(q.site_ids)||q.site_ids.length!==2||new Set(q.site_ids).size!==2||q.site_ids.some(s=>!['site01','site04'].includes(s))))throw new ScienceError('Choose two distinct catalog sites.')
   return q
 }

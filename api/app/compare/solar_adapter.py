@@ -116,7 +116,7 @@ class HorizonsSolarAdapter:
                 warnings=[f"Solar service unreachable for {site.site_id}: {exc}"],
             )
 
-        horizon_fn, eff_mode, terrain_ok, terrain_warn = resolve_horizon_evaluator(site.site_id, horizon_mode)
+        horizon_fn, eff_mode, terrain_ok, terrain_warn = resolve_horizon_evaluator(site.site_id, horizon_mode, observer_height_m=site.observer_height_m)
 
         start_dt = parse_strict_utc(start_utc, "start_utc")
         end_dt = parse_strict_utc(end_utc, "end_utc")
@@ -180,7 +180,7 @@ class HorizonsSolarAdapter:
         )
         return SolarSeriesResult(
             status=status,
-            source="JPL Horizons (Sun 10 · DE441)",
+            source="JPL Horizons (Sun 10, canonical observer)",
             samples=evaluated,
             visible_hours=vis_hours,
             visible_fraction=vis_frac,

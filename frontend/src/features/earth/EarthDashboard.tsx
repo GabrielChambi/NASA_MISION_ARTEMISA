@@ -387,7 +387,7 @@ export function EarthDashboard() {
               </tr>
               <tr>
                 <td>
-                  <strong>JPL Horizons</strong> (<code>DE441</code>)
+                  <strong>JPL Horizons</strong> (<code>{earthData.provenance.ephemeris_kernel}</code>)
                 </td>
                 <td>Topocentric Sun (10) &amp; Earth (399) Az/El by UTC date &amp; site</td>
                 <td>Calculate solar illumination, Earth LoS windows &amp; 3D ENU vectors</td>

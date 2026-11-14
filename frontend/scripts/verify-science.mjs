@@ -18,7 +18,7 @@ page.on('response', async response => {
   }
 })
 const screenshot = async name => {
-  await page.locator('.science-host').evaluate(element => { element.scrollTop = 0 })
+  await page.evaluate(() => window.scrollTo(0,0))
   await page.screenshot({ path: fileURLToPath(new URL(name + '.png', output)), fullPage: true })
 }
 const noOverflow = async () => assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'Horizontal overflow')
@@ -32,11 +32,11 @@ try {
   await workspace.getByRole('button', { name: 'Solar observatory', exact: true }).click()
   await workspace.getByRole('heading', { name: 'Follow the light.' }).waitFor()
   await page.waitForFunction(() => !document.querySelector('.science-loading'))
-  assert.ok(samples.some(row => row.body.site_id === 'site01' && row.body.samples.length === 169))
+  assert.ok(samples.some(row => row.body.site_id === 'site01' && row.body.samples.length === 73))
   await workspace.getByLabel('Primary study region').selectOption('site04')
   await page.waitForResponse(response => response.url().includes('/api/solar?site_id=site04') && response.ok())
   await workspace.getByRole('heading', { name: 'Follow the light.' }).waitFor()
-  assert.ok(samples.some(row => row.body.site_id === 'site04' && row.body.samples.length === 169))
+  assert.ok(samples.some(row => row.body.site_id === 'site04' && row.body.samples.length === 73))
   await workspace.getByRole('button', { name: /Show sun azimuth curve/ }).click()
   await workspace.getByRole('img', { name: 'Sun azimuth in degrees over UTC time' }).waitFor()
   await noOverflow(); await screenshot('science-solar-desktop')
@@ -75,11 +75,11 @@ try {
   await page.unroute('**/api/solar?*')
   await workspace.getByRole('button', { name: 'Try again' }).click()
   await workspace.getByRole('heading', { name: 'Follow the light.' }).waitFor()
-  await workspace.getByRole('button', { name: 'Return to launch' }).click()
-  await page.getByLabel('Select target destination').selectOption('site01')
+  await workspace.getByRole('button', { name: 'Volver al planificador' }).click()
+  await page.getByLabel('Punto de estudio',{exact:true}).selectOption('site01')
   await page.getByRole('button', { name: 'Explore NASA data' }).click()
   assert.equal(await workspace.getByLabel('Primary study region').inputValue(), 'site01')
   assert.deepEqual(runtimeErrors, [])
-  console.log('PASS science workspace: NASA catalog, verified coordinates, both real 169-sample solar ephemerides, Earth 399 data, azimuth curve, two-site comparison, terrain mode, all seven source products, 390px views without horizontal overflow, explicit HTTP503 state with no fabricated curve, retry, and launch/science site synchronization. No JS runtime errors.')
+  console.log('PASS science workspace: NASA catalog, verified coordinates, both real 73-sample solar ephemerides, Earth 399 data, azimuth curve, two-site comparison, terrain mode, all seven source products, 390px views without horizontal overflow, explicit HTTP503 state with no fabricated curve, retry, and launch/science site synchronization. No JS runtime errors.')
   console.log(JSON.stringify(samples.map(row => ({ site_id: row.body.site_id, target: row.body.target, count: row.body.samples.length, source: row.body.meta.source, horizon: row.body.meta.horizon_mode }))))
 } finally { await browser.close() }

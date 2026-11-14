@@ -22,10 +22,10 @@ def validate_request(start_utc,end_utc,step_minutes,site_id,height,horizon_mode)
     if horizon_mode not in ('flat','terrain'): raise ValueError('horizon_mode must be flat or terrain.')
     return start,end,site
 
-async def solar_result(site_id,start_utc,end_utc,step_minutes=60,horizon_mode='flat',observer_height_m=1,target=10):
+async def solar_result(site_id,start_utc,end_utc,step_minutes=60,horizon_mode='flat',observer_height_m=1,target=10,include_range=False):
     start,end,site=validate_request(start_utc,end_utc,step_minutes,site_id,observer_height_m,horizon_mode)
     quality=horizon_at(site_id,0,observer_height_m,horizon_mode)
-    rows,record,cache_hit=await fetch_samples(site,start,end,step_minutes,observer_height_m,target)
+    rows,record,cache_hit=await fetch_samples(site,start,end,step_minutes,observer_height_m,target,include_range)
     samples=[]
     for row in rows:
         horizon=horizon_at(site_id,row['azimuth_deg'],observer_height_m,horizon_mode)['elevation_deg']

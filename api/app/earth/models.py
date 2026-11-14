@@ -41,11 +41,11 @@ class EarthQueryRequest(BaseModel):
     site_id: str = Field(default="site04", description="Verified landing site identifier (site01 or site04)")
     start_utc: str = Field(default="2026-12-14T00:00:00Z", description="Interval start in ISO-8601 UTC")
     end_utc: str = Field(default="2026-12-17T00:00:00Z", description="Interval end in ISO-8601 UTC")
-    step_minutes: int = Field(default=60, ge=30, le=180, description="Sampling step in minutes (30-180)")
+    step_minutes: int = Field(default=60, ge=5, le=1440, description="Sampling step in minutes (5-1440)")
     horizon_mode: HorizonMode = Field(default="flat", description="Horizon model: 'flat' (0 deg) or 'terrain'")
-    clearance_deg: float = Field(default=0.0, ge=0.0, le=15.0, description="Additional elevation clearance angle in degrees")
+    clearance_deg: float = Field(default=0.0, ge=0.0, le=20.0, description="Additional elevation clearance angle in degrees")
     delay_hours: float = Field(default=0.0, ge=0.0, le=24.0, description="Launch/arrival scenario delay in hours (0-24)")
-    observer_height_m: float = Field(default=2.0, ge=0.0, le=50.0, description="Antenna height above lunar surface in meters")
+    observer_height_m: float = Field(default=2.0, ge=0.0, le=100.0, description="Antenna height above lunar surface in meters")
 
     @field_validator("site_id")
     @classmethod
@@ -76,11 +76,11 @@ class EarthQueryRequest(BaseModel):
         duration_hours = (end_dt - start_dt).total_seconds() / 3600.0
         if duration_hours < 1.0:
             raise ValueError("Interval duration must be at least 1 hour")
-        if duration_hours > 336.0:
-            raise ValueError("Interval duration cannot exceed 336 hours (14 days) to prevent abusive queries")
+        if duration_hours > 744.0:
+            raise ValueError("Interval duration cannot exceed 744 hours (31 days) to prevent abusive queries")
         max_samples = int((duration_hours * 60) // self.step_minutes) + 1
-        if max_samples > 700:
-            raise ValueError(f"Requested query generates {max_samples} samples (limit is 700)")
+        if max_samples > 1501:
+            raise ValueError(f"Requested query generates {max_samples} samples (limit is 1501)")
         return self
 
 
@@ -171,6 +171,7 @@ class EarthProvenance(BaseModel):
     cache_hit: bool
     retrieved_at_utc: str
     limitations: list[str]
+    query_url: Optional[str] = None
 
 
 class EarthResponse(BaseModel):

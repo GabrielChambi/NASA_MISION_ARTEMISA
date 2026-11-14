@@ -18,7 +18,7 @@ def test_compare_with_unavailable_solar_series_returns_unknown_and_no_winner() -
     req = CompareRequest(
         site_ids=["site01", "site04"],
         start_utc="2026-12-14T00:00:00Z",
-        end_utc="2026-12-15T00:00:00Z",
+        end_utc="2026-12-17T00:00:00Z",
         step_minutes=60,
         horizon_mode="flat",
         minimum_solar_hours=10.0,
@@ -43,29 +43,29 @@ def test_delay_scenario_queries_shifted_real_utc_range() -> None:
     base_req = CompareRequest(
         site_ids=["site01", "site04"],
         start_utc="2026-12-14T00:00:00Z",
-        end_utc="2026-12-16T00:00:00Z",
+        end_utc="2026-12-17T00:00:00Z",
         step_minutes=60,
         horizon_mode="flat",
         delay_hours=0.0,
         minimum_solar_hours=24.0,
-        minimum_earth_visible_hours=30.0,
+        minimum_earth_visible_hours=54.0,
     )
     delayed_req = CompareRequest(
         site_ids=["site01", "site04"],
         start_utc="2026-12-14T00:00:00Z",
-        end_utc="2026-12-16T00:00:00Z",
+        end_utc="2026-12-17T00:00:00Z",
         step_minutes=60,
         horizon_mode="flat",
         delay_hours=12.0,
         minimum_solar_hours=24.0,
-        minimum_earth_visible_hours=30.0,
+        minimum_earth_visible_hours=54.0,
     )
     res_base = compare_sites(base_req)
     res_delayed = compare_sites(delayed_req)
 
     assert res_base.effective_start_utc == "2026-12-14T00:00:00Z"
     assert res_delayed.effective_start_utc == "2026-12-14T12:00:00Z"
-    assert res_delayed.effective_end_utc == "2026-12-16T12:00:00Z"
+    assert res_delayed.effective_end_utc == "2026-12-17T12:00:00Z"
 
     s04_base = [s for s in res_base.sites if s.site.site_id == "site04"][0]
     s04_delayed = [s for s in res_delayed.sites if s.site.site_id == "site04"][0]
@@ -81,14 +81,14 @@ def test_delay_scenario_queries_shifted_real_utc_range() -> None:
 def test_semi_open_interval_and_units_consistency() -> None:
     """
     Mandatory Test 7: A and B use identical units and semi-open interval convention [start_utc, end_utc).
-    A 24-hour window with 60-minute step has exactly 24 samples starting at start_utc and ending at end_utc - 1h,
+    A 72-hour window with 60-minute step has exactly 72 samples starting at start_utc and ending at end_utc - 1h,
     and a continuous window has end_utc == request.effective_end_utc.
     """
     resp = client.post(
         "/api/compare",
         json={
             "site_ids": ["site01", "site04"],
-            "start_utc": "2026-12-16T00:00:00Z",
+            "start_utc": "2026-12-14T00:00:00Z",
             "end_utc": "2026-12-17T00:00:00Z",
             "step_minutes": 60,
             "horizon_mode": "flat",
@@ -96,13 +96,13 @@ def test_semi_open_interval_and_units_consistency() -> None:
     )
     assert resp.status_code == 200
     data = resp.json()
-    assert data["provenance"]["interval_convention"] == "[start_utc, end_utc)"
+    assert data["provenance"]["interval_convention"] == "[start,end), left sample"
     for site_summary in data["sites"]:
-        assert site_summary["total_hours"] == 24.0
-        assert len(site_summary["samples"]) == 24
-        assert site_summary["samples"][0]["t_utc"] == "2026-12-16T00:00:00Z"
+        assert site_summary["total_hours"] == 72.0
+        assert len(site_summary["samples"]) == 72
+        assert site_summary["samples"][0]["t_utc"] == "2026-12-14T00:00:00Z"
         assert site_summary["samples"][-1]["t_utc"] == "2026-12-16T23:00:00Z"
-        assert site_summary["earth_windows"][0]["start_utc"] == "2026-12-16T00:00:00Z"
+        assert site_summary["earth_windows"][0]["start_utc"] > "2026-12-14T00:00:00Z"
         assert site_summary["earth_windows"][0]["end_utc"] == "2026-12-17T00:00:00Z"
 
 
@@ -122,14 +122,14 @@ def test_invalid_inputs_return_422() -> None:
     )
     assert r1.status_code == 422
 
-    # Step out of bounds (< 30)
+    # Step out of bounds (< 5)
     r2 = client.post(
         "/api/compare",
         json={
             "site_ids": ["site01", "site04"],
             "start_utc": "2026-12-14T00:00:00Z",
             "end_utc": "2026-12-15T00:00:00Z",
-            "step_minutes": 5,
+            "step_minutes": 1,
         },
     )
     assert r2.status_code == 422

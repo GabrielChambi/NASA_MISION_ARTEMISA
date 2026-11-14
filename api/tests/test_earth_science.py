@@ -11,40 +11,40 @@ from api.app.main import app
 client = TestClient(app)
 
 
-def test_independent_horizons_verification_for_site01_and_site04() -> None:
+def test_actual_catalog_coordinates_match_prepared_nasa_earth_samples() -> None:
     """
-    Mandatory Test 1: Earth azimuth/elevation verified independently against JPL Horizons DE441
-    for 2026-12-14T00:00:00Z and 2026-12-15T00:00:00Z at both Site01 and Site04.
+    Compare real NASA values at the common DEM reference pixels, not the legacy seed coordinates.
+    This is a stored NASA response regression; independent JPL checks are in validation.json.
     """
     req_s01 = EarthQueryRequest(
         site_id="site01",
         start_utc="2026-12-14T00:00:00Z",
-        end_utc="2026-12-15T02:00:00Z",
+        end_utc="2026-12-17T00:00:00Z",
         step_minutes=60,
         horizon_mode="flat",
     )
     res_s01 = compute_earth_visibility(req_s01)
     s01_t0 = res_s01.samples[0]
     assert s01_t0.t_utc == "2026-12-14T00:00:00Z"
-    assert math.isclose(s01_t0.azimuth_deg, 133.427399, abs_tol=1e-4)
-    assert math.isclose(s01_t0.elevation_deg, -1.438614, abs_tol=1e-4)
+    assert math.isclose(s01_t0.azimuth_deg, 133.057924, abs_tol=1e-4)
+    assert math.isclose(s01_t0.elevation_deg, -1.436344, abs_tol=1e-4)
     assert s01_t0.earth_visible is False
 
     req_s04 = EarthQueryRequest(
         site_id="site04",
         start_utc="2026-12-14T00:00:00Z",
-        end_utc="2026-12-15T02:00:00Z",
+        end_utc="2026-12-17T00:00:00Z",
         step_minutes=60,
         horizon_mode="flat",
     )
     res_s04 = compute_earth_visibility(req_s04)
     s04_t0 = res_s04.samples[0]
     s04_t24 = [s for s in res_s04.samples if s.t_utc == "2026-12-15T00:00:00Z"][0]
-    assert math.isclose(s04_t0.azimuth_deg, 152.267344, abs_tol=1e-4)
-    assert math.isclose(s04_t0.elevation_deg, -1.271667, abs_tol=1e-4)
+    assert math.isclose(s04_t0.azimuth_deg, 167.454807, abs_tol=1e-4)
+    assert math.isclose(s04_t0.elevation_deg, -1.297333, abs_tol=1e-4)
     assert s04_t0.earth_visible is False
-    # At 2026-12-15T00:00:00Z, Site04 is already above flat horizon (+0.117899 deg), whereas Site01 is still below (-0.042867 deg)
-    assert math.isclose(s04_t24.elevation_deg, 0.117899, abs_tol=1e-4)
+    # At 2026-12-15T00:00:00Z, Site04 is already above flat horizon (+0.091028 deg), whereas Site01 is still below (-0.040540 deg)
+    assert math.isclose(s04_t24.elevation_deg, 0.091028, abs_tol=1e-4)
     assert s04_t24.earth_visible is True
 
 
@@ -127,27 +127,27 @@ def test_missing_sample_marks_degraded_quality_without_fabricating_point() -> No
     assert res.windows[1].end_utc == "2026-12-14T03:00:00Z"
 
 
-def test_terrain_mode_without_verified_service_returns_terrain_unavailable() -> None:
+def test_terrain_mode_uses_actual_partial_lola_horizon_without_flat_substitution() -> None:
     """
-    Fase B2: When terrain mode is requested and core.horizon is not verified,
-    do not block and do not silently alter requested_horizon_mode; return quality='terrain_unavailable'.
+    Terrain is available and partial: preserve the requested model and report its limits.
     """
-    resp = client.get(
+    resp = client.post(
         "/api/earth",
-        params={
+        json={
             "site_id": "site04",
             "start_utc": "2026-12-14T00:00:00Z",
-            "end_utc": "2026-12-14T06:00:00Z",
+            "end_utc": "2026-12-17T00:00:00Z",
             "step_minutes": 60,
             "horizon_mode": "terrain",
         },
     )
     assert resp.status_code == 200
     data = resp.json()
-    assert data["quality"] == "terrain_unavailable"
+    assert data["quality"] == "degraded"
     assert data["provenance"]["requested_horizon_mode"] == "terrain"
-    assert data["provenance"]["effective_horizon_mode"] == "flat"
-    assert any("Terrain horizon unavailable" in w for w in data["warnings"])
+    assert data["provenance"]["effective_horizon_mode"] == "terrain"
+    assert any('finite' in w or 'uncertainty' in w for w in data['warnings'])
+    assert any(s['local_horizon_deg'] != 0 for s in data['samples'])
 
 
 def test_3d_enu_vectors_and_terrain_mesh_ready_for_3d() -> None:
@@ -156,19 +156,19 @@ def test_3d_enu_vectors_and_terrain_mesh_ready_for_3d() -> None:
     """
     v_zenith = az_el_to_enu_vector(0.0, 90.0)
     assert math.isclose(v_zenith[2], 1.0, abs_tol=1e-6)
-    resp = client.get(
+    resp = client.post(
         "/api/earth",
-        params={
+        json={
             "site_id": "site01",
             "start_utc": "2026-12-14T00:00:00Z",
-            "end_utc": "2026-12-14T04:00:00Z",
+            "end_utc": "2026-12-17T00:00:00Z",
             "step_minutes": 60,
         },
     )
     assert resp.status_code == 200
     payload = resp.json()
     assert payload["terrain_mesh_3d"] is not None
-    assert payload["terrain_mesh_3d"]["grid_size"] == 21
+    assert payload["terrain_mesh_3d"]["grid_size"] == 65
     for s in payload["samples"]:
         vx, vy, vz = s["enu_vector"]
         norm = math.sqrt(vx * vx + vy * vy + vz * vz)
@@ -178,11 +178,11 @@ def test_3d_enu_vectors_and_terrain_mesh_ready_for_3d() -> None:
 def test_horizons_soe_eoe_parser() -> None:
     sample_block = """
 $$SOE
- 2026-Dec-14 00:00,*,i, 133.427399,    -1.438614,  0.00269550259334, -0.0290594,
+ 2026-Dec-14 00:00,*,i, 133.057924,    -1.436344,  0.00269550259334, -0.0290594,
 $$EOE
 """
     parsed = parse_horizons_observer_text(sample_block)
     assert len(parsed) == 1
     assert parsed[0]["t_utc"] == "2026-12-14T00:00:00Z"
-    assert math.isclose(parsed[0]["azimuth_deg"], 133.427399, abs_tol=1e-6)
-    assert math.isclose(parsed[0]["elevation_deg"], -1.438614, abs_tol=1e-6)
+    assert math.isclose(parsed[0]["azimuth_deg"], 133.057924, abs_tol=1e-6)
+    assert math.isclose(parsed[0]["elevation_deg"], -1.436344, abs_tol=1e-6)

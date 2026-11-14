@@ -14,12 +14,12 @@ const PRESET_WINDOWS = [
     durationHours: 168,
   },
   {
-    label: 'Dec 18–21, 2026 · Peak Earth Elevation (+6° LoS, 72h)',
+    label: 'Dec 18–21, 2026 · 72 h study window',
     startUtc: '2026-12-18T00:00:00Z',
     durationHours: 72,
   },
   {
-    label: 'Dec 01–04, 2026 · Deep Libration Blackout (−2° to −6°, 72h)',
+    label: 'Dec 01–04, 2026 · 72 h study window',
     startUtc: '2026-12-01T00:00:00Z',
     durationHours: 72,
   },
@@ -67,7 +67,7 @@ export function MissionControls() {
           Mission Controls · UTC & Scenario Parameters
         </h2>
         <div className="b-controls-badges">
-          <span className="b-badge b-badge-source">Source: JPL Horizons (DE441)</span>
+          <span className="b-badge b-badge-source">Source: NASA/JPL Horizons</span>
           <span className="b-badge b-badge-geom">Geometric visibility only</span>
           <button
             type="button"
@@ -92,10 +92,10 @@ export function MissionControls() {
             value={siteId}
             onChange={e => setSiteId(e.target.value as 'site01' | 'site04')}
           >
-            <option value="site04">Site04 · Shackleton rim (89.77°S, 203.29°E)</option>
-            <option value="site01">Site01 · Connecting ridge (89.46°S, 222.13°E)</option>
+            <option value="site04">Site04 · Shackleton rim</option>
+            <option value="site01">Site01 · Connecting ridge</option>
           </select>
-          <small className="b-control-hint">LRO-LOLA 5m/pix MOON_ME verified coordinates</small>
+          <small className="b-control-hint">NASA LOLA reference pixel · coordinates in result provenance</small>
         </div>
 
         {/* Preset Window Selector */}
@@ -137,8 +137,8 @@ export function MissionControls() {
               id="b-start-utc"
               type="datetime-local"
               value={datetimeLocalValue}
-              min="2026-12-01T00:00"
-              max="2026-12-27T00:00"
+              min="1962-01-01T00:00"
+              max="2099-12-01T00:00"
               onChange={e => handleCustomDateChange(e.target.value)}
               aria-label="Start UTC timestamp"
             />
@@ -169,7 +169,7 @@ export function MissionControls() {
               value={stepMinutes}
               onChange={e => setStepMinutes(Number(e.target.value))}
             >
-              <option value={30}>30 min step</option>
+              <option value={10}>10 min step</option><option value={15}>15 min step</option><option value={30}>30 min step</option>
               <option value={60}>60 min step</option>
               <option value={120}>120 min step</option>
               <option value={180}>180 min step</option>

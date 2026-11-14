@@ -1,3 +1,4 @@
+import { useMission as useSharedMission } from '../mission/MissionContext'
 import { createContext, useContext, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import {
@@ -55,18 +56,20 @@ export function MissionProvider({
   onExternalSiteChange?: (siteId: 'site01' | 'site04') => void
   children: ReactNode
 }) {
-  const [siteId, setSiteIdInternal] = useState<'site01' | 'site04'>(initialSiteId)
-  // Default window: Dec 14, 2026 00:00Z -> Dec 17, 2026 00:00Z (72h) captures Earth rise over the Lunar South Pole
-  const [startUtc, setStartUtc] = useState<string>('2026-12-14T00:00:00Z')
-  const [durationHours, setDurationHours] = useState<number>(72)
-  const [stepMinutes, setStepMinutes] = useState<number>(60)
-  const [horizonMode, setHorizonMode] = useState<HorizonMode>('flat')
-  const [clearanceDeg, setClearanceDeg] = useState<number>(0)
-  const [delayHours, setDelayHours] = useState<number>(0)
-  const [observerHeightM, setObserverHeightM] = useState<number>(2)
-  const [minimumSolarHours, setMinimumSolarHours] = useState<number>(48)
-  const [minimumEarthVisibleHours, setMinimumEarthVisibleHours] = useState<number>(48)
-  const [selectedSampleIndex, setSelectedSampleIndex] = useState<number>(24)
+  const { mission, updateMission, requirements, updateRequirements } = useSharedMission()
+  const siteId = (mission.siteIds[0] === 'site01' ? 'site01' : 'site04') as 'site01' | 'site04'
+  const { startUtc, endUtc, stepMinutes, horizonMode, delayHours, observerHeightM } = mission
+  const durationHours = (Date.parse(endUtc)-Date.parse(startUtc))/3600000
+  const clearanceDeg = requirements.earthClearanceDeg
+  const minimumSolarHours = requirements.minimumSunHours
+  const minimumEarthVisibleHours = requirements.minimumEarthHours
+  const setStepMinutes = (value:number) => updateMission({stepMinutes:value})
+  const setHorizonMode = (value:HorizonMode) => updateMission({horizonMode:value})
+  const setDelayHours = (value:number) => updateMission({delayHours:value})
+  const setObserverHeightM = (value:number) => updateMission({observerHeightM:value})
+  const setClearanceDeg = (value:number) => updateRequirements({earthClearanceDeg:value})
+  const [selectedSampleIndex,setSelectedSampleIndex] = useState(0)
+  void initialSiteId
 
   const [earthData, setEarthData] = useState<EarthResponse | null>(null)
   const [compareData, setCompareData] = useState<CompareResponse | null>(null)
@@ -75,26 +78,18 @@ export function MissionProvider({
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [refreshTick, setRefreshTick] = useState<number>(0)
 
-  useEffect(() => {
-    setSiteIdInternal(initialSiteId)
-  }, [initialSiteId])
-
-  const endUtc = computeEndUtc(startUtc, durationHours)
-
-  function setSiteId(next: 'site01' | 'site04') {
-    setSiteIdInternal(next)
+  function setSiteId(next:'site01'|'site04') {
+    updateMission({siteIds:[next,next==='site01'?'site04':'site01']})
     onExternalSiteChange?.(next)
   }
-
-  function setStartUtcAndDuration(nextStartUtc: string, nextDurationHours: number) {
-    setStartUtc(nextStartUtc)
-    setDurationHours(nextDurationHours)
+  function setStartUtcAndDuration(nextStartUtc:string,nextDurationHours:number) {
+    if(!Number.isFinite(Date.parse(nextStartUtc))||!Number.isFinite(nextDurationHours))return
+    updateMission({startUtc:nextStartUtc,endUtc:computeEndUtc(nextStartUtc,nextDurationHours)})
     setSelectedSampleIndex(0)
   }
 
   function setMinimumConstraints(solarHours: number, earthHours: number) {
-    setMinimumSolarHours(solarHours)
-    setMinimumEarthVisibleHours(earthHours)
+    updateRequirements({minimumSunHours:solarHours,minimumEarthHours:earthHours})
   }
 
   function refreshAll() {
@@ -104,6 +99,7 @@ export function MissionProvider({
   useEffect(() => {
     let active = true
     setLoadingEarth(true)
+    setEarthData(null)
     setErrorMessage(null)
 
     earthApiClient
@@ -139,6 +135,7 @@ export function MissionProvider({
   useEffect(() => {
     let active = true
     setLoadingCompare(true)
+    setCompareData(null)
 
     earthApiClient
       .fetchSiteComparison({
