@@ -17,10 +17,13 @@ import {
 import { Tactical3DScene } from './Tactical3DScene'
 import {
   TACTICAL_SITES,
+  MESH_STRIDE,
+  TERRAIN_EXAGGERATION,
   latLonToStereoM,
-  projectStereoTo3D,
+  sampleExactMeshSurface,
   sampleLolaHeight,
   sampleLolaSlope,
+  topocentricToWorldDirection,
   raycastTerrainObstruction,
   generate14DayTimeline,
 } from './tacticalMath'
@@ -45,6 +48,8 @@ export default function TacticalSurvivalCockpit({ onOpenScientific }: { onOpenSc
 
   // Vista 3D y Datos
   const [cameraView, setCameraView] = useState<'orbit' | 'mast' | 'top'>('orbit')
+  const [placementMode, setPlacementMode] = useState<boolean>(false)
+  const [cameraResetKey, setCameraResetKey] = useState<number>(0)
   const [atlasData, setAtlasData] = useState<AtlasData | null>(null)
   const [_atlasLoading, setAtlasLoading] = useState<boolean>(true)
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false)
@@ -75,7 +80,15 @@ export default function TacticalSurvivalCockpit({ onOpenScientific }: { onOpenSc
     if (preset) {
       setLatDeg(preset.lat_deg)
       setLonDeg(preset.lon_deg)
+      setCameraResetKey(prev => prev + 1)
     }
+  }
+
+  // Colocación manual directa sobre la malla 3D de la superficie lunar
+  function handleManualSurfacePlace(newLat: number, newLon: number) {
+    setLatDeg(newLat)
+    setLonDeg(newLon)
+    setSelectedSiteId('custom')
   }
 
   // Desplazamiento rápido de rescate (+2.0 km hacia la cresta elevada este)
@@ -96,6 +109,7 @@ export default function TacticalSurvivalCockpit({ onOpenScientific }: { onOpenSc
       setStartUtc('2026-11-26T09:00')
     }
     setCurrentHour(0)
+    setCameraResetKey(prev => prev + 1)
   }
 
   // Reproducción automática del timeline
@@ -178,13 +192,25 @@ export default function TacticalSurvivalCockpit({ onOpenScientific }: { onOpenSc
     // a menos que el ingeniero reubique la nave 2 km al este sobre la cresta elevada (lon > -159.2°)
     const isWesternMassifShadow = delayDays === 6 && lonDeg <= -159.2
     if (isWesternMassifShadow && !ray.hit) {
-      const [startX, startY] = latLonToStereoM(latDeg, lonDeg, atlasData.manifest.radius_m)
-      const azRad = currentEphem.sunAzimuthDeg * (Math.PI / 180)
       const hitDistM = 7800
-      const hitX = startX + Math.sin(azRad) * hitDistM
-      const hitY = startY + Math.cos(azRad) * hitDistM
-      const hitH = sampleLolaHeight(hitX, hitY, atlasData.heights, atlasData.manifest)
-      const hitPos = projectStereoTo3D(hitX, hitY, hitH, 2.5, atlasData.manifest.radius_m)
+      const startSurface = sampleExactMeshSurface(
+        latDeg,
+        lonDeg,
+        atlasData.heights,
+        atlasData.manifest,
+        TERRAIN_EXAGGERATION,
+        MESH_STRIDE
+      )
+      const sunDir = topocentricToWorldDirection(
+        latDeg,
+        lonDeg,
+        currentEphem.sunAzimuthDeg,
+        currentEphem.sunElevationDeg
+      )
+      const hitPos = startSurface.position
+        .clone()
+        .addScaledVector(startSurface.normal, 1.4)
+        .addScaledVector(sunDir, hitDistM / 1000)
       return {
         hit: true,
         hitDistanceM: hitDistM,
@@ -493,6 +519,36 @@ export default function TacticalSurvivalCockpit({ onOpenScientific }: { onOpenSc
                 </div>
               </div>
 
+              {/* Botón para colocar manualmente el cohete sobre la superficie lunar */}
+              <button
+                type="button"
+                onClick={() => setPlacementMode(prev => !prev)}
+                style={{
+                  width: '100%',
+                  marginTop: 6,
+                  padding: '7px 10px',
+                  borderRadius: 4,
+                  fontFamily: 'IBM Plex Mono, monospace',
+                  fontSize: 10,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  border: placementMode ? '1px solid #ffd32a' : '1px solid rgba(72, 219, 251, 0.35)',
+                  background: placementMode ? 'rgba(255, 211, 42, 0.18)' : 'rgba(72, 219, 251, 0.08)',
+                  color: placementMode ? '#ffd32a' : '#48dbfb',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
+                }}
+              >
+                <MapPin size={12} />
+                <span>
+                  {placementMode
+                    ? '🎯 CLIC EN EL TERRENO 3D PARA UBICAR NAVE'
+                    : '📍 COLOCAR / ARRASTRAR NAVE EN SUPERFICIE'}
+                </span>
+              </button>
+
               {/* Botón de Rescate en 1 click para demostrar el flujo */}
               {isSunOccluded && (
                 <button
@@ -506,7 +562,7 @@ export default function TacticalSurvivalCockpit({ onOpenScientific }: { onOpenSc
               )}
 
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: '#747d8c', fontFamily: 'monospace', marginTop: 4 }}>
-                <span>Elevación LOLA: {currentTerrain.elevationM} m</span>
+                <span>Elevación LOLA: {currentTerrain.elevationM} m (Fijo a superficie)</span>
                 <span>Pendiente: {currentTerrain.slopeDeg}°</span>
               </div>
             </div>
@@ -641,6 +697,10 @@ export default function TacticalSurvivalCockpit({ onOpenScientific }: { onOpenSc
             earthRaycast={earthRaycast}
             cameraView={cameraView}
             siteName={activeSiteName}
+            placementMode={placementMode}
+            onTogglePlacementMode={() => setPlacementMode(prev => !prev)}
+            onSurfacePlace={handleManualSurfacePlace}
+            cameraResetKey={cameraResetKey}
           />
         </main>
       </div>

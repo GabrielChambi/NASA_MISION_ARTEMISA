@@ -1,19 +1,22 @@
-import { useMemo, useRef, useEffect } from 'react'
-import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { Html, OrbitControls, Stars } from '@react-three/drei'
+import { useMemo, useRef, useEffect, useState, useCallback } from 'react'
+import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
+import { Html, OrbitControls, Stars, Line } from '@react-three/drei'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import * as THREE from 'three'
 import type { AtlasData } from '../sites/atlasGeometry'
 import { buildAtlasGeometry } from '../sites/atlasGeometry'
 import {
+  MESH_STRIDE,
+  TERRAIN_EXAGGERATION,
+  sampleExactMeshSurface,
+  sampleLolaSlope,
   latLonToStereoM,
-  projectStereoTo3D,
-  sampleLolaHeight,
   topocentricToWorldDirection,
+  world3DToLatLon,
   type RaycastHit,
 } from './tacticalMath'
 
-interface Tactical3DSceneProps {
+export interface Tactical3DSceneProps {
   latDeg: number
   lonDeg: number
   observerHeightM: number
@@ -29,21 +32,205 @@ interface Tactical3DSceneProps {
   earthRaycast: RaycastHit
   cameraView: 'orbit' | 'mast' | 'top'
   siteName: string
+  placementMode?: boolean
+  onTogglePlacementMode?: () => void
+  onSurfacePlace?: (latDeg: number, lonDeg: number) => void
+  cameraResetKey?: number
 }
 
-const EXAGGERATION = 2.5
+const SKY_SUN_DISTANCE = 380.0
+const SKY_EARTH_DISTANCE = 340.0
+const CONSTANT_ROCKET_SCALE = 0.42
+
+/**
+ * Generates a procedural Blue Marble Earth texture (oceans, continents, polar caps, clouds).
+ */
+function createEarthTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas')
+  canvas.width = 512
+  canvas.height = 256
+  const ctx = canvas.getContext('2d')!
+
+  // Deep ocean gradient
+  const oceanGrad = ctx.createLinearGradient(0, 0, 0, 256)
+  oceanGrad.addColorStop(0, '#0b2545')
+  oceanGrad.addColorStop(0.2, '#0d47a1')
+  oceanGrad.addColorStop(0.5, '#1565c0')
+  oceanGrad.addColorStop(0.8, '#0d47a1')
+  oceanGrad.addColorStop(1, '#0b2545')
+  ctx.fillStyle = oceanGrad
+  ctx.fillRect(0, 0, 512, 256)
+
+  // Helper to paint organic landmass blobs
+  const drawLand = (cx: number, cy: number, rx: number, ry: number, rot: number, color: string) => {
+    ctx.save()
+    ctx.translate(cx, cy)
+    ctx.rotate(rot)
+    ctx.beginPath()
+    ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2)
+    ctx.fillStyle = color
+    ctx.fill()
+    ctx.restore()
+  }
+
+  // North & South America
+  drawLand(135, 78, 42, 28, -0.3, '#2d6a4f')
+  drawLand(145, 92, 24, 16, 0.2, '#b5832b')
+  drawLand(172, 158, 26, 44, -0.15, '#2b9348')
+  drawLand(168, 145, 16, 26, -0.1, '#52b788')
+
+  // Africa & Eurasia
+  drawLand(278, 132, 32, 42, 0.1, '#d4a373')
+  drawLand(282, 152, 22, 26, 0.05, '#2d6a4f')
+  drawLand(275, 76, 36, 20, -0.1, '#40916c')
+  drawLand(345, 78, 65, 32, 0.08, '#52b788')
+  drawLand(360, 92, 42, 18, 0.05, '#c9ada7')
+
+  // Australia
+  drawLand(418, 174, 24, 16, -0.1, '#d97706')
+
+  // Polar ice caps (Arctic & Antarctica)
+  ctx.fillStyle = '#f1f5f9'
+  ctx.fillRect(0, 0, 512, 16)
+  ctx.fillRect(0, 236, 512, 20)
+
+  // Atmospheric cloud bands
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.28)'
+  for (let i = 0; i < 18; i++) {
+    const x = (i * 67) % 480
+    const y = 28 + ((i * 43) % 195)
+    drawLand(x, y, 36 + (i % 3) * 14, 5 + (i % 2) * 4, (i % 5) * 0.12 - 0.2, 'rgba(255,255,255,0.26)')
+  }
+
+  const tex = new THREE.CanvasTexture(canvas)
+  tex.needsUpdate = true
+  return tex
+}
+
+/**
+ * Generates a radial solar corona glow texture for the Sun in the lunar sky.
+ */
+function createSunCoronaTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas')
+  canvas.width = 256
+  canvas.height = 256
+  const ctx = canvas.getContext('2d')!
+
+  const grad = ctx.createRadialGradient(128, 128, 8, 128, 128, 126)
+  grad.addColorStop(0.0, 'rgba(255, 255, 245, 1.0)')
+  grad.addColorStop(0.18, 'rgba(255, 235, 130, 0.92)')
+  grad.addColorStop(0.42, 'rgba(255, 185, 25, 0.48)')
+  grad.addColorStop(0.72, 'rgba(255, 120, 0, 0.14)')
+  grad.addColorStop(1.0, 'rgba(255, 90, 0, 0.0)')
+
+  ctx.fillStyle = grad
+  ctx.fillRect(0, 0, 256, 256)
+
+  const tex = new THREE.CanvasTexture(canvas)
+  tex.needsUpdate = true
+  return tex
+}
 
 export function Tactical3DScene(props: Tactical3DSceneProps) {
+  const [isDraggingRocket, setIsDraggingRocket] = useState(false)
+  const [hoverSurface, setHoverSurface] = useState<{
+    point: THREE.Vector3
+    normal: THREE.Vector3
+    latDeg: number
+    lonDeg: number
+    elevationM: number
+    slopeDeg: number
+  } | null>(null)
+
+  const terrainMeshRef = useRef<THREE.Mesh | null>(null)
+
+  // End dragging if pointer is released anywhere in the window
+  useEffect(() => {
+    if (!isDraggingRocket) return
+    const handleUp = () => {
+      setIsDraggingRocket(false)
+      document.body.style.cursor = 'default'
+    }
+    window.addEventListener('pointerup', handleUp)
+    return () => window.removeEventListener('pointerup', handleUp)
+  }, [isDraggingRocket])
+
   return (
-    <div className="tactical-canvas-container" style={{ width: '100%', height: '100%', position: 'relative' }}>
+    <div
+      className="tactical-canvas-container"
+      style={{
+        width: '100%',
+        height: '100%',
+        position: 'relative',
+        cursor: isDraggingRocket ? 'grabbing' : props.placementMode ? 'crosshair' : 'default',
+      }}
+    >
+      {/* Floating HUD bar for manual surface placement & surface lock feedback */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 12,
+          left: 14,
+          zIndex: 30,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          pointerEvents: 'auto',
+        }}
+      >
+        <button
+          type="button"
+          onClick={props.onTogglePlacementMode}
+          className={`tactical-surface-place-btn ${props.placementMode ? 'active' : ''}`}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '7px 13px',
+            borderRadius: 5,
+            fontFamily: 'IBM Plex Mono, monospace',
+            fontSize: 11,
+            fontWeight: 600,
+            letterSpacing: '0.04em',
+            cursor: 'pointer',
+            border: props.placementMode ? '1px solid #ffd32a' : '1px solid rgba(72, 219, 251, 0.45)',
+            background: props.placementMode
+              ? 'linear-gradient(90deg, rgba(255, 211, 42, 0.25), rgba(255, 159, 26, 0.18))'
+              : 'rgba(6, 14, 23, 0.86)',
+            color: props.placementMode ? '#ffd32a' : '#48dbfb',
+            boxShadow: props.placementMode ? '0 0 14px rgba(255, 211, 42, 0.35)' : '0 2px 10px rgba(0,0,0,0.6)',
+          }}
+          title="Haz clic aquí para colocar el cohete haciendo clic en cualquier montaña o cráter lunar, o arrastra directamente el cohete sobre la superficie"
+        >
+          <span>{props.placementMode ? '🎯 MODO UBICAR EN SUPERFICIE: ACTIVO (HAZ CLIC EN LA LUNA)' : '📍 UBICAR COHETE MANUALMENTE EN SUPERFICIE'}</span>
+        </button>
+
+        <div
+          style={{
+            padding: '6px 10px',
+            borderRadius: 4,
+            background: 'rgba(5, 12, 20, 0.82)',
+            border: '1px solid rgba(46, 213, 115, 0.35)',
+            color: '#2ed573',
+            fontFamily: 'IBM Plex Mono, monospace',
+            fontSize: 10,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+          }}
+        >
+          <span>🔒 SUPERFICIE LOLA FIJADA (0.0 m SOBRE CORTEZA · ARRASTRAR NAVE O DOBLE CLIC)</span>
+        </div>
+      </div>
+
       <Canvas
-        camera={{ position: [0, 45, 75], fov: 42, near: 0.1, far: 5000 }}
+        camera={{ position: [0, 28, 46], fov: 44, near: 0.05, far: 8000 }}
         gl={{ antialias: true, alpha: false, toneMapping: THREE.ACESFilmicToneMapping }}
       >
-        <color attach="background" args={['#03070b']} />
-        <ambientLight intensity={0.12} />
+        <color attach="background" args={['#020509']} />
+        <ambientLight intensity={0.22} />
 
-        <Stars radius={400} depth={80} count={3500} factor={4} saturation={0.2} fade speed={0.4} />
+        <Stars radius={1200} depth={300} count={4500} factor={4} saturation={0.2} fade speed={0.35} />
 
         {props.atlasData && (
           <TerrainSurface
@@ -52,25 +239,44 @@ export function Tactical3DScene(props: Tactical3DSceneProps) {
             lonDeg={props.lonDeg}
             sunAzimuthDeg={props.sunAzimuthDeg}
             sunElevationDeg={props.sunElevationDeg}
+            placementMode={Boolean(props.placementMode)}
+            isDraggingRocket={isDraggingRocket}
+            onSurfacePlace={props.onSurfacePlace}
+            onHoverSurface={setHoverSurface}
+            terrainMeshRef={terrainMeshRef}
           />
         )}
 
-        <LanderAndSurvivalRays {...props} />
+        {/* Holographic surface reticle when moving mouse in placement mode or dragging */}
+        {(props.placementMode || isDraggingRocket) && hoverSurface && (
+          <SurfacePlacementReticle
+            hover={hoverSurface}
+            maxSlopeDeg={props.maxSlopeDeg}
+            isDragging={isDraggingRocket}
+          />
+        )}
 
-        <CelestialBodies
-          latDeg={props.latDeg}
-          lonDeg={props.lonDeg}
-          sunAzimuthDeg={props.sunAzimuthDeg}
-          sunElevationDeg={props.sunElevationDeg}
-          earthAzimuthDeg={props.earthAzimuthDeg}
-          earthElevationDeg={props.earthElevationDeg}
+        <LanderAndLinkedBodies
+          {...props}
+          terrainMeshRef={terrainMeshRef}
+          isDraggingRocket={isDraggingRocket}
+          onStartDragRocket={() => {
+            setIsDraggingRocket(true)
+            document.body.style.cursor = 'grabbing'
+          }}
         />
 
         <CameraController
           cameraView={props.cameraView}
           latDeg={props.latDeg}
           lonDeg={props.lonDeg}
+          sunAzimuthDeg={props.sunAzimuthDeg}
+          sunElevationDeg={props.sunElevationDeg}
+          earthAzimuthDeg={props.earthAzimuthDeg}
+          earthElevationDeg={props.earthElevationDeg}
           atlasData={props.atlasData}
+          isDraggingRocket={isDraggingRocket}
+          cameraResetKey={props.cameraResetKey ?? 0}
         />
       </Canvas>
 
@@ -85,31 +291,118 @@ function TerrainSurface({
   lonDeg,
   sunAzimuthDeg,
   sunElevationDeg,
+  placementMode,
+  isDraggingRocket,
+  onSurfacePlace,
+  onHoverSurface,
+  terrainMeshRef,
 }: {
   atlasData: AtlasData
   latDeg: number
   lonDeg: number
   sunAzimuthDeg: number
   sunElevationDeg: number
+  placementMode: boolean
+  isDraggingRocket: boolean
+  onSurfacePlace?: (latDeg: number, lonDeg: number) => void
+  onHoverSurface: (
+    info: {
+      point: THREE.Vector3
+      normal: THREE.Vector3
+      latDeg: number
+      lonDeg: number
+      elevationM: number
+      slopeDeg: number
+    } | null
+  ) => void
+  terrainMeshRef: React.MutableRefObject<THREE.Mesh | null>
 }) {
   const meshGeometry = useMemo(() => {
-    return buildAtlasGeometry(atlasData, EXAGGERATION, 'natural', 3)
+    return buildAtlasGeometry(atlasData, TERRAIN_EXAGGERATION, 'natural', MESH_STRIDE)
   }, [atlasData])
 
   const sunDir = useMemo(() => {
-    return topocentricToWorldDirection(latDeg, lonDeg, sunAzimuthDeg, Math.max(sunElevationDeg, 0.2))
+    return topocentricToWorldDirection(latDeg, lonDeg, sunAzimuthDeg, Math.max(sunElevationDeg, 1.5))
   }, [latDeg, lonDeg, sunAzimuthDeg, sunElevationDeg])
+
+  const extractSurfaceHit = useCallback(
+    (e: ThreeEvent<PointerEvent | MouseEvent>) => {
+      const [hitLat, hitLon] = world3DToLatLon(e.point, atlasData.manifest.radius_m)
+      const exact = sampleExactMeshSurface(
+        hitLat,
+        hitLon,
+        atlasData.heights,
+        atlasData.manifest,
+        TERRAIN_EXAGGERATION,
+        MESH_STRIDE
+      )
+      const [xM, yM] = latLonToStereoM(hitLat, hitLon, atlasData.manifest.radius_m)
+      const slopeDeg = Number(sampleLolaSlope(xM, yM, atlasData.heights, atlasData.manifest).toFixed(1))
+
+      return {
+        point: exact.position,
+        normal: exact.normal,
+        latDeg: hitLat,
+        lonDeg: hitLon,
+        elevationM: Math.round(exact.elevationM),
+        slopeDeg,
+      }
+    },
+    [atlasData]
+  )
+
+  const handlePointerMove = useCallback(
+    (e: ThreeEvent<PointerEvent>) => {
+      if (!placementMode && !isDraggingRocket) return
+      e.stopPropagation()
+      const hit = extractSurfaceHit(e)
+      onHoverSurface(hit)
+      if (isDraggingRocket && onSurfacePlace) {
+        onSurfacePlace(hit.latDeg, hit.lonDeg)
+      }
+    },
+    [placementMode, isDraggingRocket, extractSurfaceHit, onHoverSurface, onSurfacePlace]
+  )
+
+  const handleClick = useCallback(
+    (e: ThreeEvent<MouseEvent>) => {
+      if (!placementMode || !onSurfacePlace) return
+      e.stopPropagation()
+      const hit = extractSurfaceHit(e)
+      onSurfacePlace(hit.latDeg, hit.lonDeg)
+    },
+    [placementMode, onSurfacePlace, extractSurfaceHit]
+  )
+
+  const handleDoubleClick = useCallback(
+    (e: ThreeEvent<MouseEvent>) => {
+      if (!onSurfacePlace) return
+      e.stopPropagation()
+      const hit = extractSurfaceHit(e)
+      onSurfacePlace(hit.latDeg, hit.lonDeg)
+    },
+    [onSurfacePlace, extractSurfaceHit]
+  )
 
   return (
     <group>
-      <directionalLight position={sunDir.clone().multiplyScalar(200)} intensity={1.85} color="#fff6e5" />
-      <directionalLight position={[0, -100, 0]} intensity={0.08} color="#455a64" />
-      <mesh geometry={meshGeometry} receiveShadow>
+      <directionalLight position={sunDir.clone().multiplyScalar(220)} intensity={2.1} color="#fff7e6" />
+      <directionalLight position={[0, 120, 0]} intensity={0.22} color="#607d8b" />
+      <mesh
+        ref={terrainMeshRef}
+        name="lunar-terrain-mesh"
+        geometry={meshGeometry}
+        receiveShadow
+        onPointerMove={handlePointerMove}
+        onPointerOut={() => onHoverSurface(null)}
+        onClick={handleClick}
+        onDoubleClick={handleDoubleClick}
+      >
         <meshStandardMaterial
           vertexColors={false}
-          color="#909aa2"
-          roughness={0.92}
-          metalness={0.06}
+          color="#8d97a0"
+          roughness={0.9}
+          metalness={0.08}
           flatShading={false}
         />
       </mesh>
@@ -117,10 +410,74 @@ function TerrainSurface({
   )
 }
 
-function LanderAndSurvivalRays({
+function SurfacePlacementReticle({
+  hover,
+  maxSlopeDeg,
+  isDragging,
+}: {
+  hover: {
+    point: THREE.Vector3
+    normal: THREE.Vector3
+    latDeg: number
+    lonDeg: number
+    elevationM: number
+    slopeDeg: number
+  }
+  maxSlopeDeg: number
+  isDragging: boolean
+}) {
+  const isSlopeSafe = hover.slopeDeg <= maxSlopeDeg
+  const color = isSlopeSafe ? '#ffd32a' : '#ff4757'
+
+  const alignQuat = useMemo(() => {
+    const q = new THREE.Quaternion()
+    q.setFromUnitVectors(new THREE.Vector3(0, 1, 0), hover.normal.clone().normalize())
+    return q
+  }, [hover.normal])
+
+  return (
+    <group position={hover.point} quaternion={alignQuat}>
+      <mesh position={[0, 0.04, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.6, 0.85, 32]} />
+        <meshBasicMaterial color={color} transparent opacity={0.9} side={THREE.DoubleSide} />
+      </mesh>
+      <mesh position={[0, 0.8, 0]}>
+        <cylinderGeometry args={[0.04, 0.04, 1.6, 8]} />
+        <meshBasicMaterial color={color} transparent opacity={0.65} />
+      </mesh>
+      <Html position={[0, 1.9, 0]} center zIndexRange={[110, 0]}>
+        <div
+          style={{
+            background: 'rgba(4, 10, 18, 0.92)',
+            border: `1px solid ${color}`,
+            borderRadius: 4,
+            padding: '4px 8px',
+            color: '#f1f2f6',
+            fontFamily: 'IBM Plex Mono, monospace',
+            fontSize: 10,
+            whiteSpace: 'nowrap',
+            pointerEvents: 'none',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.8)',
+          }}
+        >
+          <div style={{ color, fontWeight: 700 }}>
+            {isDragging ? '🚀 DESLIZANDO EN SUPERFICIE' : '🎯 CLIC PARA COLOCAR NAVE AQUÍ'}
+          </div>
+          <div>
+            {Math.abs(hover.latDeg).toFixed(4)}°S · {hover.lonDeg.toFixed(4)}°E
+          </div>
+          <div>
+            Alt: {hover.elevationM} m · Pendiente: {hover.slopeDeg}° {isSlopeSafe ? '✓' : '⚠️'}
+          </div>
+        </div>
+      </Html>
+    </group>
+  )
+}
+
+function LanderAndLinkedBodies({
   latDeg,
   lonDeg,
-  observerHeightM: _observerHeightM,
   sunAzimuthDeg,
   sunElevationDeg,
   earthAzimuthDeg,
@@ -132,16 +489,55 @@ function LanderAndSurvivalRays({
   sunRaycast,
   earthRaycast,
   siteName,
-}: Tactical3DSceneProps) {
+  terrainMeshRef,
+  isDraggingRocket,
+  onStartDragRocket,
+}: Tactical3DSceneProps & {
+  terrainMeshRef: React.MutableRefObject<THREE.Mesh | null>
+  isDraggingRocket: boolean
+  onStartDragRocket: () => void
+}) {
   const manifest = atlasData?.manifest
   const heights = atlasData?.heights
 
-  const landerWorld = useMemo(() => {
-    if (!manifest || !heights) return new THREE.Vector3(0, 0, 0)
-    const [xM, yM] = latLonToStereoM(latDeg, lonDeg, manifest.radius_m)
-    const hM = sampleLolaHeight(xM, yM, heights, manifest)
-    return projectStereoTo3D(xM, yM, hM, EXAGGERATION, manifest.radius_m)
+  const rocketGroupRef = useRef<THREE.Group>(null)
+  const downRaycaster = useMemo(() => new THREE.Raycaster(), [])
+
+  // Compute exact surface position and normal on the rendered triangle mesh
+  const surfaceSample = useMemo(() => {
+    if (!manifest || !heights) {
+      return {
+        position: new THREE.Vector3(0, 0, 0),
+        normal: new THREE.Vector3(0, 1, 0),
+        elevationM: 1628,
+      }
+    }
+    return sampleExactMeshSurface(latDeg, lonDeg, heights, manifest, TERRAIN_EXAGGERATION, MESH_STRIDE)
   }, [latDeg, lonDeg, manifest, heights])
+
+  // Hardware-level raycast against the live Three.js terrain mesh so the rocket
+  // sits flush on the exact rendered triangle face and aligns with its exact normal
+  const { clampedLanderWorld, surfaceQuat } = useMemo(() => {
+    const pos = surfaceSample.position.clone()
+    const norm = surfaceSample.normal.clone()
+    if (terrainMeshRef.current) {
+      downRaycaster.set(new THREE.Vector3(pos.x, pos.y + 60, pos.z), new THREE.Vector3(0, -1, 0))
+      const hits = downRaycaster.intersectObject(terrainMeshRef.current, false)
+      if (hits.length > 0) {
+        pos.copy(hits[0].point)
+        if (hits[0].face) {
+          norm.copy(hits[0].face.normal).normalize()
+          if (norm.y < 0) norm.negate()
+        }
+      }
+    }
+    const up = new THREE.Vector3(0, 1, 0)
+    const q = new THREE.Quaternion().setFromUnitVectors(up, norm)
+    return { clampedLanderWorld: pos, surfaceQuat: q }
+  }, [surfaceSample, terrainMeshRef, downRaycaster])
+
+  // Keep fixed physical 3D size for the rocket so zooming in/out with scroll behaves naturally
+  const rocketScale = CONSTANT_ROCKET_SCALE
 
   const sunDir = useMemo(() => {
     return topocentricToWorldDirection(latDeg, lonDeg, sunAzimuthDeg, sunElevationDeg)
@@ -156,244 +552,464 @@ function LanderAndSurvivalRays({
   const isSlopeHazard = currentSlopeDeg > maxSlopeDeg
   const isSafe = !isSunBlocked && !isEarthBlocked && !isSlopeHazard
 
-  // Ray lengths in scene units (km)
-  const sunRayLength = sunRaycast.hit && sunRaycast.hitPositionWorld
-    ? landerWorld.distanceTo(sunRaycast.hitPositionWorld)
-    : 160.0
+  // Origin of the vectors at the top communications / solar mast of the rocket
+  const emitterOffset = useMemo(() => {
+    return surfaceSample.normal.clone().multiplyScalar(3.35 * rocketScale)
+  }, [surfaceSample.normal, rocketScale])
 
-  const earthRayLength = earthRaycast.hit && earthRaycast.hitPositionWorld
-    ? landerWorld.distanceTo(earthRaycast.hitPositionWorld)
-    : 140.0
+  const emitterWorld = useMemo(() => {
+    return clampedLanderWorld.clone().add(emitterOffset)
+  }, [clampedLanderWorld, emitterOffset])
 
-  const sunEndpoint = useMemo(() => {
+  // Exact sky positions of the Sun and Earth at the tips of the vectors coming out of the spacecraft
+  const sunSkyWorld = useMemo(() => {
+    return emitterWorld.clone().addScaledVector(sunDir, SKY_SUN_DISTANCE)
+  }, [emitterWorld, sunDir])
+
+  const earthSkyWorld = useMemo(() => {
+    return emitterWorld.clone().addScaledVector(earthDir, SKY_EARTH_DISTANCE)
+  }, [emitterWorld, earthDir])
+
+  // Collision points on mountains if obstructed
+  const sunHitWorld = useMemo(() => {
     if (sunRaycast.hit && sunRaycast.hitPositionWorld) {
       return sunRaycast.hitPositionWorld
     }
-    return landerWorld.clone().addScaledVector(sunDir, sunRayLength)
-  }, [landerWorld, sunDir, sunRayLength, sunRaycast])
+    return null
+  }, [sunRaycast])
 
-  const earthEndpoint = useMemo(() => {
+  const earthHitWorld = useMemo(() => {
     if (earthRaycast.hit && earthRaycast.hitPositionWorld) {
       return earthRaycast.hitPositionWorld
     }
-    return landerWorld.clone().addScaledVector(earthDir, earthRayLength)
-  }, [landerWorld, earthDir, earthRayLength, earthRaycast])
+    return null
+  }, [earthRaycast])
 
   return (
-    <group position={landerWorld}>
-      {/* 3D Lunar Lander Vehicle */}
-      <LanderModel isSafe={isSafe} />
+    <group>
+      {/* ====================================================================
+          SPACECRAFT / LUNAR ROCKET CLAMPED STRICTLY ON THE LUNAR SURFACE
+          ==================================================================== */}
+      <group
+        ref={rocketGroupRef}
+        position={clampedLanderWorld}
+        quaternion={surfaceQuat}
+        onPointerDown={e => {
+          e.stopPropagation()
+          onStartDragRocket()
+        }}
+        onPointerOver={() => {
+          if (!isDraggingRocket) document.body.style.cursor = 'grab'
+        }}
+        onPointerOut={() => {
+          if (!isDraggingRocket) document.body.style.cursor = 'default'
+        }}
+      >
+        <LunarRocketLanderModel isSafe={isSafe} scale={rocketScale} />
+        <LandingEllipse isSafe={isSafe} scale={rocketScale} />
 
-      {/* Holographic Landing Safety Ellipse */}
-      <LandingEllipse isSafe={isSafe} currentSlope={currentSlopeDeg} />
-
-      {/* Sun Ray (Yellow when clear, Crimson when blocked) */}
-      <SurvivalBeam
-        start={[0, 0.45, 0]}
-        end={sunEndpoint.clone().sub(landerWorld).toArray()}
-        color={isSunBlocked ? '#ff3838' : '#ffd32a'}
-        label={isSunBlocked ? '⚠️ SOL BLOQUEADO' : '☀️ SOL DESPEJADO'}
-        blocked={isSunBlocked}
-      />
-
-      {/* Earth Ray (Cyan when clear, Crimson when blocked) */}
-      <SurvivalBeam
-        start={[0, 0.55, 0]}
-        end={earthEndpoint.clone().sub(landerWorld).toArray()}
-        color={isEarthBlocked ? '#ff3838' : '#00d2d3'}
-        label={isEarthBlocked ? '⚠️ TIERRA BLOQUEADA' : '🌍 ENLACE TIERRA DIRECTO'}
-        blocked={isEarthBlocked}
-      />
-
-      {/* Site HUD Annotation */}
-      <Html position={[0, 1.4, 0]} center distanceFactor={18} zIndexRange={[100, 0]}>
-        <div className={`tactical-lander-tag ${isSafe ? 'tag-safe' : 'tag-hazard'}`}>
-          <div className="tag-dot" />
-          <div className="tag-text">
-            <strong>{siteName.toUpperCase()}</strong>
-            <small>
-              {Math.abs(latDeg).toFixed(4)}°S / {((lonDeg + 360) % 360).toFixed(4)}°E
-            </small>
+        {/* Spacecraft HUD Tag */}
+        <Html position={[0, 4.1 * rocketScale, 0]} center distanceFactor={16} zIndexRange={[100, 0]}>
+          <div
+            className={`tactical-lander-tag ${isSafe ? 'tag-safe' : 'tag-hazard'}`}
+            style={{ cursor: 'grab', userSelect: 'none' }}
+            onPointerDown={e => {
+              e.stopPropagation()
+              onStartDragRocket()
+            }}
+          >
+            <div className="tag-dot" />
+            <div className="tag-text">
+              <strong>🚀 {siteName.toUpperCase()}</strong>
+              <small>
+                {Math.abs(latDeg).toFixed(4)}°S / {lonDeg.toFixed(4)}°E · Alt: {Math.round(surfaceSample.elevationM)}m
+              </small>
+            </div>
           </div>
-        </div>
-      </Html>
+        </Html>
+      </group>
+
+      {/* ====================================================================
+          SOLAR VECTOR + LINKED 3D SUN IN BACKGROUND SKY
+          ==================================================================== */}
+      <LinkedSurvivalVector
+        emitterWorld={emitterWorld}
+        skyBodyWorld={sunSkyWorld}
+        hitWorld={sunHitWorld}
+        clearColor="#ffd32a"
+        blockedColor="#ff3838"
+        isBlocked={isSunBlocked}
+      />
+
+      <SunSkyBody
+        position={sunSkyWorld}
+        azimuthDeg={sunAzimuthDeg}
+        elevationDeg={sunElevationDeg}
+        isBlocked={isSunBlocked}
+      />
+
+      {/* ====================================================================
+          EARTH VECTOR + LINKED 3D EARTH IN BACKGROUND SKY
+          ==================================================================== */}
+      <LinkedSurvivalVector
+        emitterWorld={emitterWorld}
+        skyBodyWorld={earthSkyWorld}
+        hitWorld={earthHitWorld}
+        clearColor="#00d2d3"
+        blockedColor="#ff3838"
+        isBlocked={isEarthBlocked}
+      />
+
+      <EarthSkyBody
+        position={earthSkyWorld}
+        sunDirection={sunDir}
+        azimuthDeg={earthAzimuthDeg}
+        elevationDeg={earthElevationDeg}
+        isBlocked={isEarthBlocked}
+      />
     </group>
   )
 }
 
-function LanderModel({ isSafe }: { isSafe: boolean }) {
+/**
+ * Artemis / HLS Lunar Rocket Lander Model.
+ * Strictly constructed with all landing footpads resting at local Y = 0.00 (never below 0).
+ */
+function LunarRocketLanderModel({ isSafe, scale }: { isSafe: boolean; scale: number }) {
   return (
-    <group scale={[0.18, 0.18, 0.18]}>
-      {/* Descent Stage Octagonal Body */}
-      <mesh position={[0, 0.4, 0]}>
-        <cylinderGeometry args={[1.2, 1.4, 0.8, 8]} />
-        <meshStandardMaterial color="#c59b27" roughness={0.3} metalness={0.85} />
+    <group scale={[scale, scale, scale]}>
+      {/* Surface Contact Base Pad Ring at exact Y = 0.01 */}
+      <mesh position={[0, 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[1.35, 1.55, 24]} />
+        <meshBasicMaterial color={isSafe ? '#2ed573' : '#ff4757'} transparent opacity={0.55} side={THREE.DoubleSide} />
       </mesh>
 
-      {/* Ascent Stage Cabin */}
-      <mesh position={[0, 1.05, 0]}>
-        <boxGeometry args={[1.3, 0.9, 1.2]} />
-        <meshStandardMaterial color="#dcdde1" roughness={0.5} metalness={0.2} />
-      </mesh>
-
-      {/* Engine Bell */}
-      <mesh position={[0, -0.1, 0]}>
-        <coneGeometry args={[0.45, 0.6, 12, 1, true]} />
-        <meshStandardMaterial color="#2f3640" roughness={0.8} metalness={0.6} side={THREE.DoubleSide} />
-      </mesh>
-
-      {/* 4 Landing Gear Legs */}
-      {[0, 90, 180, 270].map((angle, i) => {
+      {/* 4 Heavy Landing Gear Struts & Golden Footpads resting at exact Y = 0.00 */}
+      {[45, 135, 225, 315].map((angle, i) => {
         const rad = (angle * Math.PI) / 180
-        const legX = Math.sin(rad) * 1.6
-        const legZ = Math.cos(rad) * 1.6
+        const padX = Math.sin(rad) * 1.42
+        const padZ = Math.cos(rad) * 1.42
         return (
           <group key={i}>
-            <mesh position={[legX * 0.55, 0.15, legZ * 0.55]} rotation={[0, rad, -0.45]}>
-              <cylinderGeometry args={[0.04, 0.04, 1.4, 6]} />
-              <meshStandardMaterial color="#718093" metalness={0.8} />
+            {/* Footpad resting flush on the lunar regolith (Y = 0.00 to 0.08) */}
+            <mesh position={[padX, 0.04, padZ]}>
+              <cylinderGeometry args={[0.28, 0.34, 0.08, 12]} />
+              <meshStandardMaterial color="#eab308" roughness={0.35} metalness={0.75} />
             </mesh>
-            <mesh position={[legX, -0.25, legZ]}>
-              <cylinderGeometry args={[0.22, 0.22, 0.06, 8]} />
-              <meshStandardMaterial color="#c59b27" metalness={0.7} />
+            {/* Primary telescopic shock strut from hull skirt down to footpad */}
+            <mesh
+              position={[padX * 0.68, 0.48, padZ * 0.68]}
+              rotation={[Math.cos(rad) * 0.52, 0, -Math.sin(rad) * 0.52]}
+            >
+              <cylinderGeometry args={[0.055, 0.055, 1.15, 8]} />
+              <meshStandardMaterial color="#cbd5e1" roughness={0.3} metalness={0.85} />
             </mesh>
           </group>
         )
       })}
 
-      {/* High-Gain Antenna Mast */}
-      <mesh position={[0.45, 1.8, 0.45]}>
-        <cylinderGeometry args={[0.03, 0.03, 0.8, 6]} />
-        <meshStandardMaterial color="#dcdde1" metalness={0.5} />
-      </mesh>
-      <mesh position={[0.45, 2.2, 0.45]} rotation={[0.4, 0.5, 0.2]}>
-        <sphereGeometry args={[0.3, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2]} />
-        <meshStandardMaterial color="#f5f6fa" roughness={0.3} metalness={0.6} side={THREE.DoubleSide} />
+      {/* Engine Bells (Safe clearance at Y = 0.22 to 0.50 above regolith) */}
+      <mesh position={[0, 0.35, 0]}>
+        <coneGeometry args={[0.42, 0.38, 16, 1, true]} />
+        <meshStandardMaterial color="#334155" roughness={0.6} metalness={0.7} side={THREE.DoubleSide} />
       </mesh>
 
-      {/* Status Beacon on Top */}
-      <mesh position={[0, 1.6, 0]}>
-        <sphereGeometry args={[0.09, 8, 8]} />
+      {/* Lower Propulsion & Thermal Gold Skirt (Y = 0.45 to 1.05) */}
+      <mesh position={[0, 0.75, 0]}>
+        <cylinderGeometry args={[0.88, 0.96, 0.6, 16]} />
+        <meshStandardMaterial color="#d97706" roughness={0.32} metalness={0.82} />
+      </mesh>
+
+      {/* Main Pressurized Cylindrical Rocket Hull (Y = 1.05 to 2.45) */}
+      <mesh position={[0, 1.75, 0]}>
+        <cylinderGeometry args={[0.85, 0.88, 1.4, 20]} />
+        <meshStandardMaterial color="#f8fafc" roughness={0.28} metalness={0.35} />
+      </mesh>
+
+      {/* Dark Thermal Shield Accent Band & Crew Viewport Windows */}
+      <mesh position={[0, 1.95, 0]}>
+        <cylinderGeometry args={[0.865, 0.865, 0.24, 20]} />
+        <meshStandardMaterial color="#0f172a" roughness={0.2} metalness={0.5} />
+      </mesh>
+
+      {/* Conical Rocket Nose Fairing / Upper Ascent Dome (Y = 2.45 to 3.20) */}
+      <mesh position={[0, 2.82, 0]}>
+        <coneGeometry args={[0.85, 0.75, 20]} />
+        <meshStandardMaterial color="#f1f5f9" roughness={0.25} metalness={0.4} />
+      </mesh>
+
+      {/* Deployed Solar Array Wings (Left & Right) */}
+      <mesh position={[1.65, 1.85, 0]} rotation={[0.2, 0, 0]}>
+        <boxGeometry args={[1.55, 0.04, 0.52]} />
+        <meshStandardMaterial color="#1d4ed8" emissive="#1e3a8a" emissiveIntensity={0.35} roughness={0.2} metalness={0.8} />
+      </mesh>
+      <mesh position={[-1.65, 1.85, 0]} rotation={[0.2, 0, 0]}>
+        <boxGeometry args={[1.55, 0.04, 0.52]} />
+        <meshStandardMaterial color="#1d4ed8" emissive="#1e3a8a" emissiveIntensity={0.35} roughness={0.2} metalness={0.8} />
+      </mesh>
+
+      {/* Top Vector Emitter Turret & High-Gain Dish (Y = 3.20 to 3.45) */}
+      <mesh position={[0, 3.35, 0]}>
+        <sphereGeometry args={[0.2, 14, 14]} />
         <meshBasicMaterial color={isSafe ? '#2ed573' : '#ff4757'} />
       </mesh>
+      <pointLight position={[0, 3.4, 0]} color={isSafe ? '#2ed573' : '#ff4757'} intensity={1.8} distance={6} />
     </group>
   )
 }
 
-function LandingEllipse({ isSafe }: { isSafe: boolean; currentSlope?: number }) {
+function LandingEllipse({ isSafe, scale }: { isSafe: boolean; scale: number }) {
   const ringRef = useRef<THREE.Mesh>(null)
 
   useFrame((_, delta) => {
     if (ringRef.current) {
-      ringRef.current.rotation.z += delta * (isSafe ? 0.3 : 0.8)
+      ringRef.current.rotation.z += delta * (isSafe ? 0.35 : 0.85)
     }
   })
 
   const color = isSafe ? '#2ed573' : '#ff4757'
 
   return (
-    <group position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+    <group position={[0, 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[scale, scale, scale]}>
       <mesh ref={ringRef}>
-        <ringGeometry args={[0.75, 0.88, 36]} />
-        <meshBasicMaterial color={color} transparent opacity={0.75} side={THREE.DoubleSide} />
+        <ringGeometry args={[2.1, 2.32, 40]} />
+        <meshBasicMaterial color={color} transparent opacity={0.82} side={THREE.DoubleSide} />
       </mesh>
       <mesh>
-        <circleGeometry args={[0.75, 24]} />
-        <meshBasicMaterial color={color} transparent opacity={0.12} side={THREE.DoubleSide} />
+        <circleGeometry args={[2.1, 32]} />
+        <meshBasicMaterial color={color} transparent opacity={0.14} side={THREE.DoubleSide} />
       </mesh>
     </group>
   )
 }
 
-function SurvivalBeam({
-  start,
-  end,
-  color,
-  blocked,
+/**
+ * Renders the vector emerging from the spacecraft and connecting directly to the Sun or Earth in the sky.
+ * If obstructed by a mountain, renders a red collision beam up to the mountain impact point,
+ * and a dashed continuation vector from the mountain up to the celestial body in the sky.
+ */
+function LinkedSurvivalVector({
+  emitterWorld,
+  skyBodyWorld,
+  hitWorld,
+  clearColor,
+  blockedColor,
+  isBlocked,
 }: {
-  start: [number, number, number]
-  end: [number, number, number]
-  color: string
-  label?: string
-  blocked: boolean
+  emitterWorld: THREE.Vector3
+  skyBodyWorld: THREE.Vector3
+  hitWorld: THREE.Vector3 | null
+  clearColor: string
+  blockedColor: string
+  isBlocked: boolean
 }) {
-  const linePoints = useMemo(() => {
-    return [new THREE.Vector3(...start), new THREE.Vector3(...end)]
-  }, [start, end])
+  if (isBlocked && hitWorld) {
+    return (
+      <group>
+        {/* Solid crimson beam from spacecraft to mountain collision point */}
+        <Line
+          points={[emitterWorld, hitWorld]}
+          color={blockedColor}
+          lineWidth={3.2}
+        />
 
-  const lineGeo = useMemo(() => {
-    return new THREE.BufferGeometry().setFromPoints(linePoints)
-  }, [linePoints])
+        {/* Dashed continuation line from mountain collision point to the celestial body in the sky */}
+        <Line
+          points={[hitWorld, skyBodyWorld]}
+          color={clearColor}
+          lineWidth={1.6}
+          dashed
+          dashSize={3.5}
+          gapSize={2.2}
+          transparent
+          opacity={0.55}
+        />
 
-  return (
-    <group>
-      {/* Laser line */}
-      <primitive object={new THREE.Line(lineGeo, new THREE.LineBasicMaterial({ color, linewidth: 2 }))} />
-
-      {/* Collision impact marker if blocked */}
-      {blocked && (
-        <group position={end}>
+        {/* Collision beacon on the mountain ridge */}
+        <group position={hitWorld}>
           <mesh>
-            <sphereGeometry args={[0.25, 12, 12]} />
+            <sphereGeometry args={[0.42, 16, 16]} />
             <meshBasicMaterial color="#ff3838" />
           </mesh>
-          <pointLight color="#ff3838" intensity={2.5} distance={5} />
-          <Html position={[0, 0.5, 0]} center distanceFactor={16}>
+          <pointLight color="#ff3838" intensity={3.5} distance={8} />
+          <Html position={[0, 0.9, 0]} center distanceFactor={24} zIndexRange={[105, 0]}>
             <div className="impact-beacon">
-              <span>OBSTRUCCIÓN</span>
+              <span>⚠️ IMPACTO EN MONTAÑA (BLOQUEO)</span>
             </div>
           </Html>
         </group>
-      )}
+      </group>
+    )
+  }
+
+  return (
+    <group>
+      {/* Unobstructed bright laser vector from spacecraft straight into the celestial body */}
+      <Line
+        points={[emitterWorld, skyBodyWorld]}
+        color={ isBlocked ? blockedColor : clearColor }
+        lineWidth={2.8}
+      />
     </group>
   )
 }
 
-function CelestialBodies({
-  latDeg,
-  lonDeg,
-  sunAzimuthDeg,
-  sunElevationDeg,
-  earthAzimuthDeg,
-  earthElevationDeg,
+/**
+ * 3D Sun in the far background sky, directly anchored to the tip of the solar vector.
+ */
+function SunSkyBody({
+  position,
+  azimuthDeg,
+  elevationDeg,
+  isBlocked,
 }: {
-  latDeg: number
-  lonDeg: number
-  sunAzimuthDeg: number
-  sunElevationDeg: number
-  earthAzimuthDeg: number
-  earthElevationDeg: number
+  position: THREE.Vector3
+  azimuthDeg: number
+  elevationDeg: number
+  isBlocked: boolean
 }) {
-  const sunDir = useMemo(() => {
-    return topocentricToWorldDirection(latDeg, lonDeg, sunAzimuthDeg, sunElevationDeg)
-  }, [latDeg, lonDeg, sunAzimuthDeg, sunElevationDeg])
-
-  const earthDir = useMemo(() => {
-    return topocentricToWorldDirection(latDeg, lonDeg, earthAzimuthDeg, earthElevationDeg)
-  }, [latDeg, lonDeg, earthAzimuthDeg, earthElevationDeg])
-
-  const sunPos = sunDir.multiplyScalar(220)
-  const earthPos = earthDir.multiplyScalar(190)
+  const coronaTexture = useMemo(() => createSunCoronaTexture(), [])
 
   return (
-    <group>
-      {/* Sun Body */}
-      <mesh position={sunPos}>
-        <sphereGeometry args={[4.5, 24, 24]} />
-        <meshBasicMaterial color="#fffae6" />
+    <group position={position}>
+      {/* Incandescent Solar Core */}
+      <mesh>
+        <sphereGeometry args={[14.5, 32, 32]} />
+        <meshBasicMaterial color={isBlocked ? '#ff7675' : '#fffdf2'} />
       </mesh>
 
-      {/* Earth Body (Blue Marble with Atmosphere Glow) */}
-      <group position={earthPos}>
-        <mesh>
-          <sphereGeometry args={[3.2, 24, 24]} />
-          <meshStandardMaterial color="#227093" roughness={0.4} metalness={0.1} />
-        </mesh>
-        <mesh scale={[1.08, 1.08, 1.08]}>
-          <sphereGeometry args={[3.2, 24, 24]} />
-          <meshBasicMaterial color="#00d2d3" transparent opacity={0.25} side={THREE.BackSide} />
-        </mesh>
-      </group>
+      {/* Golden Photosphere Halo */}
+      <mesh scale={[1.28, 1.28, 1.28]}>
+        <sphereGeometry args={[14.5, 28, 28]} />
+        <meshBasicMaterial
+          color={isBlocked ? '#ff4757' : '#ffd32a'}
+          transparent
+          opacity={isBlocked ? 0.35 : 0.55}
+          side={THREE.BackSide}
+        />
+      </mesh>
+
+      {/* Luminous Solar Corona Sprite */}
+      <sprite scale={[88, 88, 1]}>
+        <spriteMaterial
+          map={coronaTexture}
+          color={isBlocked ? '#ff6b81' : '#ffd32a'}
+          transparent
+          opacity={isBlocked ? 0.45 : 0.9}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </sprite>
+
+      {/* HUD Label Attached to the Sun */}
+      <Html position={[0, 23, 0]} center distanceFactor={240} zIndexRange={[95, 0]}>
+        <div
+          style={{
+            background: 'rgba(10, 14, 22, 0.88)',
+            border: `1px solid ${isBlocked ? '#ff4757' : '#ffd32a'}`,
+            borderRadius: 4,
+            padding: '3px 8px',
+            color: isBlocked ? '#ff6b81' : '#ffd32a',
+            fontFamily: 'IBM Plex Mono, monospace',
+            fontSize: 10,
+            fontWeight: 700,
+            whiteSpace: 'nowrap',
+            boxShadow: '0 0 12px rgba(255, 211, 42, 0.3)',
+            pointerEvents: 'none',
+          }}
+        >
+          ☀️ SOL {isBlocked ? '(OCULTO)' : '(CONECTADO)'} · El {elevationDeg.toFixed(2)}° | Az {azimuthDeg.toFixed(1)}°
+        </div>
+      </Html>
+    </group>
+  )
+}
+
+/**
+ * 3D Earth (Blue Marble with continents, clouds, and atmosphere) in the far background sky,
+ * directly anchored to the tip of the Earth communication vector.
+ */
+function EarthSkyBody({
+  position,
+  sunDirection,
+  azimuthDeg,
+  elevationDeg,
+  isBlocked,
+}: {
+  position: THREE.Vector3
+  sunDirection: THREE.Vector3
+  azimuthDeg: number
+  elevationDeg: number
+  isBlocked: boolean
+}) {
+  const earthMeshRef = useRef<THREE.Mesh>(null)
+  const earthTexture = useMemo(() => createEarthTexture(), [])
+
+  useFrame((_, delta) => {
+    if (earthMeshRef.current) {
+      earthMeshRef.current.rotation.y += delta * 0.12
+    }
+  })
+
+  return (
+    <group position={position}>
+      {/* Local sunlight illuminating the Earth globe */}
+      <directionalLight position={sunDirection.clone().multiplyScalar(60)} intensity={1.8} color="#ffffff" />
+
+      {/* Blue Marble Globe with Continents & Clouds */}
+      <mesh ref={earthMeshRef} rotation={[0.25, -0.6, 0]}>
+        <sphereGeometry args={[12.5, 36, 36]} />
+        <meshStandardMaterial
+          map={earthTexture}
+          roughness={0.45}
+          metalness={0.08}
+          emissive="#0c4a6e"
+          emissiveIntensity={0.45}
+        />
+      </mesh>
+
+      {/* Cyan Atmospheric Rim Glow */}
+      <mesh scale={[1.14, 1.14, 1.14]}>
+        <sphereGeometry args={[12.5, 32, 32]} />
+        <meshBasicMaterial
+          color={isBlocked ? '#ff4757' : '#00d2d3'}
+          transparent
+          opacity={0.32}
+          side={THREE.BackSide}
+        />
+      </mesh>
+
+      {/* Outer Telemetry Beacon Ring around Earth */}
+      <mesh rotation={[Math.PI / 2.4, 0.3, 0]}>
+        <ringGeometry args={[15.8, 16.6, 48]} />
+        <meshBasicMaterial
+          color={isBlocked ? '#ff4757' : '#00d2d3'}
+          transparent
+          opacity={0.55}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+
+      {/* HUD Label Attached to the Earth */}
+      <Html position={[0, 21, 0]} center distanceFactor={220} zIndexRange={[95, 0]}>
+        <div
+          style={{
+            background: 'rgba(6, 16, 26, 0.88)',
+            border: `1px solid ${isBlocked ? '#ff4757' : '#00d2d3'}`,
+            borderRadius: 4,
+            padding: '3px 8px',
+            color: isBlocked ? '#ff6b81' : '#00d2d3',
+            fontFamily: 'IBM Plex Mono, monospace',
+            fontSize: 10,
+            fontWeight: 700,
+            whiteSpace: 'nowrap',
+            boxShadow: '0 0 12px rgba(0, 210, 211, 0.3)',
+            pointerEvents: 'none',
+          }}
+        >
+          🌍 TIERRA {isBlocked ? '(BLOQUEADA)' : '(ENLACE ACTIVO)'} · El {elevationDeg.toFixed(2)}° | Az {azimuthDeg.toFixed(1)}°
+        </div>
+      </Html>
     </group>
   )
 }
@@ -402,45 +1018,135 @@ function CameraController({
   cameraView,
   latDeg,
   lonDeg,
+  sunAzimuthDeg,
+  sunElevationDeg,
+  earthAzimuthDeg,
+  earthElevationDeg,
   atlasData,
+  isDraggingRocket,
+  cameraResetKey,
 }: {
   cameraView: 'orbit' | 'mast' | 'top'
   latDeg: number
   lonDeg: number
+  sunAzimuthDeg: number
+  sunElevationDeg: number
+  earthAzimuthDeg: number
+  earthElevationDeg: number
   atlasData: AtlasData | null
+  isDraggingRocket: boolean
+  cameraResetKey: number
 }) {
   const { camera } = useThree()
   const controlsRef = useRef<OrbitControlsImpl>(null)
+  const prevlanderTargetRef = useRef<THREE.Vector3 | null>(null)
 
   const landerTarget = useMemo(() => {
     if (!atlasData) return new THREE.Vector3(0, 0, 0)
-    const [xM, yM] = latLonToStereoM(latDeg, lonDeg, atlasData.manifest.radius_m)
-    const hM = sampleLolaHeight(xM, yM, atlasData.heights, atlasData.manifest)
-    return projectStereoTo3D(xM, yM, hM, EXAGGERATION, atlasData.manifest.radius_m)
+    return sampleExactMeshSurface(
+      latDeg,
+      lonDeg,
+      atlasData.heights,
+      atlasData.manifest,
+      TERRAIN_EXAGGERATION,
+      MESH_STRIDE
+    ).position
   }, [latDeg, lonDeg, atlasData])
 
+  // Position camera behind the rocket looking toward the Sun & Earth vectors when preset or view mode changes
   useEffect(() => {
-    if (!controlsRef.current) return
-    controlsRef.current.target.copy(landerTarget)
+    if (!controlsRef.current || !atlasData) return
+
+    const sunDir = topocentricToWorldDirection(latDeg, lonDeg, sunAzimuthDeg, sunElevationDeg)
+    const earthDir = topocentricToWorldDirection(latDeg, lonDeg, earthAzimuthDeg, earthElevationDeg)
+
+    // Horizontal bisector pointing from the rocket toward the midpoint of Sun and Earth
+    const bisector = sunDir.clone().add(earthDir)
+    bisector.y = 0
+    if (bisector.lengthSq() < 0.001) {
+      bisector.set(0, 0, -1)
+    } else {
+      bisector.normalize()
+    }
 
     if (cameraView === 'orbit') {
-      camera.position.set(landerTarget.x + 6, landerTarget.y + 4.5, landerTarget.z + 8.5)
+      // Place camera behind the spacecraft looking forward toward the spacecraft AND the Sun & Earth in the sky
+      const camPos = landerTarget
+        .clone()
+        .addScaledVector(bisector, -18.5)
+        .add(new THREE.Vector3(0, 4.2, 0))
+      const lookTarget = landerTarget
+        .clone()
+        .addScaledVector(bisector, 8.0)
+        .add(new THREE.Vector3(0, 2.2, 0))
+
+      camera.position.copy(camPos)
+      controlsRef.current.target.copy(lookTarget)
     } else if (cameraView === 'mast') {
-      camera.position.set(landerTarget.x + 0.3, landerTarget.y + 1.2, landerTarget.z + 0.4)
+      const camPos = landerTarget
+        .clone()
+        .addScaledVector(bisector, -2.2)
+        .add(new THREE.Vector3(0, 1.8, 0))
+      const lookTarget = landerTarget
+        .clone()
+        .addScaledVector(bisector, 20.0)
+        .add(new THREE.Vector3(0, 2.5, 0))
+
+      camera.position.copy(camPos)
+      controlsRef.current.target.copy(lookTarget)
     } else if (cameraView === 'top') {
-      camera.position.set(landerTarget.x, landerTarget.y + 25, landerTarget.z + 0.1)
+      camera.position.set(landerTarget.x, landerTarget.y + 32, landerTarget.z + 0.1)
+      controlsRef.current.target.copy(landerTarget)
     }
+
+    prevlanderTargetRef.current = landerTarget.clone()
     controlsRef.current.update()
-  }, [cameraView, landerTarget, camera])
+    // Only trigger full camera reposition when view mode or preset changes, NOT during manual drag/click
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cameraView, cameraResetKey, Boolean(atlasData)])
+
+  // When the user nudges coordinates or clicks to place the rocket (without dragging),
+  // gently pan the orbit target without resetting their camera angle or zoom
+  useEffect(() => {
+    if (!controlsRef.current || isDraggingRocket) return
+    if (prevlanderTargetRef.current) {
+      const delta = landerTarget.clone().sub(prevlanderTargetRef.current)
+      if (delta.lengthSq() > 0.0001 && delta.lengthSq() < 400) {
+        controlsRef.current.target.add(delta)
+        camera.position.add(delta)
+        controlsRef.current.update()
+      }
+    }
+    prevlanderTargetRef.current = landerTarget.clone()
+  }, [landerTarget, isDraggingRocket, camera])
+
+  // Prevent camera from ever dipping underneath the lunar terrain crust
+  useFrame(() => {
+    if (!atlasData) return
+    const [camLat, camLon] = world3DToLatLon(camera.position, atlasData.manifest.radius_m)
+    const camSurface = sampleExactMeshSurface(
+      camLat,
+      camLon,
+      atlasData.heights,
+      atlasData.manifest,
+      TERRAIN_EXAGGERATION,
+      MESH_STRIDE
+    )
+    const minCamY = camSurface.position.y + 0.45
+    if (camera.position.y < minCamY) {
+      camera.position.y = minCamY
+    }
+  })
 
   return (
     <OrbitControls
       ref={controlsRef}
+      enabled={!isDraggingRocket}
       enableDamping
       dampingFactor={0.08}
-      maxDistance={250}
-      minDistance={1.2}
-      maxPolarAngle={Math.PI / 2 + 0.05}
+      maxDistance={260}
+      minDistance={1.5}
+      maxPolarAngle={Math.PI / 2 + 0.08}
     />
   )
 }
@@ -452,27 +1158,47 @@ function CompassOverlay({
   sunAzimuthDeg: number
   earthAzimuthDeg: number
 }) {
+  const sunRad = (sunAzimuthDeg - 90) * (Math.PI / 180)
+  const earthRad = (earthAzimuthDeg - 90) * (Math.PI / 180)
+
+  const sunX = 36 + Math.cos(sunRad) * 24
+  const sunY = 36 + Math.sin(sunRad) * 24
+
+  const earthX = 36 + Math.cos(earthRad) * 20
+  const earthY = 36 + Math.sin(earthRad) * 20
+
   return (
-    <div className="tactical-compass-hud">
-      <div className="compass-rose">
-        <span className="compass-n">N</span>
-        <span className="compass-e">E</span>
-        <span className="compass-s">S</span>
-        <span className="compass-w">W</span>
-        <div
-          className="compass-needle-sun"
-          style={{ transform: `rotate(${sunAzimuthDeg}deg)` }}
-          title={`Sol: ${sunAzimuthDeg.toFixed(1)}°`}
-        />
-        <div
-          className="compass-needle-earth"
-          style={{ transform: `rotate(${earthAzimuthDeg}deg)` }}
-          title={`Tierra: ${earthAzimuthDeg.toFixed(1)}°`}
-        />
-      </div>
-      <div className="compass-legend">
-        <span className="c-sun">☀️ {sunAzimuthDeg.toFixed(1)}°</span>
-        <span className="c-earth">🌍 {earthAzimuthDeg.toFixed(1)}°</span>
+    <div className="tactical-compass" title="Orientación topocéntrica: Sol (Amarillo) / Tierra (Cian)">
+      <svg width="72" height="72" viewBox="0 0 72 72">
+        <circle cx="36" cy="36" r="32" fill="none" stroke="rgba(72, 219, 251, 0.25)" strokeWidth="1" />
+        <circle cx="36" cy="36" r="20" fill="none" stroke="rgba(72, 219, 251, 0.12)" strokeDasharray="2 2" />
+        <line x1="36" y1="4" x2="36" y2="68" stroke="rgba(255,255,255,0.1)" />
+        <line x1="4" y1="36" x2="68" y2="36" stroke="rgba(255,255,255,0.1)" />
+
+        <text x="36" y="12" textAnchor="middle" fill="#48dbfb" fontSize="8" fontFamily="monospace" fontWeight="bold">
+          N
+        </text>
+        <text x="63" y="39" textAnchor="middle" fill="#747d8c" fontSize="7" fontFamily="monospace">
+          E
+        </text>
+        <text x="36" y="66" textAnchor="middle" fill="#747d8c" fontSize="7" fontFamily="monospace">
+          S
+        </text>
+        <text x="9" y="39" textAnchor="middle" fill="#747d8c" fontSize="7" fontFamily="monospace">
+          W
+        </text>
+
+        <line x1="36" y1="36" x2={sunX} y2={sunY} stroke="#ffd32a" strokeWidth="2" />
+        <circle cx={sunX} cy={sunY} r="3.5" fill="#ffd32a" />
+
+        <line x1="36" y1="36" x2={earthX} y2={earthY} stroke="#00d2d3" strokeWidth="2" />
+        <circle cx={earthX} cy={earthY} r="3" fill="#00d2d3" />
+
+        <circle cx="36" cy="36" r="2.5" fill="#ffffff" />
+      </svg>
+      <div className="compass-readout">
+        <span style={{ color: '#ffd32a' }}>☀ {sunAzimuthDeg.toFixed(0)}°</span>
+        <span style={{ color: '#00d2d3' }}>🌍 {earthAzimuthDeg.toFixed(0)}°</span>
       </div>
     </div>
   )

@@ -76,6 +76,8 @@ export const TACTICAL_SITES: TacticalSitePreset[] = [
 ]
 
 export const LUNAR_RADIUS_M = 1737400.0
+export const MESH_STRIDE = 2
+export const TERRAIN_EXAGGERATION = 2.5
 
 /**
  * Converts Lunar (Lat, Lon) to South Polar Stereographic coordinates (x, y) in meters.
@@ -99,6 +101,21 @@ export function stereoMToLatLon(xM: number, yM: number, radiusM = LUNAR_RADIUS_M
   const lonDeg = ((Math.atan2(xM, yM) * (180 / Math.PI)) + 360) % 360
   const lonNorm = lonDeg > 180 ? lonDeg - 360 : lonDeg
   return [latDeg, lonNorm]
+}
+
+/**
+ * Inverse projection from 3D world coordinates on the lunar terrain mesh back to Lunar (Lat, Lon).
+ * Algebraically exact regardless of terrain elevation or vertical exaggeration.
+ */
+export function world3DToLatLon(worldPoint: THREE.Vector3, radiusM = LUNAR_RADIUS_M): [number, number] {
+  const horiz = Math.hypot(worldPoint.x, worldPoint.z)
+  const vert = worldPoint.y + radiusM / 1000
+  const angle = Math.atan2(horiz, vert)
+  const latDeg = THREE.MathUtils.clamp(angle * (180 / Math.PI) - 90, -89.999, -81.5)
+  let lonDeg = Math.atan2(-worldPoint.x, worldPoint.z) * (180 / Math.PI)
+  if (lonDeg > 180) lonDeg -= 360
+  if (lonDeg < -180) lonDeg += 360
+  return [Number(latDeg.toFixed(4)), Number(lonDeg.toFixed(4))]
 }
 
 /**
@@ -181,19 +198,21 @@ export function raycastTerrainObstruction(
   targetElevationDeg: number,
   heights: Uint16Array,
   manifest: AtlasManifest,
-  exaggeration = 3.0,
+  exaggeration = TERRAIN_EXAGGERATION,
   maxDistanceKm = 80.0
 ): RaycastHit {
   const [startX, startY] = latLonToStereoM(siteLat, siteLon, manifest.radius_m)
   const startTerrainH = sampleLolaHeight(startX, startY, heights, manifest)
   const eyeAltitudeM = startTerrainH + observerHeightM
 
+  const startSurface = sampleExactMeshSurface(siteLat, siteLon, heights, manifest, exaggeration, MESH_STRIDE)
+  const rayOriginWorld = startSurface.position.clone().add(new THREE.Vector3(0, 0.35, 0))
+  const rayDirWorld = topocentricToWorldDirection(siteLat, siteLon, azimuthDeg, targetElevationDeg)
+
   const azRad = azimuthDeg * (Math.PI / 180)
   const elRad = targetElevationDeg * (Math.PI / 180)
   const tanEl = Math.tan(elRad)
 
-  // Step vector in stereographic plane
-  // Azimuth 0 = North (+Y in lunar stereographic), 90 = East (+X in lunar stereographic)
   const dxStep = Math.sin(azRad)
   const dyStep = Math.cos(azRad)
 
@@ -210,7 +229,7 @@ export function raycastTerrainObstruction(
     // Curvature drop: drop = dist^2 / (2 * R_moon)
     const curvatureDropM = (distM * distM) / (2 * manifest.radius_m)
 
-    // Ray height above reference sphere
+    // Physical ray height above reference sphere
     const rayH = eyeAltitudeM + distM * tanEl - curvatureDropM
 
     // Terrain height from NASA LOLA
@@ -223,10 +242,10 @@ export function raycastTerrainObstruction(
       maxObstacleAngleDeg = pointAngleDeg
     }
 
-    // Direct collision check: ray dips below terrain
+    // Direct physical collision check: ray dips below terrain
     if (terrainH >= rayH && pointAngleDeg > targetElevationDeg) {
-      // Collision detected!
-      const hitWorld = projectStereoTo3D(curX, curY, terrainH, exaggeration, manifest.radius_m)
+      // Collision detected! Place hit point strictly along the 3D ray at the mountain intersection
+      const hitWorld = rayOriginWorld.clone().addScaledVector(rayDirWorld, distM / 1000)
       return {
         hit: true,
         hitDistanceM: distM,
@@ -261,6 +280,110 @@ export function projectStereoTo3D(
   const radial = radiusM + heightM * exaggeration
   const k = rho > 0 ? (radial * Math.sin(angle)) / rho / 1000 : 0
   return new THREE.Vector3(-xM * k, (radial * Math.cos(angle) - radiusM) / 1000, yM * k)
+}
+
+export interface ExactSurfaceSample {
+  position: THREE.Vector3
+  normal: THREE.Vector3
+  elevationM: number
+}
+
+/**
+ * Computes the exact 3D point and surface normal on the rendered Three.js terrain mesh triangle
+ * at stereographic coordinates (xM, yM), matching buildAtlasGeometry's exact vertex grid and winding.
+ */
+export function sampleExactStereoMeshPoint(
+  xM: number,
+  yM: number,
+  heights: Uint16Array,
+  manifest: AtlasManifest,
+  exaggeration = TERRAIN_EXAGGERATION,
+  stride = MESH_STRIDE
+): ExactSurfaceSample {
+  const grid = Math.floor((manifest.grid_size - 1) / stride) + 1
+  const cellSpacing = manifest.display_spacing_m * stride
+  const colF = THREE.MathUtils.clamp((xM - manifest.sample_extent_m.xmin) / cellSpacing, 0, grid - 1.0001)
+  const rowF = THREE.MathUtils.clamp((manifest.sample_extent_m.ymax - yM) / cellSpacing, 0, grid - 1.0001)
+
+  const col = Math.floor(colF)
+  const row = Math.floor(rowF)
+  const u = colF - col
+  const v = rowF - row
+
+  const getVertex = (r: number, c: number) => {
+    const sr = Math.min(manifest.grid_size - 1, r * stride)
+    const sc = Math.min(manifest.grid_size - 1, c * stride)
+    const encoded = heights[sr * manifest.grid_size + sc]
+    const h = encoded === manifest.nodata ? 0 : encoded * manifest.scale_m + manifest.offset_m
+    const vx = manifest.sample_extent_m.xmin + sc * manifest.display_spacing_m
+    const vy = manifest.sample_extent_m.ymax - sr * manifest.display_spacing_m
+    return {
+      world: projectStereoTo3D(vx, vy, h, exaggeration, manifest.radius_m),
+      h,
+    }
+  }
+
+  const va = getVertex(row, col)
+  const vb = getVertex(row, col + 1)
+  const vc = getVertex(row + 1, col)
+  const vd = getVertex(row + 1, col + 1)
+
+  const position = new THREE.Vector3()
+  const normal = new THREE.Vector3()
+  let elevationM = 0
+
+  if (u + v <= 1) {
+    // Triangle (a, c, b)
+    const wa = 1 - u - v
+    const wb = u
+    const wc = v
+    position
+      .copy(va.world)
+      .multiplyScalar(wa)
+      .addScaledVector(vb.world, wb)
+      .addScaledVector(vc.world, wc)
+    elevationM = va.h * wa + vb.h * wb + vc.h * wc
+
+    const edge1 = vc.world.clone().sub(va.world)
+    const edge2 = vb.world.clone().sub(va.world)
+    normal.crossVectors(edge1, edge2).normalize()
+  } else {
+    // Triangle (b, c, d)
+    const wb = 1 - v
+    const wc = 1 - u
+    const wd = u + v - 1
+    position
+      .copy(vb.world)
+      .multiplyScalar(wb)
+      .addScaledVector(vc.world, wc)
+      .addScaledVector(vd.world, wd)
+    elevationM = vb.h * wb + vc.h * wc + vd.h * wd
+
+    const edge1 = vc.world.clone().sub(vb.world)
+    const edge2 = vd.world.clone().sub(vb.world)
+    normal.crossVectors(edge1, edge2).normalize()
+  }
+
+  if (normal.y < 0) normal.negate()
+  if (normal.lengthSq() < 0.0001) normal.set(0, 1, 0)
+
+  return { position, normal, elevationM }
+}
+
+/**
+ * Samples the exact 3D lunar surface point and normal for a spacecraft at (latDeg, lonDeg),
+ * enforcing multi-pad crust contact so the spacecraft never sinks below a ridge crease or floats above it.
+ */
+export function sampleExactMeshSurface(
+  latDeg: number,
+  lonDeg: number,
+  heights: Uint16Array,
+  manifest: AtlasManifest,
+  exaggeration = TERRAIN_EXAGGERATION,
+  stride = MESH_STRIDE
+): ExactSurfaceSample {
+  const [xM, yM] = latLonToStereoM(latDeg, lonDeg, manifest.radius_m)
+  return sampleExactStereoMeshPoint(xM, yM, heights, manifest, exaggeration, stride)
 }
 
 /**
