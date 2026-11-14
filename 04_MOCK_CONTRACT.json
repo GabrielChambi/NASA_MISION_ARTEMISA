@@ -1,0 +1,52 @@
+{
+  "contract_version": "1.0.0",
+  "conventions": {
+    "time_standard": "UTC",
+    "interval_convention": "[start_utc, end_utc)",
+    "azimuth_zero": "North (0 deg = N, 90 deg = E)",
+    "elevation_zero": "Local horizontal plane (0 deg)",
+    "coordinate_frame_3d": "ENU (East-North-Up unit vector [x_east, y_north, z_up])",
+    "limits": {
+      "min_step_minutes": 30,
+      "max_step_minutes": 180,
+      "min_duration_hours": 1,
+      "max_duration_hours": 336,
+      "min_delay_hours": 0,
+      "max_delay_hours": 24
+    }
+  },
+  "sites": [
+    {
+      "site_id": "site01",
+      "name": "Connecting ridge",
+      "region": "Lunar south pole",
+      "lat_deg": -89.463521,
+      "lon_east_deg": 222.128578,
+      "elevation_m": 1934.32,
+      "reference_frame": "MOON_ME (DE421/DE441)",
+      "provenance_url": "https://pgda.gsfc.nasa.gov/products/78"
+    },
+    {
+      "site_id": "site04",
+      "name": "Shackleton rim",
+      "region": "Lunar south pole",
+      "lat_deg": -89.771917,
+      "lon_east_deg": 203.293771,
+      "elevation_m": 1731.37,
+      "reference_frame": "MOON_ME (DE421/DE441)",
+      "provenance_url": "https://pgda.gsfc.nasa.gov/products/78"
+    }
+  ],
+  "mock_earth_sample": {
+    "t_utc": "2026-12-14T00:00:00Z",
+    "azimuth_deg": 133.427399,
+    "elevation_deg": -1.438614,
+    "local_horizon_deg": 0.0,
+    "clearance_deg": 0.0,
+    "effective_threshold_deg": 0.0,
+    "earth_visible": false,
+    "range_km": 403241.32,
+    "range_rate_km_s": -0.0290594,
+    "enu_vector": [0.726018, -0.687216, -0.025106]
+  }
+}

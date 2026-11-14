@@ -8,9 +8,11 @@ from .core.sites import DATA, catalog, datasets, get_site
 from .core.horizon import profiles, HorizonUnavailable
 from .solar.horizons import HorizonsUnavailable
 from .solar.service import solar_result
+from .earth.router import router as earth_router
+from .compare.router import router as compare_router
 
 app=FastAPI(title='Lunar Oracle scientific API',version='1.0.0',description='NASA LOLA catalog and JPL Horizons geometric visibility. No simulated science.')
-app.add_middleware(CORSMiddleware,allow_origins=['http://127.0.0.1:5173','http://localhost:5173'],allow_credentials=False,allow_methods=['GET'],allow_headers=['*'])
+app.add_middleware(CORSMiddleware,allow_origins=['http://127.0.0.1:5173','http://localhost:5173'],allow_credentials=False,allow_methods=['GET','POST','OPTIONS'],allow_headers=['*'])
 
 @app.exception_handler(RequestValidationError)
 async def invalid_request(request:Request,exc:RequestValidationError):
@@ -66,9 +68,5 @@ async def solar_endpoint(site_id:str='site04',start_utc:str='2026-12-01T00:00:00
         if isinstance(exc,HorizonUnavailable): raise
         return JSONResponse(status_code=422,content={'status':'unavailable','message':str(exc),'samples':[],'windows':[],'summary':None})
 
-@app.get('/api/earth')
-async def earth_endpoint(site_id:str='site04',start_utc:str='2026-12-01T00:00:00Z',end_utc:str='2026-12-08T00:00:00Z',step_minutes:int=60,horizon_mode:str='flat',observer_height_m:float=1):
-    try: return await solar_result(site_id,start_utc,end_utc,step_minutes,horizon_mode,observer_height_m,target=399)
-    except ValueError as exc:
-        if isinstance(exc,HorizonUnavailable): raise
-        return JSONResponse(status_code=422,content={'status':'unavailable','message':str(exc),'samples':[],'windows':[],'summary':None})
+app.include_router(earth_router)
+app.include_router(compare_router)

@@ -5,6 +5,7 @@ import { LunarMap2D } from '../sites/LunarMap2D'
 import { TerrainLayerPreview } from '../sites/TerrainLayerPreview'
 import { fetchSites, fetchSolar } from '../solar/SolarApiClient'
 import { DataQualityNotice, MetricCards, SolarDashboard } from '../solar/SolarDashboard'
+import { EarthMissionSuite } from '../earth/EarthMissionSuite'
 import type { LunarSite, SolarResult, WorkspaceView } from './types'
 import './workspace.css'
 
@@ -109,6 +110,8 @@ function WorkspaceContent({ onSelectSite, onClose }: Props) {
       {view === 'explorer' && selectedSite && <TerrainLayerPreview site={selectedSite} />}
 
       {(view === 'solar' || view === 'compare' || view === 'earth') && <>{loading && <div className="science-loading" role="status"><LoaderCircle size={22} className="spinning" /><div><strong>Retrieving scientific ephemerides…</strong><span>Querying JPL Horizons or a traceable stored response. No illustrative values are substituted.</span></div></div>}{dataError && <Unavailable error={dataError} onRetry={() => setRevision(v => v + 1)} />}{!loading && !dataError && primary && selectedSite && (view !== 'compare' ? <SolarDashboard result={primary} site={selectedSite} body={view === 'earth' ? 'Earth' : 'Sun'} /> : secondary ? <><div className="science-comparison-intro"><SlidersHorizontal size={17} /><p>Both regions use the same UTC interval, {mission.stepMinutes}-minute sampling, {mission.observerHeightM} m observer height and {mission.horizonMode} horizon. This is a solar comparison; no overall landing-safety score is assigned.</p></div><div className="science-comparison-grid">{mission.siteIds.map(id => { const result = results[id]; const site = sites.find(s => s.id === id)!; return <section key={id} className="science-card science-compare-site"><span className="science-eyebrow">{id.toUpperCase()} / SOLAR GEOMETRY</span><h3>{site.name}</h3><MetricCards result={result} /><p>{result.windows.length} sampled visibility windows</p><DataQualityNotice result={result} /></section> })}</div><section className="science-comparison-difference"><Sun size={18} /><div><strong>{Math.abs(primary.summary.sun_visible_hours - secondary.summary.sun_visible_hours).toFixed(1)} h difference in sampled solar visibility</strong><p>{primary.summary.sun_visible_hours === secondary.summary.sun_visible_hours ? 'These conditions produce equal visible duration. Terrain or another interval may change the comparison.' : `${sites.find(s => s.id === (primary.summary.sun_visible_hours > secondary.summary.sun_visible_hours ? mission.siteIds[0] : mission.siteIds[1]))?.name} has more Sun-above-horizon time for these assumptions. This alone is not a landing recommendation.`}</p></div></section></> : null)}</>}
+
+      {(view === 'earth' || view === 'compare') && <EarthMissionSuite initialSiteId={(mission.siteIds[0] === 'site01' ? 'site01' : 'site04')} activeSection={view === 'compare' ? 'compare' : 'earth'} onSiteChange={selectSite} />}
 
 
 
