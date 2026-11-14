@@ -81,7 +81,7 @@ def test_horizons_height_includes_surface_elevation():
     assert abs(float(params['SITE_COORD'].strip("'").split(',')[2])-(site['elevation_m']+1)/1000)<1e-8
 
 def test_real_cached_horizons_table_and_independent_crosschecks():
-    record=next(json.loads(p.read_text()) for p in (DATA/'prepared'/'ephemeris').glob('*.json') if json.loads(p.read_text())['params']['COMMAND']=="'10'")
+    record=next(json.loads(p.read_text()) for p in sorted((DATA/'prepared'/'ephemeris').glob('*.json')) if json.loads(p.read_text())['params']['COMMAND']=="'10'" and json.loads(p.read_text())['params']['START_TIME']==f"'{START.strftime('%Y-%m-%d %H:%M:%S')}'")
     parsed=parse_result(record['response']['result'],START,END,60)
     assert len(parsed)==169
     checks=json.loads((DATA/'prepared'/'validation.json').read_text())['checks']
