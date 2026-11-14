@@ -1,0 +1,700 @@
+/* ==========================================================================
+   APEX / LUNAR ORACLE · TACTICAL SURVIVAL COCKPIT STYLES
+   High-density dark aerospace HUD theme (Apollo / Artemis Mission Control)
+   ========================================================================== */
+
+.tactical-cockpit-root {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+  max-width: 100vw;
+  max-height: 100vh;
+  background-color: #05090e;
+  color: #d2dae2;
+  font-family: 'Barlow', -apple-system, BlinkMacSystemFont, sans-serif;
+  overflow: hidden;
+  box-sizing: border-box;
+  user-select: none;
+}
+
+.tactical-cockpit-root * {
+  box-sizing: border-box;
+}
+
+/* ==========================================================================
+   TOP TACTICAL BAR
+   ========================================================================== */
+.tactical-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+  min-height: 48px;
+  background: #090e15;
+  border-bottom: 1px solid rgba(80, 110, 130, 0.25);
+  padding: 0 16px;
+  gap: 16px;
+  z-index: 50;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #48dbfb;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+}
+
+.brand-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #48dbfb;
+  box-shadow: 0 0 8px #48dbfb;
+  animation: pulse-dot 2s infinite ease-in-out;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 0.5; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+.topbar-subhead {
+  font-size: 10px;
+  color: #718093;
+  letter-spacing: 1px;
+  border-left: 1px solid rgba(113, 128, 147, 0.3);
+  padding-left: 12px;
+}
+
+.topbar-center {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topbar-clock {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(15, 25, 38, 0.85);
+  border: 1px solid rgba(80, 120, 150, 0.3);
+  padding: 4px 10px;
+  border-radius: 3px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: #f1f2f6;
+}
+
+.clock-label {
+  color: #718093;
+  font-size: 9px;
+  letter-spacing: 0.8px;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.view-preset-btn {
+  background: rgba(30, 45, 60, 0.4);
+  border: 1px solid rgba(80, 110, 130, 0.3);
+  color: #a4b0be;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  padding: 5px 9px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.view-preset-btn:hover {
+  background: rgba(50, 75, 100, 0.5);
+  color: #f1f2f6;
+}
+
+.view-preset-btn.active {
+  background: rgba(72, 219, 251, 0.15);
+  border-color: #48dbfb;
+  color: #48dbfb;
+}
+
+/* ==========================================================================
+   MAIN WORKSPACE (SPLIT LAYOUT)
+   ========================================================================== */
+.tactical-workspace {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ==========================================================================
+   SIDEBAR: INPUTS & KPIS
+   ========================================================================== */
+.tactical-sidebar {
+  width: 360px;
+  min-width: 340px;
+  max-width: 400px;
+  background: #080d14;
+  border-right: 1px solid rgba(80, 110, 130, 0.25);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  z-index: 20;
+  scrollbar-width: thin;
+  scrollbar-color: #2f3640 #080d14;
+}
+
+.tactical-sidebar::-webkit-scrollbar {
+  width: 5px;
+}
+.tactical-sidebar::-webkit-scrollbar-thumb {
+  background: #2f3640;
+  border-radius: 3px;
+}
+
+/* TACTICAL BLOCK CARDS */
+.tactical-block {
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(80, 110, 130, 0.18);
+}
+
+.tactical-block-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.block-title-text {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: #747d8c;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.block-number {
+  color: #48dbfb;
+  font-size: 11px;
+}
+
+/* FORM FIELDS */
+.tactical-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tactical-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  color: #a4b0be;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.tactical-select,
+.tactical-input {
+  background: #0e1520;
+  border: 1px solid rgba(90, 120, 150, 0.35);
+  color: #f1f2f6;
+  border-radius: 3px;
+  padding: 7px 10px;
+  font-size: 11px;
+  font-family: 'IBM Plex Mono', monospace;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.tactical-select:focus,
+.tactical-input:focus {
+  border-color: #48dbfb;
+  box-shadow: 0 0 5px rgba(72, 219, 251, 0.3);
+}
+
+.coords-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.coord-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.coord-numpad {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.step-btn {
+  background: rgba(50, 75, 100, 0.3);
+  border: 1px solid rgba(90, 120, 150, 0.3);
+  color: #dcdde1;
+  font-size: 9px;
+  padding: 6px 7px;
+  border-radius: 2px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.step-btn:hover {
+  background: rgba(72, 219, 251, 0.25);
+  color: #48dbfb;
+}
+
+.quick-action-btn {
+  background: rgba(46, 213, 115, 0.12);
+  border: 1px solid rgba(46, 213, 115, 0.4);
+  color: #2ed573;
+  padding: 7px 10px;
+  font-size: 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  border-radius: 3px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 4px;
+  transition: all 0.2s;
+}
+
+.quick-action-btn:hover {
+  background: rgba(46, 213, 115, 0.25);
+  box-shadow: 0 0 8px rgba(46, 213, 115, 0.3);
+}
+
+/* DELAY PRESETS */
+.delay-pills {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.delay-pill {
+  flex: 1;
+  background: rgba(30, 45, 60, 0.4);
+  border: 1px solid rgba(80, 110, 130, 0.3);
+  color: #a4b0be;
+  font-size: 9px;
+  padding: 5px;
+  border-radius: 2px;
+  cursor: pointer;
+  text-align: center;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.delay-pill:hover {
+  background: rgba(50, 75, 100, 0.5);
+}
+
+.delay-pill.active {
+  background: rgba(255, 71, 87, 0.2);
+  border-color: #ff4757;
+  color: #ff6b81;
+}
+
+.delay-pill.active-base {
+  background: rgba(46, 213, 115, 0.2);
+  border-color: #2ed573;
+  color: #2ed573;
+}
+
+/* THRESHOLDS SLIDERS */
+.tactical-slider {
+  width: 100%;
+  accent-color: #48dbfb;
+  cursor: pointer;
+  height: 4px;
+}
+
+/* ==========================================================================
+   SURVIVAL STATUS & KPIS
+   ========================================================================== */
+.tactical-status-banner {
+  padding: 12px 14px;
+  border-radius: 3px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.tactical-status-banner.status-green {
+  background: rgba(46, 213, 115, 0.12);
+  border: 1px solid rgba(46, 213, 115, 0.45);
+  color: #2ed573;
+}
+
+.tactical-status-banner.status-red {
+  background: rgba(255, 71, 87, 0.15);
+  border: 1px solid rgba(255, 71, 87, 0.55);
+  color: #ff6b81;
+}
+
+.status-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.status-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  margin-bottom: 3px;
+}
+
+.status-desc {
+  font-size: 10px;
+  line-height: 1.4;
+  color: #d2dae2;
+}
+
+.kpi-grid-tactical {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.kpi-cell {
+  background: #0b111a;
+  border: 1px solid rgba(80, 110, 130, 0.2);
+  padding: 8px 10px;
+  border-radius: 3px;
+}
+
+.kpi-cell-label {
+  font-size: 8px;
+  color: #718093;
+  letter-spacing: 0.8px;
+  font-family: 'IBM Plex Mono', monospace;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.kpi-cell-value {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 16px;
+  font-weight: 600;
+  color: #f1f2f6;
+  margin: 4px 0 2px;
+}
+
+.kpi-cell-sub {
+  font-size: 9px;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.kpi-cell-sub.text-green { color: #2ed573; }
+.kpi-cell-sub.text-red { color: #ff4757; }
+.kpi-cell-sub.text-amber { color: #ffa502; }
+
+/* ==========================================================================
+   3D VIEWPORT CONTAINER
+   ========================================================================== */
+.tactical-viewport-wrap {
+  flex: 1;
+  position: relative;
+  background: #020407;
+  overflow: hidden;
+}
+
+/* COMPASS HUD IN 3D */
+.tactical-compass-hud {
+  position: absolute;
+  right: 18px;
+  bottom: 22px;
+  width: 90px;
+  height: 90px;
+  background: rgba(10, 18, 28, 0.85);
+  border: 1px solid rgba(80, 120, 160, 0.35);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.compass-rose {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  border: 1px dashed rgba(80, 120, 160, 0.4);
+  border-radius: 50%;
+}
+
+.compass-n, .compass-e, .compass-s, .compass-w {
+  position: absolute;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  color: #747d8c;
+  font-weight: 600;
+}
+.compass-n { top: -2px; left: 50%; transform: translateX(-50%); color: #48dbfb; }
+.compass-s { bottom: -2px; left: 50%; transform: translateX(-50%); }
+.compass-e { right: -2px; top: 50%; transform: translateY(-50%); }
+.compass-w { left: -2px; top: 50%; transform: translateY(-50%); }
+
+.compass-needle-sun {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2px;
+  height: 24px;
+  background: #ffd32a;
+  transform-origin: top center;
+  box-shadow: 0 0 6px #ffd32a;
+}
+
+.compass-needle-earth {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2px;
+  height: 20px;
+  background: #00d2d3;
+  transform-origin: top center;
+  box-shadow: 0 0 6px #00d2d3;
+}
+
+.compass-legend {
+  display: flex;
+  gap: 6px;
+  font-size: 8px;
+  font-family: 'IBM Plex Mono', monospace;
+  margin-top: 3px;
+}
+.compass-legend .c-sun { color: #ffd32a; }
+.compass-legend .c-earth { color: #00d2d3; }
+
+/* 3D TAGS OVERLAY */
+.tactical-lander-tag {
+  background: rgba(10, 18, 28, 0.9);
+  border-radius: 3px;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+}
+
+.tactical-lander-tag.tag-safe {
+  border: 1px solid #2ed573;
+  color: #2ed573;
+}
+.tactical-lander-tag.tag-safe .tag-dot {
+  background: #2ed573;
+  box-shadow: 0 0 6px #2ed573;
+}
+
+.tactical-lander-tag.tag-hazard {
+  border: 1px solid #ff4757;
+  color: #ff6b81;
+}
+.tactical-lander-tag.tag-hazard .tag-dot {
+  background: #ff4757;
+  box-shadow: 0 0 6px #ff4757;
+}
+
+.tag-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.tag-text strong {
+  display: block;
+  font-size: 9px;
+  color: #f1f2f6;
+}
+.tag-text small {
+  font-size: 8px;
+  color: #a4b0be;
+}
+
+.impact-beacon {
+  background: #ff3838;
+  color: #fff;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  font-weight: 700;
+  padding: 2px 5px;
+  border-radius: 2px;
+  box-shadow: 0 0 10px #ff3838;
+  white-space: nowrap;
+  animation: pulse-beacon 1s infinite;
+}
+
+@keyframes pulse-beacon {
+  0%, 100% { opacity: 0.8; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+/* ==========================================================================
+   BOTTOM SCRUBBER (TIME SELECTION SLIDER)
+   ========================================================================== */
+.tactical-scrubber-bar {
+  height: 78px;
+  min-height: 78px;
+  background: #080d14;
+  border-top: 1px solid rgba(80, 110, 130, 0.25);
+  display: flex;
+  flex-direction: column;
+  padding: 6px 16px 8px;
+  z-index: 30;
+}
+
+.scrubber-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.scrubber-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: #747d8c;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.scrubber-legend {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 9px;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.legend-color {
+  width: 10px;
+  height: 2px;
+  border-radius: 1px;
+}
+
+.legend-color.sun { background: #ffd32a; }
+.legend-color.earth { background: #00d2d3; }
+.legend-color.hazard { background: #ff4757; }
+
+.scrubber-timeline-wrap {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.scrubber-mini-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.scrubber-slider-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 5;
+}
+
+.scrubber-ticks {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  color: #57606f;
+  pointer-events: none;
+}
+
+.scrubber-needle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #ffffff;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.scrubber-play-btn {
+  background: rgba(30, 45, 60, 0.5);
+  border: 1px solid rgba(80, 110, 130, 0.35);
+  color: #dcdde1;
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+.scrubber-play-btn:hover {
+  background: rgba(72, 219, 251, 0.25);
+  color: #48dbfb;
+}
+
+/* ==========================================================================
+   RESPONSIVE LAYOUT
+   ========================================================================== */
+@media (max-width: 900px) {
+  .tactical-workspace {
+    flex-direction: column-reverse;
+  }
+  .tactical-sidebar {
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+    height: 320px;
+  }
+}
