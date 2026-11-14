@@ -217,10 +217,40 @@ export function Tactical3DScene(props: Tactical3DSceneProps) {
             display: 'flex',
             alignItems: 'center',
             gap: 6,
+            pointerEvents: 'none',
           }}
         >
-          <span>🔒 SUPERFICIE LOLA FIJADA (0.0 m SOBRE CORTEZA · ARRASTRAR NAVE O DOBLE CLIC)</span>
+          <span>🔒 SUPERFICIE LOLA FIJADA (0.0 m SOBRE CORTEZA)</span>
         </div>
+
+        {(props.placementMode || isDraggingRocket) && hoverSurface && (
+          <div
+            style={{
+              padding: '6px 12px',
+              borderRadius: 4,
+              background: 'rgba(4, 10, 18, 0.92)',
+              border: `1px solid ${hoverSurface.slopeDeg <= props.maxSlopeDeg ? '#ffd32a' : '#ff4757'}`,
+              color: '#f1f2f6',
+              fontFamily: 'IBM Plex Mono, monospace',
+              fontSize: 10,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              pointerEvents: 'none',
+            }}
+          >
+            <strong style={{ color: hoverSurface.slopeDeg <= props.maxSlopeDeg ? '#ffd32a' : '#ff4757' }}>
+              🎯 DESTINO:
+            </strong>
+            <span>
+              {Math.abs(hoverSurface.latDeg).toFixed(4)}°S / {hoverSurface.lonDeg.toFixed(4)}°E
+            </span>
+            <span>Alt: {hoverSurface.elevationM} m</span>
+            <span>
+              Pendiente: {hoverSurface.slopeDeg}° {hoverSurface.slopeDeg <= props.maxSlopeDeg ? '✓' : '⚠️'}
+            </span>
+          </div>
+        )}
       </div>
 
       <Canvas
@@ -276,6 +306,7 @@ export function Tactical3DScene(props: Tactical3DSceneProps) {
           earthElevationDeg={props.earthElevationDeg}
           atlasData={props.atlasData}
           isDraggingRocket={isDraggingRocket}
+          placementMode={Boolean(props.placementMode)}
           cameraResetKey={props.cameraResetKey ?? 0}
         />
       </Canvas>
@@ -364,6 +395,17 @@ function TerrainSurface({
     [placementMode, isDraggingRocket, extractSurfaceHit, onHoverSurface, onSurfacePlace]
   )
 
+  const handlePointerDown = useCallback(
+    (e: ThreeEvent<PointerEvent>) => {
+      if (!placementMode || !onSurfacePlace || e.button !== 0) return
+      e.stopPropagation()
+      const hit = extractSurfaceHit(e)
+      onHoverSurface(hit)
+      onSurfacePlace(hit.latDeg, hit.lonDeg)
+    },
+    [placementMode, onSurfacePlace, extractSurfaceHit, onHoverSurface]
+  )
+
   const handleClick = useCallback(
     (e: ThreeEvent<MouseEvent>) => {
       if (!placementMode || !onSurfacePlace) return
@@ -393,6 +435,7 @@ function TerrainSurface({
         name="lunar-terrain-mesh"
         geometry={meshGeometry}
         receiveShadow
+        onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerOut={() => onHoverSurface(null)}
         onClick={handleClick}
@@ -413,7 +456,6 @@ function TerrainSurface({
 function SurfacePlacementReticle({
   hover,
   maxSlopeDeg,
-  isDragging,
 }: {
   hover: {
     point: THREE.Vector3
@@ -424,7 +466,7 @@ function SurfacePlacementReticle({
     slopeDeg: number
   }
   maxSlopeDeg: number
-  isDragging: boolean
+  isDragging?: boolean
 }) {
   const isSlopeSafe = hover.slopeDeg <= maxSlopeDeg
   const color = isSlopeSafe ? '#ffd32a' : '#ff4757'
@@ -437,40 +479,14 @@ function SurfacePlacementReticle({
 
   return (
     <group position={hover.point} quaternion={alignQuat}>
-      <mesh position={[0, 0.04, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[0.6, 0.85, 32]} />
+      <mesh position={[0, 0.04, 0]} rotation={[-Math.PI / 2, 0, 0]} raycast={() => null}>
+        <ringGeometry args={[0.55, 0.78, 32]} />
         <meshBasicMaterial color={color} transparent opacity={0.9} side={THREE.DoubleSide} />
       </mesh>
-      <mesh position={[0, 0.8, 0]}>
-        <cylinderGeometry args={[0.04, 0.04, 1.6, 8]} />
+      <mesh position={[0, 0.65, 0]} raycast={() => null}>
+        <cylinderGeometry args={[0.03, 0.03, 1.3, 8]} />
         <meshBasicMaterial color={color} transparent opacity={0.65} />
       </mesh>
-      <Html position={[0, 1.9, 0]} center zIndexRange={[110, 0]}>
-        <div
-          style={{
-            background: 'rgba(4, 10, 18, 0.92)',
-            border: `1px solid ${color}`,
-            borderRadius: 4,
-            padding: '4px 8px',
-            color: '#f1f2f6',
-            fontFamily: 'IBM Plex Mono, monospace',
-            fontSize: 10,
-            whiteSpace: 'nowrap',
-            pointerEvents: 'none',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.8)',
-          }}
-        >
-          <div style={{ color, fontWeight: 700 }}>
-            {isDragging ? '🚀 DESLIZANDO EN SUPERFICIE' : '🎯 CLIC PARA COLOCAR NAVE AQUÍ'}
-          </div>
-          <div>
-            {Math.abs(hover.latDeg).toFixed(4)}°S · {hover.lonDeg.toFixed(4)}°E
-          </div>
-          <div>
-            Alt: {hover.elevationM} m · Pendiente: {hover.slopeDeg}° {isSlopeSafe ? '✓' : '⚠️'}
-          </div>
-        </div>
-      </Html>
     </group>
   )
 }
@@ -771,11 +787,11 @@ function LandingEllipse({ isSafe, scale }: { isSafe: boolean; scale: number }) {
 
   return (
     <group position={[0, 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[scale, scale, scale]}>
-      <mesh ref={ringRef}>
+      <mesh ref={ringRef} raycast={() => null}>
         <ringGeometry args={[2.1, 2.32, 40]} />
         <meshBasicMaterial color={color} transparent opacity={0.82} side={THREE.DoubleSide} />
       </mesh>
-      <mesh>
+      <mesh raycast={() => null}>
         <circleGeometry args={[2.1, 32]} />
         <meshBasicMaterial color={color} transparent opacity={0.14} side={THREE.DoubleSide} />
       </mesh>
@@ -1024,6 +1040,7 @@ function CameraController({
   earthElevationDeg,
   atlasData,
   isDraggingRocket,
+  placementMode,
   cameraResetKey,
 }: {
   cameraView: 'orbit' | 'mast' | 'top'
@@ -1035,11 +1052,11 @@ function CameraController({
   earthElevationDeg: number
   atlasData: AtlasData | null
   isDraggingRocket: boolean
+  placementMode: boolean
   cameraResetKey: number
 }) {
   const { camera } = useThree()
   const controlsRef = useRef<OrbitControlsImpl>(null)
-  const prevlanderTargetRef = useRef<THREE.Vector3 | null>(null)
 
   const landerTarget = useMemo(() => {
     if (!atlasData) return new THREE.Vector3(0, 0, 0)
@@ -1053,7 +1070,7 @@ function CameraController({
     ).position
   }, [latDeg, lonDeg, atlasData])
 
-  // Position camera behind the rocket looking toward the Sun & Earth vectors when preset or view mode changes
+  // Position camera behind the rocket looking toward the Sun & Earth vectors ONLY when preset or view mode changes
   useEffect(() => {
     if (!controlsRef.current || !atlasData) return
 
@@ -1099,26 +1116,10 @@ function CameraController({
       controlsRef.current.target.copy(landerTarget)
     }
 
-    prevlanderTargetRef.current = landerTarget.clone()
     controlsRef.current.update()
-    // Only trigger full camera reposition when view mode or preset changes, NOT during manual drag/click
+    // Only trigger camera reposition when view mode or site preset changes, NEVER when clicking/dragging on terrain
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cameraView, cameraResetKey, Boolean(atlasData)])
-
-  // When the user nudges coordinates or clicks to place the rocket (without dragging),
-  // gently pan the orbit target without resetting their camera angle or zoom
-  useEffect(() => {
-    if (!controlsRef.current || isDraggingRocket) return
-    if (prevlanderTargetRef.current) {
-      const delta = landerTarget.clone().sub(prevlanderTargetRef.current)
-      if (delta.lengthSq() > 0.0001 && delta.lengthSq() < 400) {
-        controlsRef.current.target.add(delta)
-        camera.position.add(delta)
-        controlsRef.current.update()
-      }
-    }
-    prevlanderTargetRef.current = landerTarget.clone()
-  }, [landerTarget, isDraggingRocket, camera])
 
   // Prevent camera from ever dipping underneath the lunar terrain crust
   useFrame(() => {
@@ -1142,6 +1143,7 @@ function CameraController({
     <OrbitControls
       ref={controlsRef}
       enabled={!isDraggingRocket}
+      enableRotate={!isDraggingRocket && !placementMode}
       enableDamping
       dampingFactor={0.08}
       maxDistance={260}
