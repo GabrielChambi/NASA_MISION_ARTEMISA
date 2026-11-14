@@ -1,4 +1,4 @@
-﻿# LUNAR ORACLE · Lunar Landing Site Navigator
+# LUNAR ORACLE · Lunar Landing Site Navigator
 
 Planifica una misión al polo sur lunar con **topografía NASA LOLA y efemérides NASA/JPL Horizons**. El inicio muestra el mapa 3D, compara dos puntos y fechas, y reproduce un descenso vertical calculado con física.
 
@@ -112,3 +112,7 @@ Rutas GET: /api/sites, /api/solar, /api/earth, /api/horizon, /api/sites/{id}/ter
 Los perfiles y el mapa son finitos y muestreados; no detectan todos los obstáculos ni propagan incertidumbre probabilística. Falta contraste independiente SPICE. Las transiciones de visibilidad no son exactas entre muestras. Seleccionar coordenadas arbitrarias exige reprocesar elevación y horizonte; ahora se admiten los dos píxeles conocidos.
 
 La simulación vertical no certifica seguridad ni sustituye software de vuelo. La secuencia cinematográfica anterior permanece en LaunchScene3D.tsx como código histórico, fuera del inicio. El [plan original](docs/DEVELOPMENT_PLAN.md) es contexto; el [estado verificado](docs/IMPLEMENTATION_STATUS.md) describe la implementación. Se usó IA para programación; fuentes y dependencias conservan sus condiciones. Definir licencia del proyecto antes de presentarlo como código abierto.
+
+## Investigación de mejoras e IA
+
+[Propuesta para competir: copiloto, cambio mínimo y robustez](docs/research/innovation_roadmap.md). Incluye fuentes NASA, prioridades y un experimento reproducible de 26 ventanas con datos originales. Son propuestas y evidencia de investigación; no funciones IA ya desplegadas.

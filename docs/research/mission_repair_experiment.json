@@ -1,0 +1,898 @@
+{
+  "schema": "lunar-oracle-research/minimum-change/v1",
+  "research_only": true,
+  "computed_at": "2026-11-14T22:11:13.193239+00:00",
+  "requirements_chosen_for_this_experiment": {
+    "minimum_sun_hours": 60,
+    "minimum_earth_hours": 36,
+    "max_slope_deg": 10
+  },
+  "analysis_parameters": {
+    "duration_hours": 72,
+    "horizon": "partial LOLA terrain",
+    "height_m": 2,
+    "step_minutes": 60,
+    "earth_clearance_deg": 0,
+    "searched_shift_hours": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ],
+    "tested_surface_timing_errors_hours": [
+      -2,
+      -1,
+      0,
+      1,
+      2
+    ],
+    "sites": [
+      "site01",
+      "site04"
+    ]
+  },
+  "method": "Exhaustive bounded search over 26 candidate site/time windows; actual overlapping NASA series joined by UTC after agreement checks; half-open intervals with the final endpoint excluded from duration.",
+  "matching_overlap_checks": 244,
+  "terrain_profile": {
+    "path": "data/prepared/horizon_profiles.json",
+    "sha256": "faf205074d425f9f234f8aff905053d747f6c3f9f7164c49a8d359fd7516a67f"
+  },
+  "site_catalog": {
+    "path": "data/catalog/sites.json",
+    "sha256": "0a9bd36c0c7986a4d68880888127bbd3dd44f70a24f9c06bbc0fe422aaeaffb1"
+  },
+  "new_nasa_requests": 0,
+  "uses_ai": false,
+  "limitations": [
+    "Minimum only among the 0..12-hour integer shifts and two reference pixels tested, not a global or continuous optimum.",
+    "Derived windows retain the two original NASA query URLs; NASA was not queried directly for each derived interval.",
+    "Earth hours are accumulated centre visibility, not continuous communication or a guaranteed RF link.",
+    "The chosen requirements omit a maximum communications blackout and a battery/thermal budget.",
+    "Partial terrain horizons and sampled transitions remain; no landing or mission-safety certification.",
+    "Changing the surface-analysis epoch does not model launch/orbit feasibility.",
+    "Timing robustness covers only the five discrete shifts +/-2 h, not a calibrated probability or continuous guarantee.",
+    "Insufficient temporal coverage is labelled unknown rather than passed or failed.",
+    "This is research evidence, not an AI feature already integrated into the web app."
+  ],
+  "results": [
+    {
+      "site_id": "site01",
+      "baseline": {
+        "site_id": "site01",
+        "start_shift_hours": 0,
+        "start_utc": "2026-12-14T00:00:00Z",
+        "end_utc": "2026-12-17T00:00:00Z",
+        "sun_hours": 72.0,
+        "earth_hours": 29.0,
+        "joint_hours": 29.0,
+        "longest_earth_gap_hours": 43.0,
+        "reference_pixel_slope_deg": 3.7994,
+        "meets_selected_requirements": false
+      },
+      "minimum_shift_on_tested_grid": {
+        "site_id": "site01",
+        "start_shift_hours": 7,
+        "start_utc": "2026-12-14T07:00:00Z",
+        "end_utc": "2026-12-17T07:00:00Z",
+        "sun_hours": 72.0,
+        "earth_hours": 36.0,
+        "joint_hours": 36.0,
+        "longest_earth_gap_hours": 36.0,
+        "reference_pixel_slope_deg": 3.7994,
+        "meets_selected_requirements": true
+      },
+      "minimum_robust_shift_on_fully_covered_grid": {
+        "nominal_shift_hours": 9,
+        "evaluated_realized_shifts_hours": [
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "coverage_complete": true,
+        "passes_all_tested_timing_errors": true,
+        "minimum_earth_hours": 36.0,
+        "maximum_earth_hours": 40.0
+      },
+      "robust_timing_cases": [
+        {
+          "nominal_shift_hours": 0,
+          "evaluated_realized_shifts_hours": [
+            -2,
+            -1,
+            0,
+            1,
+            2
+          ],
+          "coverage_complete": false,
+          "passes_all_tested_timing_errors": null,
+          "minimum_earth_hours": null,
+          "maximum_earth_hours": null
+        },
+        {
+          "nominal_shift_hours": 1,
+          "evaluated_realized_shifts_hours": [
+            -1,
+            0,
+            1,
+            2,
+            3
+          ],
+          "coverage_complete": false,
+          "passes_all_tested_timing_errors": null,
+          "minimum_earth_hours": null,
+          "maximum_earth_hours": null
+        },
+        {
+          "nominal_shift_hours": 2,
+          "evaluated_realized_shifts_hours": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          "coverage_complete": true,
+          "passes_all_tested_timing_errors": false,
+          "minimum_earth_hours": 29.0,
+          "maximum_earth_hours": 33.0
+        },
+        {
+          "nominal_shift_hours": 3,
+          "evaluated_realized_shifts_hours": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "coverage_complete": true,
+          "passes_all_tested_timing_errors": false,
+          "minimum_earth_hours": 30.0,
+          "maximum_earth_hours": 34.0
+        },
+        {
+          "nominal_shift_hours": 4,
+          "evaluated_realized_shifts_hours": [
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "coverage_complete": true,
+          "passes_all_tested_timing_errors": false,
+          "minimum_earth_hours": 31.0,
+          "maximum_earth_hours": 35.0
+        },
+        {
+          "nominal_shift_hours": 5,
+          "evaluated_realized_shifts_hours": [
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "coverage_complete": true,
+          "passes_all_tested_timing_errors": false,
+          "minimum_earth_hours": 32.0,
+          "maximum_earth_hours": 36.0
+        },
+        {
+          "nominal_shift_hours": 6,
+          "evaluated_realized_shifts_hours": [
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "coverage_complete": true,
+          "passes_all_tested_timing_errors": false,
+          "minimum_earth_hours": 33.0,
+          "maximum_earth_hours": 37.0
+        },
+        {
+          "nominal_shift_hours": 7,
+          "evaluated_realized_shifts_hours": [
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "coverage_complete": true,
+          "passes_all_tested_timing_errors": false,
+          "minimum_earth_hours": 34.0,
+          "maximum_earth_hours": 38.0
+        },
+        {
+          "nominal_shift_hours": 8,
+          "evaluated_realized_shifts_hours": [
+            6,
+            7,
+            8,
+            9,
+            10
+          ],
+          "coverage_complete": true,
+          "passes_all_tested_timing_errors": false,
+          "minimum_earth_hours": 35.0,
+          "maximum_earth_hours": 39.0
+        },
+        {
+          "nominal_shift_hours": 9,
+          "evaluated_realized_shifts_hours": [
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "coverage_complete": true,
+          "passes_all_tested_timing_errors": true,
+          "minimum_earth_hours": 36.0,
+          "maximum_earth_hours": 40.0
+        },
+        {
+          "nominal_shift_hours": 10,
+          "evaluated_realized_shifts_hours": [
+            8,
+            9,
+            10,
+            11,
+            12
+          ],
+          "coverage_complete": true,
+          "passes_all_tested_timing_errors": true,
+          "minimum_earth_hours": 37.0,
+          "maximum_earth_hours": 41.0
+        },
+        {
+          "nominal_shift_hours": 11,
+          "evaluated_realized_shifts_hours": [
+            9,
+            10,
+            11,
+            12,
+            13
+          ],
+          "coverage_complete": false,
+          "passes_all_tested_timing_errors": null,
+          "minimum_earth_hours": null,
+          "maximum_earth_hours": null
+        },
+        {
+          "nominal_shift_hours": 12,
+          "evaluated_realized_shifts_hours": [
+            10,
+            11,
+            12,
+            13,
+            14
+          ],
+          "coverage_complete": false,
+          "passes_all_tested_timing_errors": null,
+          "minimum_earth_hours": null,
+          "maximum_earth_hours": null
+        }
+      ]
+    },
+    {
+      "site_id": "site04",
+      "baseline": {
+        "site_id": "site04",
+        "start_shift_hours": 0,
+        "start_utc": "2026-12-14T00:00:00Z",
+        "end_utc": "2026-12-17T00:00:00Z",
+        "sun_hours": 72.0,
+        "earth_hours": 0.0,
+        "joint_hours": 0.0,
+        "longest_earth_gap_hours": 72.0,
+        "reference_pixel_slope_deg": 32.7358,
+        "meets_selected_requirements": false
+      },
+      "minimum_shift_on_tested_grid": null,
+      "minimum_robust_shift_on_fully_covered_grid": null,
+      "robust_timing_cases": [
+        {
+          "nominal_shift_hours": 0,
+          "evaluated_realized_shifts_hours": [
+            -2,
+            -1,
+            0,
+            1,
+            2
+          ],
+          "coverage_complete": false,
+          "passes_all_tested_timing_errors": null,
+          "minimum_earth_hours": null,
+          "maximum_earth_hours": null
+        },
+        {
+          "nominal_shift_hours": 1,
+          "evaluated_realized_shifts_hours": [
+            -1,
+            0,
+            1,
+            2,
+            3
+          ],
+          "coverage_complete": false,
+          "passes_all_tested_timing_errors": null,
+          "minimum_earth_hours": null,
+          "maximum_earth_hours": null
+        },
+        {
+          "nominal_shift_hours": 2,
+          "evaluated_realized_shifts_hours": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          "coverage_complete": true,
+          "passes_all_tested_timing_errors": false,
+          "minimum_earth_hours": 0.0,
+          "maximum_earth_hours": 0.0
+        },
+        {
+          "nominal_shift_hours": 3,
+          "evaluated_realized_shifts_hours": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "coverage_complete": true,
+          "passes_all_tested_timing_errors": false,
+          "minimum_earth_hours": 0.0,
+          "maximum_earth_hours": 0.0
+        },
+        {
+          "nominal_shift_hours": 4,
+          "evaluated_realized_shifts_hours": [
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "coverage_complete": true,
+          "passes_all_tested_timing_errors": false,
+          "minimum_earth_hours": 0.0,
+          "maximum_earth_hours": 0.0
+        },
+        {
+          "nominal_shift_hours": 5,
+          "evaluated_realized_shifts_hours": [
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "coverage_complete": true,
+          "passes_all_tested_timing_errors": false,
+          "minimum_earth_hours": 0.0,
+          "maximum_earth_hours": 0.0
+        },
+        {
+          "nominal_shift_hours": 6,
+          "evaluated_realized_shifts_hours": [
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "coverage_complete": true,
+          "passes_all_tested_timing_errors": false,
+          "minimum_earth_hours": 0.0,
+          "maximum_earth_hours": 0.0
+        },
+        {
+          "nominal_shift_hours": 7,
+          "evaluated_realized_shifts_hours": [
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "coverage_complete": true,
+          "passes_all_tested_timing_errors": false,
+          "minimum_earth_hours": 0.0,
+          "maximum_earth_hours": 0.0
+        },
+        {
+          "nominal_shift_hours": 8,
+          "evaluated_realized_shifts_hours": [
+            6,
+            7,
+            8,
+            9,
+            10
+          ],
+          "coverage_complete": true,
+          "passes_all_tested_timing_errors": false,
+          "minimum_earth_hours": 0.0,
+          "maximum_earth_hours": 0.0
+        },
+        {
+          "nominal_shift_hours": 9,
+          "evaluated_realized_shifts_hours": [
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "coverage_complete": true,
+          "passes_all_tested_timing_errors": false,
+          "minimum_earth_hours": 0.0,
+          "maximum_earth_hours": 0.0
+        },
+        {
+          "nominal_shift_hours": 10,
+          "evaluated_realized_shifts_hours": [
+            8,
+            9,
+            10,
+            11,
+            12
+          ],
+          "coverage_complete": true,
+          "passes_all_tested_timing_errors": false,
+          "minimum_earth_hours": 0.0,
+          "maximum_earth_hours": 0.0
+        },
+        {
+          "nominal_shift_hours": 11,
+          "evaluated_realized_shifts_hours": [
+            9,
+            10,
+            11,
+            12,
+            13
+          ],
+          "coverage_complete": false,
+          "passes_all_tested_timing_errors": null,
+          "minimum_earth_hours": null,
+          "maximum_earth_hours": null
+        },
+        {
+          "nominal_shift_hours": 12,
+          "evaluated_realized_shifts_hours": [
+            10,
+            11,
+            12,
+            13,
+            14
+          ],
+          "coverage_complete": false,
+          "passes_all_tested_timing_errors": null,
+          "minimum_earth_hours": null,
+          "maximum_earth_hours": null
+        }
+      ]
+    }
+  ],
+  "candidate_windows": [
+    {
+      "site_id": "site01",
+      "start_shift_hours": 0,
+      "start_utc": "2026-12-14T00:00:00Z",
+      "end_utc": "2026-12-17T00:00:00Z",
+      "sun_hours": 72.0,
+      "earth_hours": 29.0,
+      "joint_hours": 29.0,
+      "longest_earth_gap_hours": 43.0,
+      "reference_pixel_slope_deg": 3.7994,
+      "meets_selected_requirements": false
+    },
+    {
+      "site_id": "site01",
+      "start_shift_hours": 1,
+      "start_utc": "2026-12-14T01:00:00Z",
+      "end_utc": "2026-12-17T01:00:00Z",
+      "sun_hours": 72.0,
+      "earth_hours": 30.0,
+      "joint_hours": 30.0,
+      "longest_earth_gap_hours": 42.0,
+      "reference_pixel_slope_deg": 3.7994,
+      "meets_selected_requirements": false
+    },
+    {
+      "site_id": "site01",
+      "start_shift_hours": 2,
+      "start_utc": "2026-12-14T02:00:00Z",
+      "end_utc": "2026-12-17T02:00:00Z",
+      "sun_hours": 72.0,
+      "earth_hours": 31.0,
+      "joint_hours": 31.0,
+      "longest_earth_gap_hours": 41.0,
+      "reference_pixel_slope_deg": 3.7994,
+      "meets_selected_requirements": false
+    },
+    {
+      "site_id": "site01",
+      "start_shift_hours": 3,
+      "start_utc": "2026-12-14T03:00:00Z",
+      "end_utc": "2026-12-17T03:00:00Z",
+      "sun_hours": 72.0,
+      "earth_hours": 32.0,
+      "joint_hours": 32.0,
+      "longest_earth_gap_hours": 40.0,
+      "reference_pixel_slope_deg": 3.7994,
+      "meets_selected_requirements": false
+    },
+    {
+      "site_id": "site01",
+      "start_shift_hours": 4,
+      "start_utc": "2026-12-14T04:00:00Z",
+      "end_utc": "2026-12-17T04:00:00Z",
+      "sun_hours": 72.0,
+      "earth_hours": 33.0,
+      "joint_hours": 33.0,
+      "longest_earth_gap_hours": 39.0,
+      "reference_pixel_slope_deg": 3.7994,
+      "meets_selected_requirements": false
+    },
+    {
+      "site_id": "site01",
+      "start_shift_hours": 5,
+      "start_utc": "2026-12-14T05:00:00Z",
+      "end_utc": "2026-12-17T05:00:00Z",
+      "sun_hours": 72.0,
+      "earth_hours": 34.0,
+      "joint_hours": 34.0,
+      "longest_earth_gap_hours": 38.0,
+      "reference_pixel_slope_deg": 3.7994,
+      "meets_selected_requirements": false
+    },
+    {
+      "site_id": "site01",
+      "start_shift_hours": 6,
+      "start_utc": "2026-12-14T06:00:00Z",
+      "end_utc": "2026-12-17T06:00:00Z",
+      "sun_hours": 72.0,
+      "earth_hours": 35.0,
+      "joint_hours": 35.0,
+      "longest_earth_gap_hours": 37.0,
+      "reference_pixel_slope_deg": 3.7994,
+      "meets_selected_requirements": false
+    },
+    {
+      "site_id": "site01",
+      "start_shift_hours": 7,
+      "start_utc": "2026-12-14T07:00:00Z",
+      "end_utc": "2026-12-17T07:00:00Z",
+      "sun_hours": 72.0,
+      "earth_hours": 36.0,
+      "joint_hours": 36.0,
+      "longest_earth_gap_hours": 36.0,
+      "reference_pixel_slope_deg": 3.7994,
+      "meets_selected_requirements": true
+    },
+    {
+      "site_id": "site01",
+      "start_shift_hours": 8,
+      "start_utc": "2026-12-14T08:00:00Z",
+      "end_utc": "2026-12-17T08:00:00Z",
+      "sun_hours": 72.0,
+      "earth_hours": 37.0,
+      "joint_hours": 37.0,
+      "longest_earth_gap_hours": 35.0,
+      "reference_pixel_slope_deg": 3.7994,
+      "meets_selected_requirements": true
+    },
+    {
+      "site_id": "site01",
+      "start_shift_hours": 9,
+      "start_utc": "2026-12-14T09:00:00Z",
+      "end_utc": "2026-12-17T09:00:00Z",
+      "sun_hours": 72.0,
+      "earth_hours": 38.0,
+      "joint_hours": 38.0,
+      "longest_earth_gap_hours": 34.0,
+      "reference_pixel_slope_deg": 3.7994,
+      "meets_selected_requirements": true
+    },
+    {
+      "site_id": "site01",
+      "start_shift_hours": 10,
+      "start_utc": "2026-12-14T10:00:00Z",
+      "end_utc": "2026-12-17T10:00:00Z",
+      "sun_hours": 72.0,
+      "earth_hours": 39.0,
+      "joint_hours": 39.0,
+      "longest_earth_gap_hours": 33.0,
+      "reference_pixel_slope_deg": 3.7994,
+      "meets_selected_requirements": true
+    },
+    {
+      "site_id": "site01",
+      "start_shift_hours": 11,
+      "start_utc": "2026-12-14T11:00:00Z",
+      "end_utc": "2026-12-17T11:00:00Z",
+      "sun_hours": 72.0,
+      "earth_hours": 40.0,
+      "joint_hours": 40.0,
+      "longest_earth_gap_hours": 32.0,
+      "reference_pixel_slope_deg": 3.7994,
+      "meets_selected_requirements": true
+    },
+    {
+      "site_id": "site01",
+      "start_shift_hours": 12,
+      "start_utc": "2026-12-14T12:00:00Z",
+      "end_utc": "2026-12-17T12:00:00Z",
+      "sun_hours": 72.0,
+      "earth_hours": 41.0,
+      "joint_hours": 41.0,
+      "longest_earth_gap_hours": 31.0,
+      "reference_pixel_slope_deg": 3.7994,
+      "meets_selected_requirements": true
+    },
+    {
+      "site_id": "site04",
+      "start_shift_hours": 0,
+      "start_utc": "2026-12-14T00:00:00Z",
+      "end_utc": "2026-12-17T00:00:00Z",
+      "sun_hours": 72.0,
+      "earth_hours": 0.0,
+      "joint_hours": 0.0,
+      "longest_earth_gap_hours": 72.0,
+      "reference_pixel_slope_deg": 32.7358,
+      "meets_selected_requirements": false
+    },
+    {
+      "site_id": "site04",
+      "start_shift_hours": 1,
+      "start_utc": "2026-12-14T01:00:00Z",
+      "end_utc": "2026-12-17T01:00:00Z",
+      "sun_hours": 72.0,
+      "earth_hours": 0.0,
+      "joint_hours": 0.0,
+      "longest_earth_gap_hours": 72.0,
+      "reference_pixel_slope_deg": 32.7358,
+      "meets_selected_requirements": false
+    },
+    {
+      "site_id": "site04",
+      "start_shift_hours": 2,
+      "start_utc": "2026-12-14T02:00:00Z",
+      "end_utc": "2026-12-17T02:00:00Z",
+      "sun_hours": 72.0,
+      "earth_hours": 0.0,
+      "joint_hours": 0.0,
+      "longest_earth_gap_hours": 72.0,
+      "reference_pixel_slope_deg": 32.7358,
+      "meets_selected_requirements": false
+    },
+    {
+      "site_id": "site04",
+      "start_shift_hours": 3,
+      "start_utc": "2026-12-14T03:00:00Z",
+      "end_utc": "2026-12-17T03:00:00Z",
+      "sun_hours": 72.0,
+      "earth_hours": 0.0,
+      "joint_hours": 0.0,
+      "longest_earth_gap_hours": 72.0,
+      "reference_pixel_slope_deg": 32.7358,
+      "meets_selected_requirements": false
+    },
+    {
+      "site_id": "site04",
+      "start_shift_hours": 4,
+      "start_utc": "2026-12-14T04:00:00Z",
+      "end_utc": "2026-12-17T04:00:00Z",
+      "sun_hours": 72.0,
+      "earth_hours": 0.0,
+      "joint_hours": 0.0,
+      "longest_earth_gap_hours": 72.0,
+      "reference_pixel_slope_deg": 32.7358,
+      "meets_selected_requirements": false
+    },
+    {
+      "site_id": "site04",
+      "start_shift_hours": 5,
+      "start_utc": "2026-12-14T05:00:00Z",
+      "end_utc": "2026-12-17T05:00:00Z",
+      "sun_hours": 72.0,
+      "earth_hours": 0.0,
+      "joint_hours": 0.0,
+      "longest_earth_gap_hours": 72.0,
+      "reference_pixel_slope_deg": 32.7358,
+      "meets_selected_requirements": false
+    },
+    {
+      "site_id": "site04",
+      "start_shift_hours": 6,
+      "start_utc": "2026-12-14T06:00:00Z",
+      "end_utc": "2026-12-17T06:00:00Z",
+      "sun_hours": 72.0,
+      "earth_hours": 0.0,
+      "joint_hours": 0.0,
+      "longest_earth_gap_hours": 72.0,
+      "reference_pixel_slope_deg": 32.7358,
+      "meets_selected_requirements": false
+    },
+    {
+      "site_id": "site04",
+      "start_shift_hours": 7,
+      "start_utc": "2026-12-14T07:00:00Z",
+      "end_utc": "2026-12-17T07:00:00Z",
+      "sun_hours": 72.0,
+      "earth_hours": 0.0,
+      "joint_hours": 0.0,
+      "longest_earth_gap_hours": 72.0,
+      "reference_pixel_slope_deg": 32.7358,
+      "meets_selected_requirements": false
+    },
+    {
+      "site_id": "site04",
+      "start_shift_hours": 8,
+      "start_utc": "2026-12-14T08:00:00Z",
+      "end_utc": "2026-12-17T08:00:00Z",
+      "sun_hours": 72.0,
+      "earth_hours": 0.0,
+      "joint_hours": 0.0,
+      "longest_earth_gap_hours": 72.0,
+      "reference_pixel_slope_deg": 32.7358,
+      "meets_selected_requirements": false
+    },
+    {
+      "site_id": "site04",
+      "start_shift_hours": 9,
+      "start_utc": "2026-12-14T09:00:00Z",
+      "end_utc": "2026-12-17T09:00:00Z",
+      "sun_hours": 72.0,
+      "earth_hours": 0.0,
+      "joint_hours": 0.0,
+      "longest_earth_gap_hours": 72.0,
+      "reference_pixel_slope_deg": 32.7358,
+      "meets_selected_requirements": false
+    },
+    {
+      "site_id": "site04",
+      "start_shift_hours": 10,
+      "start_utc": "2026-12-14T10:00:00Z",
+      "end_utc": "2026-12-17T10:00:00Z",
+      "sun_hours": 72.0,
+      "earth_hours": 0.0,
+      "joint_hours": 0.0,
+      "longest_earth_gap_hours": 72.0,
+      "reference_pixel_slope_deg": 32.7358,
+      "meets_selected_requirements": false
+    },
+    {
+      "site_id": "site04",
+      "start_shift_hours": 11,
+      "start_utc": "2026-12-14T11:00:00Z",
+      "end_utc": "2026-12-17T11:00:00Z",
+      "sun_hours": 72.0,
+      "earth_hours": 0.0,
+      "joint_hours": 0.0,
+      "longest_earth_gap_hours": 72.0,
+      "reference_pixel_slope_deg": 32.7358,
+      "meets_selected_requirements": false
+    },
+    {
+      "site_id": "site04",
+      "start_shift_hours": 12,
+      "start_utc": "2026-12-14T12:00:00Z",
+      "end_utc": "2026-12-17T12:00:00Z",
+      "sun_hours": 72.0,
+      "earth_hours": 0.0,
+      "joint_hours": 0.0,
+      "longest_earth_gap_hours": 72.0,
+      "reference_pixel_slope_deg": 32.7358,
+      "meets_selected_requirements": false
+    }
+  ],
+  "source_records": [
+    {
+      "site_id": "site01",
+      "target": 10,
+      "observer_height_m": 2,
+      "start_utc": "2026-12-14T00:00:00Z",
+      "end_utc": "2026-12-17T00:00:00Z",
+      "path": "data/prepared/ephemeris/c53675b232cf71d6e2c67a9186c678954225d4311d7e56645aa80582992bfb22.json",
+      "sha256": "174b8abe33bb9ee7b36374331f11aac7c7b0f039d11f9b2e37835334b9f25ce1",
+      "original_query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-137.50198491%2C-89.46315776%2C1.946767000%27&START_TIME=%272026-12-14+00%3A00%3A00%27&STOP_TIME=%272026-12-17+00%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "retrieved_at": "2026-11-14T20:25:32.500504+00:00"
+    },
+    {
+      "site_id": "site01",
+      "target": 10,
+      "observer_height_m": 2,
+      "start_utc": "2026-12-14T12:00:00Z",
+      "end_utc": "2026-12-17T12:00:00Z",
+      "path": "data/prepared/ephemeris/1e22a2015fad0957e237f07db92d224c8cf6a0afa995aada160d1898ab7668bb.json",
+      "sha256": "b3ffe940516f9afa23bfb6271c032871e03cc273c3383b84e6cbb2bbdfd30dbf",
+      "original_query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-137.50198491%2C-89.46315776%2C1.946767000%27&START_TIME=%272026-12-14+12%3A00%3A00%27&STOP_TIME=%272026-12-17+12%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "retrieved_at": "2026-11-14T20:25:35.446238+00:00"
+    },
+    {
+      "site_id": "site01",
+      "target": 399,
+      "observer_height_m": 2,
+      "start_utc": "2026-12-14T00:00:00Z",
+      "end_utc": "2026-12-17T00:00:00Z",
+      "path": "data/prepared/ephemeris/fc8a905c00f10de17b65b5121c880e491122b9450a80273a0cc1dd5edf37a959.json",
+      "sha256": "9a49ffc1f7c79faa47dfd096fc5bb32cab3b1f9aa3eeafd21373d3a2711b3da9",
+      "original_query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-137.50198491%2C-89.46315776%2C1.946767000%27&START_TIME=%272026-12-14+00%3A00%3A00%27&STOP_TIME=%272026-12-17+00%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "retrieved_at": "2026-11-14T20:25:31.756987+00:00"
+    },
+    {
+      "site_id": "site01",
+      "target": 399,
+      "observer_height_m": 2,
+      "start_utc": "2026-12-14T12:00:00Z",
+      "end_utc": "2026-12-17T12:00:00Z",
+      "path": "data/prepared/ephemeris/254f62ff0abd17438ac66039c79ed3b531380335b13b76651ebf09286c3ec02a.json",
+      "sha256": "192856954d1b6f7447b3da4704d8a98d9e7aac8387489f64484a0bff7fb310bd",
+      "original_query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-137.50198491%2C-89.46315776%2C1.946767000%27&START_TIME=%272026-12-14+12%3A00%3A00%27&STOP_TIME=%272026-12-17+12%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "retrieved_at": "2026-11-14T20:25:34.746068+00:00"
+    },
+    {
+      "site_id": "site04",
+      "target": 10,
+      "observer_height_m": 2,
+      "start_utc": "2026-12-14T00:00:00Z",
+      "end_utc": "2026-12-17T00:00:00Z",
+      "path": "data/prepared/ephemeris/43bddb5c1b9d62d5367b0d2250d76a7423e2a784124595585e3a5f70db39c99a.json",
+      "sha256": "d1f147d5a7fa9f42e751a4486bd2f5dfa0c6b3e8e87057bf80d97b50af00c97c",
+      "original_query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-171.89280908%2C-89.76674148%2C0.769979000%27&START_TIME=%272026-12-14+00%3A00%3A00%27&STOP_TIME=%272026-12-17+00%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "retrieved_at": "2026-11-14T20:25:33.962647+00:00"
+    },
+    {
+      "site_id": "site04",
+      "target": 10,
+      "observer_height_m": 2,
+      "start_utc": "2026-12-14T12:00:00Z",
+      "end_utc": "2026-12-17T12:00:00Z",
+      "path": "data/prepared/ephemeris/ab13d0309e1b18b38899c1d0f3bc744466f154d4c48ccbdb5180c23a7ae26257.json",
+      "sha256": "aa89a8d37c3450e8f6d9c4adf493122967255f5f2fed7c6cdd9f5dd1176d1b90",
+      "original_query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-171.89280908%2C-89.76674148%2C0.769979000%27&START_TIME=%272026-12-14+12%3A00%3A00%27&STOP_TIME=%272026-12-17+12%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "retrieved_at": "2026-11-14T20:25:36.971294+00:00"
+    },
+    {
+      "site_id": "site04",
+      "target": 399,
+      "observer_height_m": 2,
+      "start_utc": "2026-12-14T00:00:00Z",
+      "end_utc": "2026-12-17T00:00:00Z",
+      "path": "data/prepared/ephemeris/12378342fbf51ad784c369e2935ea4577e2b996d3ed8fdf4d69b37275582aaea.json",
+      "sha256": "3b1dc3d47adaddf52fe4eeceb46eab551e3260a9dbcef9eab7bc84339edafadb",
+      "original_query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-171.89280908%2C-89.76674148%2C0.769979000%27&START_TIME=%272026-12-14+00%3A00%3A00%27&STOP_TIME=%272026-12-17+00%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "retrieved_at": "2026-11-14T20:25:33.271091+00:00"
+    },
+    {
+      "site_id": "site04",
+      "target": 399,
+      "observer_height_m": 2,
+      "start_utc": "2026-12-14T12:00:00Z",
+      "end_utc": "2026-12-17T12:00:00Z",
+      "path": "data/prepared/ephemeris/8b55719e79ba1f0a10838aaec47b27b9baa57f0dabe8d1f7a09a3681ac738a19.json",
+      "sha256": "701f54c3ef19e2a40a16ade7a40a0a29980a9a7f181cc354471500bc37fe5254",
+      "original_query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-171.89280908%2C-89.76674148%2C0.769979000%27&START_TIME=%272026-12-14+12%3A00%3A00%27&STOP_TIME=%272026-12-17+12%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "retrieved_at": "2026-11-14T20:25:36.261750+00:00"
+    }
+  ]
+}
