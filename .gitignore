@@ -8,3 +8,9 @@ dist/
 artifacts/
 .playwright/
 *.tsbuildinfo
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+data/cache/
+data/raw/

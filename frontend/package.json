@@ -6,21 +6,29 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc -b && vite build",
-    "preview": "vite preview --host 127.0.0.1"
+    "build:hosted": "npm run build && node scripts/build-hosted.mjs",
+    "test:science": "node --test worker/science.test.mjs",
+    "preview": "vite preview --host 127.0.0.1",
+    "preview:hosted": "node scripts/serve-hosted.mjs"
   },
   "dependencies": {
     "@fontsource/barlow": "^5.3.0",
     "@fontsource/barlow-condensed": "^5.3.0",
     "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@react-three/drei": "^10.7.9",
+    "@react-three/fiber": "^9.8.2",
     "lucide-react": "^0.468.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "three": "^0.187.0"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
+    "@types/three": "^0.187.0",
     "@vitejs/plugin-react": "^5.1.0",
+    "esbuild": "^0.28.2",
     "playwright": "^1.56.1",
     "typescript": "~5.9.3",
     "vite": "^7.2.2"

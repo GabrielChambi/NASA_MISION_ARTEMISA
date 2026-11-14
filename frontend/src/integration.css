@@ -1,0 +1,18 @@
+.mission-view[hidden],.science-host[hidden]{display:none!important}
+.science-host{grid-column:2;grid-row:2;min-width:0;min-height:0;overflow:auto;background:#0d171f}
+.scene-shade,.scene-grid{pointer-events:none}
+.scene-loading{position:absolute;inset:0;z-index:-5;display:grid;place-items:center;background:radial-gradient(ellipse at 60% 50%,#1d354a,#08111e 75%);font:11px var(--mono);color:#a7c5c3}
+.science-loading{padding:50px;font:12px var(--mono);color:var(--green)}
+.view-heading{pointer-events:auto}
+.open-science-button{display:inline-flex;align-items:center;justify-content:center;gap:9px;border:1px solid #bed9bb70;border-radius:3px;background:#172b2bcc;padding:9px 12px;color:#d5e6cc;font:10px 'Barlow',sans-serif;letter-spacing:.2px;backdrop-filter:blur(8px);pointer-events:auto;transition:background .2s,transform .2s}
+.open-science-button:hover{background:#344e41;transform:translateY(-1px)}
+.view-heading>.open-science-button{position:absolute;left:312px;top:75px}
+.phase-transit .mission-view .left-stack,.phase-transit .mission-view .right-stack,.phase-transit .vehicle-marker,.phase-transit .location-marker{opacity:0;pointer-events:none;transition:opacity .6s}
+.phase-transit .transit-message{top:23%;left:22%;text-align:left;max-width:245px;width:26%;transform:none;pointer-events:none}
+.phase-transit .transit-message>.eyebrow{justify-content:flex-start}.phase-transit .transit-message h2{font-size:31px}
+.phase-transit .transit-message .open-science-button{margin-top:17px;pointer-events:auto}
+.phase-transit .scene-shade{opacity:.55}
+@media(max-width:1050px){.view-heading>.open-science-button{left:285px;top:63px}.phase-transit .transit-message{left:12%;top:22%;width:36%}}
+@media(max-width:900px){.science-host{overflow:visible}.workspace-active{grid-template-rows:var(--header) auto var(--footer)}.phase-transit .transit-message{top:180px;left:11%;width:40%}}
+@media(max-width:760px){.science-host{grid-column:1}.view-heading>.open-science-button{left:260px;top:55px;padding:8px;font-size:9px}}
+@media(max-width:600px){.view-heading>.open-science-button{position:static;margin-top:16px;padding:10px 13px;font-size:11px}.phase-transit .mission-view{min-height:calc(100svh - 105px);padding-top:24px}.phase-transit .mission-view .telemetry-panel,.phase-transit .mission-view .checklist-panel,.phase-transit .mission-view .destination-preview,.phase-transit .mission-view .diagnostics-panel{display:none}.phase-transit .view-heading{min-height:340px}.phase-transit .view-heading>p,.phase-transit .view-heading>.open-science-button{opacity:0;pointer-events:none}.phase-transit .transit-message{top:175px;left:22px;max-width:220px;width:60%;text-align:left}.phase-transit .transit-message h2{font-size:27px}.phase-transit .transit-message>.eyebrow{display:flex}.phase-transit .transit-message>span:last-child{display:block;max-width:200px;line-height:1.8}.phase-transit .transit-message p{font-size:11px}.phase-transit .scene-tools{top:78px}.phase-transit .view-heading h1{font-size:31px}}

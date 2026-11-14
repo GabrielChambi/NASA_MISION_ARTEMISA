@@ -3,8 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "dev:full": "node scripts/dev-full.mjs",
     "dev": "npm --prefix frontend run dev",
     "build": "npm --prefix frontend run build",
+    "build:hosted": "npm --prefix frontend run build:hosted",
+    "test:science": "npm --prefix frontend run test:science",
     "preview": "npm --prefix frontend run preview"
   }
 }

@@ -1,0 +1,65 @@
+{
+  "source": "Independent direct JPL Horizons query with shorter interval",
+  "checks": [
+    {
+      "site_id": "site01",
+      "t_utc": "2026-12-01T00:00:00Z",
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-137.50198491%2C-89.46315776%2C1.945767000%27&START_TIME=%272026-12-01+00%3A00%3A00%27&STOP_TIME=%272026-12-01+01%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "max_difference_deg": 0.0,
+      "tolerance_deg": 1e-05,
+      "result": "passed",
+      "azimuth_deg": 57.578559,
+      "elevation_deg": 1.75801
+    },
+    {
+      "site_id": "site01",
+      "t_utc": "2026-12-04T00:00:00Z",
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-137.50198491%2C-89.46315776%2C1.945767000%27&START_TIME=%272026-12-04+00%3A00%3A00%27&STOP_TIME=%272026-12-04+01%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "max_difference_deg": 0.0,
+      "tolerance_deg": 1e-05,
+      "result": "passed",
+      "azimuth_deg": 21.065201,
+      "elevation_deg": 1.958421
+    },
+    {
+      "site_id": "site01",
+      "t_utc": "2026-12-07T00:00:00Z",
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-137.50198491%2C-89.46315776%2C1.945767000%27&START_TIME=%272026-12-07+00%3A00%3A00%27&STOP_TIME=%272026-12-07+01%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "max_difference_deg": 0.0,
+      "tolerance_deg": 1e-05,
+      "result": "passed",
+      "azimuth_deg": 344.50138,
+      "elevation_deg": 1.964614
+    },
+    {
+      "site_id": "site04",
+      "t_utc": "2026-12-01T00:00:00Z",
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-171.89280908%2C-89.76674148%2C0.768979000%27&START_TIME=%272026-12-01+00%3A00%3A00%27&STOP_TIME=%272026-12-01+01%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "max_difference_deg": 0.0,
+      "tolerance_deg": 1e-05,
+      "result": "passed",
+      "azimuth_deg": 91.962579,
+      "elevation_deg": 1.462158
+    },
+    {
+      "site_id": "site04",
+      "t_utc": "2026-12-04T00:00:00Z",
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-171.89280908%2C-89.76674148%2C0.768979000%27&START_TIME=%272026-12-04+00%3A00%3A00%27&STOP_TIME=%272026-12-04+01%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "max_difference_deg": 0.0,
+      "tolerance_deg": 1e-05,
+      "result": "passed",
+      "azimuth_deg": 55.455383,
+      "elevation_deg": 1.589723
+    },
+    {
+      "site_id": "site04",
+      "t_utc": "2026-12-07T00:00:00Z",
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-171.89280908%2C-89.76674148%2C0.768979000%27&START_TIME=%272026-12-07+00%3A00%3A00%27&STOP_TIME=%272026-12-07+01%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "max_difference_deg": 0.0,
+      "tolerance_deg": 1e-05,
+      "result": "passed",
+      "azimuth_deg": 18.898533,
+      "elevation_deg": 1.667973
+    }
+  ]
+}

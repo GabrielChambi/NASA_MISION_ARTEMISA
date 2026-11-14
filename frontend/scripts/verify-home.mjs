@@ -10,7 +10,7 @@ const errors = []
 page.on('pageerror', error => errors.push(error.message))
 
 try {
-  const response = await page.goto('http://127.0.0.1:5173/', { waitUntil: 'networkidle' })
+  const response = await page.goto(process.env.LUNAR_ORACLE_TEST_URL || 'http://127.0.0.1:5173/', { waitUntil: 'networkidle' })
   assert.equal(response.status(), 200)
   await page.evaluate(() => document.fonts.ready)
   assert.equal(await page.title(), 'Lunar Oracle · Mission Control')

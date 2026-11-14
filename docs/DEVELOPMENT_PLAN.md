@@ -1,5 +1,7 @@
 # Contexto y plan de desarrollo de LUNAR ORACLE
 
+> Documento de planificación inicial conservado como contexto. Para el estado implementado actual, consultar [README](../README.md), [cobertura del Plan A](IMPLEMENTATION_STATUS.md) y [metodología científica](science/solar.md).
+
 Este documento resume la propuesta suministrada para el proyecto y la separa del estado implementado. Los endpoints, parámetros y arquitectura siguientes son propuestas por validar. No confirman requisitos oficiales de la hackatón ni certifican resultados científicos.
 
 ## Objetivo y límites
