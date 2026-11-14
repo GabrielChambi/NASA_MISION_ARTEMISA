@@ -1,6 +1,6 @@
 /* ==========================================================================
    APEX / LUNAR ORACLE · TACTICAL SURVIVAL COCKPIT STYLES
-   High-density dark aerospace HUD theme (Apollo / Artemis Mission Control)
+   Monochrome Flight Software Aesthetic: Pure White, Translucent White & Matte Black
    ========================================================================== */
 
 .tactical-cockpit-root {
@@ -10,8 +10,8 @@
   height: 100vh;
   max-width: 100vw;
   max-height: 100vh;
-  background-color: #05090e;
-  color: #d2dae2;
+  background-color: #050506;
+  color: rgba(255, 255, 255, 0.88);
   font-family: 'Barlow', -apple-system, BlinkMacSystemFont, sans-serif;
   overflow: hidden;
   box-sizing: border-box;
@@ -31,8 +31,8 @@
   justify-content: space-between;
   height: 48px;
   min-height: 48px;
-  background: #090e15;
-  border-bottom: 1px solid rgba(80, 110, 130, 0.25);
+  background: #08080a;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   padding: 0 16px;
   gap: 16px;
   z-index: 50;
@@ -48,56 +48,49 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #48dbfb;
+  color: #ffffff;
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 1.5px;
+  letter-spacing: 1.6px;
 }
 
 .brand-dot {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: #48dbfb;
-  box-shadow: 0 0 8px #48dbfb;
-  animation: pulse-dot 2s infinite ease-in-out;
-}
-
-@keyframes pulse-dot {
-  0%, 100% { opacity: 0.5; transform: scale(0.9); }
-  50% { opacity: 1; transform: scale(1.15); }
+  background: #ffffff;
 }
 
 .topbar-subhead {
   font-size: 10px;
-  color: #718093;
+  color: rgba(255, 255, 255, 0.45);
   letter-spacing: 1px;
-  border-left: 1px solid rgba(113, 128, 147, 0.3);
+  border-left: 1px solid rgba(255, 255, 255, 0.16);
   padding-left: 12px;
 }
 
 .topbar-center {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .topbar-clock {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(15, 25, 38, 0.85);
-  border: 1px solid rgba(80, 120, 150, 0.3);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   padding: 4px 10px;
-  border-radius: 3px;
+  border-radius: 2px;
   font-family: 'IBM Plex Mono', monospace;
   font-size: 11px;
-  color: #f1f2f6;
+  color: #ffffff;
 }
 
 .clock-label {
-  color: #718093;
+  color: rgba(255, 255, 255, 0.48);
   font-size: 9px;
   letter-spacing: 0.8px;
 }
@@ -105,30 +98,35 @@
 .topbar-right {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .view-preset-btn {
-  background: rgba(30, 45, 60, 0.4);
-  border: 1px solid rgba(80, 110, 130, 0.3);
-  color: #a4b0be;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.65);
   font-family: 'IBM Plex Mono', monospace;
   font-size: 10px;
-  padding: 5px 9px;
-  border-radius: 3px;
+  padding: 5px 10px;
+  border-radius: 2px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .view-preset-btn:hover {
-  background: rgba(50, 75, 100, 0.5);
-  color: #f1f2f6;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #ffffff;
 }
 
 .view-preset-btn.active {
-  background: rgba(72, 219, 251, 0.15);
-  border-color: #48dbfb;
-  color: #48dbfb;
+  background: #ffffff;
+  border-color: #ffffff;
+  color: #050506;
+  font-weight: 600;
 }
 
 /* ==========================================================================
@@ -150,28 +148,28 @@
   width: 360px;
   min-width: 340px;
   max-width: 400px;
-  background: #080d14;
-  border-right: 1px solid rgba(80, 110, 130, 0.25);
+  background: #08080a;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
   display: flex;
   flex-direction: column;
   overflow-y: auto;
   z-index: 20;
   scrollbar-width: thin;
-  scrollbar-color: #2f3640 #080d14;
+  scrollbar-color: rgba(255, 255, 255, 0.22) #08080a;
 }
 
 .tactical-sidebar::-webkit-scrollbar {
-  width: 5px;
+  width: 4px;
 }
 .tactical-sidebar::-webkit-scrollbar-thumb {
-  background: #2f3640;
-  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 2px;
 }
 
 /* TACTICAL BLOCK CARDS */
 .tactical-block {
   padding: 14px 16px;
-  border-bottom: 1px solid rgba(80, 110, 130, 0.18);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .tactical-block-title {
@@ -185,16 +183,19 @@
   font-family: 'IBM Plex Mono', monospace;
   font-size: 10px;
   font-weight: 600;
-  letter-spacing: 1px;
-  color: #747d8c;
+  letter-spacing: 1.1px;
+  color: rgba(255, 255, 255, 0.55);
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
 .block-number {
-  color: #48dbfb;
-  font-size: 11px;
+  color: #ffffff;
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 1px 5px;
+  border-radius: 2px;
 }
 
 /* FORM FIELDS */
@@ -209,28 +210,28 @@
   justify-content: space-between;
   align-items: center;
   font-size: 10px;
-  color: #a4b0be;
+  color: rgba(255, 255, 255, 0.62);
   font-family: 'IBM Plex Mono', monospace;
 }
 
 .tactical-select,
 .tactical-input {
-  background: #0e1520;
-  border: 1px solid rgba(90, 120, 150, 0.35);
-  color: #f1f2f6;
-  border-radius: 3px;
+  background: #0d0d10;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  border-radius: 2px;
   padding: 7px 10px;
   font-size: 11px;
   font-family: 'IBM Plex Mono', monospace;
   width: 100%;
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.15s ease, background 0.15s ease;
 }
 
 .tactical-select:focus,
 .tactical-input:focus {
-  border-color: #48dbfb;
-  box-shadow: 0 0 5px rgba(72, 219, 251, 0.3);
+  border-color: #ffffff;
+  background: #121216;
 }
 
 .coords-row {
@@ -252,41 +253,45 @@
 }
 
 .step-btn {
-  background: rgba(50, 75, 100, 0.3);
-  border: 1px solid rgba(90, 120, 150, 0.3);
-  color: #dcdde1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.8);
   font-size: 9px;
+  font-family: 'IBM Plex Mono', monospace;
   padding: 6px 7px;
   border-radius: 2px;
   cursor: pointer;
   white-space: nowrap;
+  transition: all 0.15s ease;
 }
 
 .step-btn:hover {
-  background: rgba(72, 219, 251, 0.25);
-  color: #48dbfb;
+  background: rgba(255, 255, 255, 0.16);
+  border-color: #ffffff;
+  color: #ffffff;
 }
 
 .quick-action-btn {
-  background: rgba(46, 213, 115, 0.12);
-  border: 1px solid rgba(46, 213, 115, 0.4);
-  color: #2ed573;
-  padding: 7px 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  color: #ffffff;
+  padding: 8px 10px;
   font-size: 10px;
+  font-weight: 600;
   font-family: 'IBM Plex Mono', monospace;
-  border-radius: 3px;
+  border-radius: 2px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   margin-top: 4px;
-  transition: all 0.2s;
+  transition: all 0.15s ease;
 }
 
 .quick-action-btn:hover {
-  background: rgba(46, 213, 115, 0.25);
-  box-shadow: 0 0 8px rgba(46, 213, 115, 0.3);
+  background: #ffffff;
+  color: #050506;
 }
 
 /* DELAY PRESETS */
@@ -298,39 +303,41 @@
 
 .delay-pill {
   flex: 1;
-  background: rgba(30, 45, 60, 0.4);
-  border: 1px solid rgba(80, 110, 130, 0.3);
-  color: #a4b0be;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.68);
   font-size: 9px;
-  padding: 5px;
+  padding: 6px 5px;
   border-radius: 2px;
   cursor: pointer;
   text-align: center;
   font-family: 'IBM Plex Mono', monospace;
+  transition: all 0.15s ease;
 }
 
 .delay-pill:hover {
-  background: rgba(50, 75, 100, 0.5);
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
 }
 
-.delay-pill.active {
-  background: rgba(255, 71, 87, 0.2);
-  border-color: #ff4757;
-  color: #ff6b81;
-}
-
+.delay-pill.active,
 .delay-pill.active-base {
-  background: rgba(46, 213, 115, 0.2);
-  border-color: #2ed573;
-  color: #2ed573;
+  background: #ffffff;
+  border-color: #ffffff;
+  color: #050506;
+  font-weight: 600;
 }
 
 /* THRESHOLDS SLIDERS */
 .tactical-slider {
   width: 100%;
-  accent-color: #48dbfb;
+  accent-color: #ffffff;
   cursor: pointer;
-  height: 4px;
+  height: 3px;
 }
 
 /* ==========================================================================
@@ -338,7 +345,7 @@
    ========================================================================== */
 .tactical-status-banner {
   padding: 12px 14px;
-  border-radius: 3px;
+  border-radius: 2px;
   margin-bottom: 12px;
   display: flex;
   align-items: flex-start;
@@ -347,33 +354,37 @@
 }
 
 .tactical-status-banner.status-green {
-  background: rgba(46, 213, 115, 0.12);
-  border: 1px solid rgba(46, 213, 115, 0.45);
-  color: #2ed573;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  color: #ffffff;
 }
 
 .tactical-status-banner.status-red {
-  background: rgba(255, 71, 87, 0.15);
-  border: 1px solid rgba(255, 71, 87, 0.55);
-  color: #ff6b81;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-left: 3px solid #ffffff;
+  color: #ffffff;
 }
 
 .status-icon {
   font-size: 16px;
   line-height: 1;
+  color: #ffffff;
+  margin-top: 1px;
 }
 
 .status-title {
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.6px;
   margin-bottom: 3px;
+  color: #ffffff;
 }
 
 .status-desc {
   font-size: 10px;
   line-height: 1.4;
-  color: #d2dae2;
+  color: rgba(255, 255, 255, 0.68);
 }
 
 .kpi-grid-tactical {
@@ -383,151 +394,109 @@
 }
 
 .kpi-cell {
-  background: #0b111a;
-  border: 1px solid rgba(80, 110, 130, 0.2);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   padding: 8px 10px;
-  border-radius: 3px;
+  border-radius: 2px;
 }
 
 .kpi-cell-label {
   font-size: 8px;
-  color: #718093;
+  color: rgba(255, 255, 255, 0.5);
   letter-spacing: 0.8px;
   font-family: 'IBM Plex Mono', monospace;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
 }
 
 .kpi-cell-value {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 16px;
   font-weight: 600;
-  color: #f1f2f6;
+  color: #ffffff;
   margin: 4px 0 2px;
 }
 
 .kpi-cell-sub {
   font-size: 9px;
   font-family: 'IBM Plex Mono', monospace;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
-.kpi-cell-sub.text-green { color: #2ed573; }
-.kpi-cell-sub.text-red { color: #ff4757; }
-.kpi-cell-sub.text-amber { color: #ffa502; }
+.kpi-cell-sub.text-green { color: rgba(255, 255, 255, 0.78); }
+.kpi-cell-sub.text-red { color: #ffffff; font-weight: 600; }
+.kpi-cell-sub.text-amber { color: rgba(255, 255, 255, 0.62); }
 
 /* ==========================================================================
-   3D VIEWPORT CONTAINER
+   3D VIEWPORT CONTAINER & MONOCHROME GLASS OVERLAYS
    ========================================================================== */
 .tactical-viewport-wrap {
   flex: 1;
   position: relative;
-  background: #020407;
+  background: #030304;
   overflow: hidden;
 }
 
-/* COMPASS HUD IN 3D */
-.tactical-compass-hud {
+/* COMPASS OVERLAY IN 3D */
+.tactical-compass {
   position: absolute;
   right: 18px;
-  bottom: 22px;
-  width: 90px;
-  height: 90px;
-  background: rgba(10, 18, 28, 0.85);
-  border: 1px solid rgba(80, 120, 160, 0.35);
-  border-radius: 50%;
+  bottom: 18px;
+  background: rgba(8, 8, 10, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 4px;
+  padding: 8px 10px;
   pointer-events: none;
-  z-index: 10;
+  z-index: 15;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(8px);
 }
 
-.compass-rose {
-  position: relative;
-  width: 58px;
-  height: 58px;
-  border: 1px dashed rgba(80, 120, 160, 0.4);
-  border-radius: 50%;
-}
-
-.compass-n, .compass-e, .compass-s, .compass-w {
-  position: absolute;
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 8px;
-  color: #747d8c;
-  font-weight: 600;
-}
-.compass-n { top: -2px; left: 50%; transform: translateX(-50%); color: #48dbfb; }
-.compass-s { bottom: -2px; left: 50%; transform: translateX(-50%); }
-.compass-e { right: -2px; top: 50%; transform: translateY(-50%); }
-.compass-w { left: -2px; top: 50%; transform: translateY(-50%); }
-
-.compass-needle-sun {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 2px;
-  height: 24px;
-  background: #ffd32a;
-  transform-origin: top center;
-  box-shadow: 0 0 6px #ffd32a;
-}
-
-.compass-needle-earth {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 2px;
-  height: 20px;
-  background: #00d2d3;
-  transform-origin: top center;
-  box-shadow: 0 0 6px #00d2d3;
-}
-
-.compass-legend {
+.compass-readout {
   display: flex;
-  gap: 6px;
-  font-size: 8px;
+  align-items: center;
+  gap: 10px;
   font-family: 'IBM Plex Mono', monospace;
-  margin-top: 3px;
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.75);
+  margin-top: 4px;
 }
-.compass-legend .c-sun { color: #ffd32a; }
-.compass-legend .c-earth { color: #00d2d3; }
 
 /* 3D TAGS OVERLAY */
 .tactical-lander-tag {
-  background: rgba(10, 18, 28, 0.9);
-  border-radius: 3px;
-  padding: 4px 8px;
+  background: rgba(6, 6, 8, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 2px;
+  padding: 5px 9px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   font-family: 'IBM Plex Mono', monospace;
   font-size: 9px;
   white-space: nowrap;
-  pointer-events: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(6px);
 }
 
 .tactical-lander-tag.tag-safe {
-  border: 1px solid #2ed573;
-  color: #2ed573;
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #ffffff;
 }
 .tactical-lander-tag.tag-safe .tag-dot {
-  background: #2ed573;
-  box-shadow: 0 0 6px #2ed573;
+  background: #ffffff;
 }
 
 .tactical-lander-tag.tag-hazard {
-  border: 1px solid #ff4757;
-  color: #ff6b81;
+  border-color: #ffffff;
+  color: #ffffff;
 }
 .tactical-lander-tag.tag-hazard .tag-dot {
-  background: #ff4757;
-  box-shadow: 0 0 6px #ff4757;
+  background: #ffffff;
+  border: 1px solid #000000;
 }
 
 .tag-dot {
@@ -537,31 +506,31 @@
 }
 
 .tag-text strong {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 5px;
   font-size: 9px;
-  color: #f1f2f6;
+  color: #ffffff;
 }
 .tag-text small {
   font-size: 8px;
-  color: #a4b0be;
+  color: rgba(255, 255, 255, 0.58);
 }
 
 .impact-beacon {
-  background: #ff3838;
-  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(8, 8, 10, 0.92);
+  border: 1px solid #ffffff;
+  color: #ffffff;
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 8px;
-  font-weight: 700;
-  padding: 2px 5px;
+  font-size: 9px;
+  font-weight: 600;
+  padding: 3px 7px;
   border-radius: 2px;
-  box-shadow: 0 0 10px #ff3838;
   white-space: nowrap;
-  animation: pulse-beacon 1s infinite;
-}
-
-@keyframes pulse-beacon {
-  0%, 100% { opacity: 0.8; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.15); }
+  backdrop-filter: blur(4px);
 }
 
 /* ==========================================================================
@@ -570,8 +539,8 @@
 .tactical-scrubber-bar {
   height: 78px;
   min-height: 78px;
-  background: #080d14;
-  border-top: 1px solid rgba(80, 110, 130, 0.25);
+  background: #08080a;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
   display: flex;
   flex-direction: column;
   padding: 6px 16px 8px;
@@ -589,7 +558,7 @@
   font-family: 'IBM Plex Mono', monospace;
   font-size: 9px;
   letter-spacing: 1px;
-  color: #747d8c;
+  color: rgba(255, 255, 255, 0.65);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -601,6 +570,7 @@
   gap: 14px;
   font-size: 9px;
   font-family: 'IBM Plex Mono', monospace;
+  color: rgba(255, 255, 255, 0.65);
 }
 
 .legend-item {
@@ -615,9 +585,9 @@
   border-radius: 1px;
 }
 
-.legend-color.sun { background: #ffd32a; }
-.legend-color.earth { background: #00d2d3; }
-.legend-color.hazard { background: #ff4757; }
+.legend-color.sun { background: #ffffff; }
+.legend-color.earth { background: rgba(255, 255, 255, 0.5); }
+.legend-color.hazard { background: rgba(255, 255, 255, 0.22); }
 
 .scrubber-timeline-wrap {
   position: relative;
@@ -655,7 +625,7 @@
   justify-content: space-between;
   font-family: 'IBM Plex Mono', monospace;
   font-size: 8px;
-  color: #57606f;
+  color: rgba(255, 255, 255, 0.38);
   pointer-events: none;
 }
 
@@ -663,25 +633,28 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 2px;
+  width: 1.5px;
   background: #ffffff;
-  box-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
   pointer-events: none;
   z-index: 2;
 }
 
 .scrubber-play-btn {
-  background: rgba(30, 45, 60, 0.5);
-  border: 1px solid rgba(80, 110, 130, 0.35);
-  color: #dcdde1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
   font-size: 10px;
   padding: 3px 8px;
   border-radius: 2px;
   cursor: pointer;
+  transition: all 0.15s ease;
 }
 .scrubber-play-btn:hover {
-  background: rgba(72, 219, 251, 0.25);
-  color: #48dbfb;
+  background: #ffffff;
+  color: #050506;
 }
 
 /* ==========================================================================

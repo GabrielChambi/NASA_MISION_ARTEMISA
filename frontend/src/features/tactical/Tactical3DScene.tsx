@@ -3,6 +3,16 @@ import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { Html, OrbitControls, Stars, Line } from '@react-three/drei'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import * as THREE from 'three'
+import {
+  Crosshair,
+  MapPin,
+  Lock,
+  Navigation,
+  AlertTriangle,
+  Check,
+  Sun,
+  Globe2,
+} from 'lucide-react'
 import type { AtlasData } from '../sites/atlasGeometry'
 import { buildAtlasGeometry } from '../sites/atlasGeometry'
 import {
@@ -187,40 +197,43 @@ export function Tactical3DScene(props: Tactical3DSceneProps) {
             alignItems: 'center',
             gap: 8,
             padding: '7px 13px',
-            borderRadius: 5,
+            borderRadius: 4,
             fontFamily: 'IBM Plex Mono, monospace',
             fontSize: 11,
             fontWeight: 600,
             letterSpacing: '0.04em',
             cursor: 'pointer',
-            border: props.placementMode ? '1px solid #ffd32a' : '1px solid rgba(72, 219, 251, 0.45)',
+            border: props.placementMode ? '1px solid #ffffff' : '1px solid rgba(255, 255, 255, 0.24)',
             background: props.placementMode
-              ? 'linear-gradient(90deg, rgba(255, 211, 42, 0.25), rgba(255, 159, 26, 0.18))'
-              : 'rgba(6, 14, 23, 0.86)',
-            color: props.placementMode ? '#ffd32a' : '#48dbfb',
-            boxShadow: props.placementMode ? '0 0 14px rgba(255, 211, 42, 0.35)' : '0 2px 10px rgba(0,0,0,0.6)',
+              ? 'rgba(255, 255, 255, 0.16)'
+              : 'rgba(8, 8, 10, 0.88)',
+            color: props.placementMode ? '#ffffff' : 'rgba(255, 255, 255, 0.82)',
+            backdropFilter: 'blur(8px)',
           }}
           title="Haz clic aquí para colocar el cohete haciendo clic en cualquier montaña o cráter lunar, o arrastra directamente el cohete sobre la superficie"
         >
-          <span>{props.placementMode ? '🎯 MODO UBICAR EN SUPERFICIE: ACTIVO (HAZ CLIC EN LA LUNA)' : '📍 UBICAR COHETE MANUALMENTE EN SUPERFICIE'}</span>
+          {props.placementMode ? <Crosshair size={13} /> : <MapPin size={13} />}
+          <span>{props.placementMode ? 'MODO UBICAR EN SUPERFICIE: ACTIVO (HAZ CLIC EN LA LUNA)' : 'UBICAR COHETE MANUALMENTE EN SUPERFICIE'}</span>
         </button>
 
         <div
           style={{
             padding: '6px 10px',
             borderRadius: 4,
-            background: 'rgba(5, 12, 20, 0.82)',
-            border: '1px solid rgba(46, 213, 115, 0.35)',
-            color: '#2ed573',
+            background: 'rgba(8, 8, 10, 0.85)',
+            border: '1px solid rgba(255, 255, 255, 0.18)',
+            color: 'rgba(255, 255, 255, 0.78)',
             fontFamily: 'IBM Plex Mono, monospace',
             fontSize: 10,
             display: 'flex',
             alignItems: 'center',
             gap: 6,
             pointerEvents: 'none',
+            backdropFilter: 'blur(8px)',
           }}
         >
-          <span>🔒 SUPERFICIE LOLA FIJADA (0.0 m SOBRE CORTEZA)</span>
+          <Lock size={11} />
+          <span>SUPERFICIE LOLA FIJADA (0.0 m SOBRE CORTEZA)</span>
         </div>
 
         {(props.placementMode || isDraggingRocket) && hoverSurface && (
@@ -228,26 +241,28 @@ export function Tactical3DScene(props: Tactical3DSceneProps) {
             style={{
               padding: '6px 12px',
               borderRadius: 4,
-              background: 'rgba(4, 10, 18, 0.92)',
-              border: `1px solid ${hoverSurface.slopeDeg <= props.maxSlopeDeg ? '#ffd32a' : '#ff4757'}`,
-              color: '#f1f2f6',
+              background: 'rgba(8, 8, 10, 0.92)',
+              border: `1px solid ${hoverSurface.slopeDeg <= props.maxSlopeDeg ? '#ffffff' : 'rgba(255, 255, 255, 0.45)'}`,
+              color: '#ffffff',
               fontFamily: 'IBM Plex Mono, monospace',
               fontSize: 10,
               display: 'flex',
               alignItems: 'center',
               gap: 10,
               pointerEvents: 'none',
+              backdropFilter: 'blur(8px)',
             }}
           >
-            <strong style={{ color: hoverSurface.slopeDeg <= props.maxSlopeDeg ? '#ffd32a' : '#ff4757' }}>
-              🎯 DESTINO:
+            <strong style={{ color: '#ffffff', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+              <Crosshair size={11} /> DESTINO:
             </strong>
-            <span>
+            <span style={{ color: 'rgba(255, 255, 255, 0.82)' }}>
               {Math.abs(hoverSurface.latDeg).toFixed(4)}°S / {hoverSurface.lonDeg.toFixed(4)}°E
             </span>
-            <span>Alt: {hoverSurface.elevationM} m</span>
-            <span>
-              Pendiente: {hoverSurface.slopeDeg}° {hoverSurface.slopeDeg <= props.maxSlopeDeg ? '✓' : '⚠️'}
+            <span style={{ color: 'rgba(255, 255, 255, 0.82)' }}>Alt: {hoverSurface.elevationM} m</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              Pendiente: {hoverSurface.slopeDeg}°{' '}
+              {hoverSurface.slopeDeg <= props.maxSlopeDeg ? <Check size={11} /> : <AlertTriangle size={11} />}
             </span>
           </div>
         )}
@@ -469,7 +484,7 @@ function SurfacePlacementReticle({
   isDragging?: boolean
 }) {
   const isSlopeSafe = hover.slopeDeg <= maxSlopeDeg
-  const color = isSlopeSafe ? '#ffd32a' : '#ff4757'
+  const color = isSlopeSafe ? '#ffffff' : '#a1a1aa'
 
   const alignQuat = useMemo(() => {
     const q = new THREE.Quaternion()
@@ -636,7 +651,9 @@ function LanderAndLinkedBodies({
           >
             <div className="tag-dot" />
             <div className="tag-text">
-              <strong>🚀 {siteName.toUpperCase()}</strong>
+              <strong style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                <Navigation size={11} /> {siteName.toUpperCase()}
+              </strong>
               <small>
                 {Math.abs(latDeg).toFixed(4)}°S / {lonDeg.toFixed(4)}°E · Alt: {Math.round(surfaceSample.elevationM)}m
               </small>
@@ -652,8 +669,8 @@ function LanderAndLinkedBodies({
         emitterWorld={emitterWorld}
         skyBodyWorld={sunSkyWorld}
         hitWorld={sunHitWorld}
-        clearColor="#ffd32a"
-        blockedColor="#ff3838"
+        clearColor="#ffffff"
+        blockedColor="#a1a1aa"
         isBlocked={isSunBlocked}
       />
 
@@ -671,8 +688,8 @@ function LanderAndLinkedBodies({
         emitterWorld={emitterWorld}
         skyBodyWorld={earthSkyWorld}
         hitWorld={earthHitWorld}
-        clearColor="#00d2d3"
-        blockedColor="#ff3838"
+        clearColor="#a3adc2"
+        blockedColor="#71717a"
         isBlocked={isEarthBlocked}
       />
 
@@ -697,7 +714,7 @@ function LunarRocketLanderModel({ isSafe, scale }: { isSafe: boolean; scale: num
       {/* Surface Contact Base Pad Ring at exact Y = 0.01 */}
       <mesh position={[0, 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[1.35, 1.55, 24]} />
-        <meshBasicMaterial color={isSafe ? '#2ed573' : '#ff4757'} transparent opacity={0.55} side={THREE.DoubleSide} />
+        <meshBasicMaterial color={isSafe ? '#ffffff' : '#a1a1aa'} transparent opacity={0.45} side={THREE.DoubleSide} />
       </mesh>
 
       {/* 4 Heavy Landing Gear Struts & Golden Footpads resting at exact Y = 0.00 */}
@@ -767,9 +784,9 @@ function LunarRocketLanderModel({ isSafe, scale }: { isSafe: boolean; scale: num
       {/* Top Vector Emitter Turret & High-Gain Dish (Y = 3.20 to 3.45) */}
       <mesh position={[0, 3.35, 0]}>
         <sphereGeometry args={[0.2, 14, 14]} />
-        <meshBasicMaterial color={isSafe ? '#2ed573' : '#ff4757'} />
+        <meshBasicMaterial color={isSafe ? '#ffffff' : '#d4d4d8'} />
       </mesh>
-      <pointLight position={[0, 3.4, 0]} color={isSafe ? '#2ed573' : '#ff4757'} intensity={1.8} distance={6} />
+      <pointLight position={[0, 3.4, 0]} color="#ffffff" intensity={1.4} distance={6} />
     </group>
   )
 }
@@ -783,17 +800,17 @@ function LandingEllipse({ isSafe, scale }: { isSafe: boolean; scale: number }) {
     }
   })
 
-  const color = isSafe ? '#2ed573' : '#ff4757'
+  const color = isSafe ? '#ffffff' : '#a1a1aa'
 
   return (
     <group position={[0, 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[scale, scale, scale]}>
       <mesh ref={ringRef} raycast={() => null}>
         <ringGeometry args={[2.1, 2.32, 40]} />
-        <meshBasicMaterial color={color} transparent opacity={0.82} side={THREE.DoubleSide} />
+        <meshBasicMaterial color={color} transparent opacity={0.68} side={THREE.DoubleSide} />
       </mesh>
       <mesh raycast={() => null}>
         <circleGeometry args={[2.1, 32]} />
-        <meshBasicMaterial color={color} transparent opacity={0.14} side={THREE.DoubleSide} />
+        <meshBasicMaterial color={color} transparent opacity={0.1} side={THREE.DoubleSide} />
       </mesh>
     </group>
   )
@@ -844,13 +861,15 @@ function LinkedSurvivalVector({
         {/* Collision beacon on the mountain ridge */}
         <group position={hitWorld}>
           <mesh>
-            <sphereGeometry args={[0.42, 16, 16]} />
-            <meshBasicMaterial color="#ff3838" />
+            <sphereGeometry args={[0.38, 16, 16]} />
+            <meshBasicMaterial color="#ffffff" />
           </mesh>
-          <pointLight color="#ff3838" intensity={3.5} distance={8} />
+          <pointLight color="#ffffff" intensity={2.0} distance={8} />
           <Html position={[0, 0.9, 0]} center distanceFactor={24} zIndexRange={[105, 0]}>
             <div className="impact-beacon">
-              <span>⚠️ IMPACTO EN MONTAÑA (BLOQUEO)</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                <AlertTriangle size={11} /> IMPACTO EN MONTAÑA (BLOQUEO)
+              </span>
             </div>
           </Html>
         </group>
@@ -891,16 +910,16 @@ function SunSkyBody({
       {/* Incandescent Solar Core */}
       <mesh>
         <sphereGeometry args={[14.5, 32, 32]} />
-        <meshBasicMaterial color={isBlocked ? '#ff7675' : '#fffdf2'} />
+        <meshBasicMaterial color={isBlocked ? '#d4d4d8' : '#fffdf2'} />
       </mesh>
 
-      {/* Golden Photosphere Halo */}
+      {/* Photosphere Halo */}
       <mesh scale={[1.28, 1.28, 1.28]}>
         <sphereGeometry args={[14.5, 28, 28]} />
         <meshBasicMaterial
-          color={isBlocked ? '#ff4757' : '#ffd32a'}
+          color={isBlocked ? '#a1a1aa' : '#ffd32a'}
           transparent
-          opacity={isBlocked ? 0.35 : 0.55}
+          opacity={isBlocked ? 0.28 : 0.55}
           side={THREE.BackSide}
         />
       </mesh>
@@ -909,9 +928,9 @@ function SunSkyBody({
       <sprite scale={[88, 88, 1]}>
         <spriteMaterial
           map={coronaTexture}
-          color={isBlocked ? '#ff6b81' : '#ffd32a'}
+          color={isBlocked ? '#a1a1aa' : '#ffd32a'}
           transparent
-          opacity={isBlocked ? 0.45 : 0.9}
+          opacity={isBlocked ? 0.35 : 0.9}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
         />
@@ -921,20 +940,26 @@ function SunSkyBody({
       <Html position={[0, 23, 0]} center distanceFactor={240} zIndexRange={[95, 0]}>
         <div
           style={{
-            background: 'rgba(10, 14, 22, 0.88)',
-            border: `1px solid ${isBlocked ? '#ff4757' : '#ffd32a'}`,
+            background: 'rgba(8, 8, 10, 0.92)',
+            border: `1px solid ${isBlocked ? 'rgba(255, 255, 255, 0.85)' : 'rgba(255, 255, 255, 0.45)'}`,
             borderRadius: 4,
-            padding: '3px 8px',
-            color: isBlocked ? '#ff6b81' : '#ffd32a',
+            padding: '4px 9px',
+            color: '#ffffff',
             fontFamily: 'IBM Plex Mono, monospace',
             fontSize: 10,
-            fontWeight: 700,
+            fontWeight: 600,
             whiteSpace: 'nowrap',
-            boxShadow: '0 0 12px rgba(255, 211, 42, 0.3)',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 5,
             pointerEvents: 'none',
+            backdropFilter: 'blur(6px)',
           }}
         >
-          ☀️ SOL {isBlocked ? '(OCULTO)' : '(CONECTADO)'} · El {elevationDeg.toFixed(2)}° | Az {azimuthDeg.toFixed(1)}°
+          <Sun size={11} />
+          <span>
+            SOL {isBlocked ? '(OCULTO)' : '(CONECTADO)'} · El {elevationDeg.toFixed(2)}° | Az {azimuthDeg.toFixed(1)}°
+          </span>
         </div>
       </Html>
     </group>
@@ -984,13 +1009,13 @@ function EarthSkyBody({
         />
       </mesh>
 
-      {/* Cyan Atmospheric Rim Glow */}
+      {/* Subtle White Atmospheric Rim Glow */}
       <mesh scale={[1.14, 1.14, 1.14]}>
         <sphereGeometry args={[12.5, 32, 32]} />
         <meshBasicMaterial
-          color={isBlocked ? '#ff4757' : '#00d2d3'}
+          color={isBlocked ? '#71717a' : '#cbd5e1'}
           transparent
-          opacity={0.32}
+          opacity={0.26}
           side={THREE.BackSide}
         />
       </mesh>
@@ -999,9 +1024,9 @@ function EarthSkyBody({
       <mesh rotation={[Math.PI / 2.4, 0.3, 0]}>
         <ringGeometry args={[15.8, 16.6, 48]} />
         <meshBasicMaterial
-          color={isBlocked ? '#ff4757' : '#00d2d3'}
+          color={isBlocked ? '#a1a1aa' : '#ffffff'}
           transparent
-          opacity={0.55}
+          opacity={0.42}
           side={THREE.DoubleSide}
         />
       </mesh>
@@ -1010,20 +1035,26 @@ function EarthSkyBody({
       <Html position={[0, 21, 0]} center distanceFactor={220} zIndexRange={[95, 0]}>
         <div
           style={{
-            background: 'rgba(6, 16, 26, 0.88)',
-            border: `1px solid ${isBlocked ? '#ff4757' : '#00d2d3'}`,
+            background: 'rgba(8, 8, 10, 0.92)',
+            border: `1px solid ${isBlocked ? 'rgba(255, 255, 255, 0.75)' : 'rgba(255, 255, 255, 0.35)'}`,
             borderRadius: 4,
-            padding: '3px 8px',
-            color: isBlocked ? '#ff6b81' : '#00d2d3',
+            padding: '4px 9px',
+            color: 'rgba(255, 255, 255, 0.88)',
             fontFamily: 'IBM Plex Mono, monospace',
             fontSize: 10,
-            fontWeight: 700,
+            fontWeight: 600,
             whiteSpace: 'nowrap',
-            boxShadow: '0 0 12px rgba(0, 210, 211, 0.3)',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 5,
             pointerEvents: 'none',
+            backdropFilter: 'blur(6px)',
           }}
         >
-          🌍 TIERRA {isBlocked ? '(BLOQUEADA)' : '(ENLACE ACTIVO)'} · El {elevationDeg.toFixed(2)}° | Az {azimuthDeg.toFixed(1)}°
+          <Globe2 size={11} />
+          <span>
+            TIERRA {isBlocked ? '(BLOQUEADA)' : '(ENLACE ACTIVO)'} · El {elevationDeg.toFixed(2)}° | Az {azimuthDeg.toFixed(1)}°
+          </span>
         </div>
       </Html>
     </group>
@@ -1170,37 +1201,41 @@ function CompassOverlay({
   const earthY = 36 + Math.sin(earthRad) * 20
 
   return (
-    <div className="tactical-compass" title="Orientación topocéntrica: Sol (Amarillo) / Tierra (Cian)">
+    <div className="tactical-compass" title="Orientación topocéntrica: Sol (Blanco) / Tierra (Gris claro)">
       <svg width="72" height="72" viewBox="0 0 72 72">
-        <circle cx="36" cy="36" r="32" fill="none" stroke="rgba(72, 219, 251, 0.25)" strokeWidth="1" />
-        <circle cx="36" cy="36" r="20" fill="none" stroke="rgba(72, 219, 251, 0.12)" strokeDasharray="2 2" />
-        <line x1="36" y1="4" x2="36" y2="68" stroke="rgba(255,255,255,0.1)" />
-        <line x1="4" y1="36" x2="68" y2="36" stroke="rgba(255,255,255,0.1)" />
+        <circle cx="36" cy="36" r="32" fill="none" stroke="rgba(255, 255, 255, 0.22)" strokeWidth="1" />
+        <circle cx="36" cy="36" r="20" fill="none" stroke="rgba(255, 255, 255, 0.1)" strokeDasharray="2 2" />
+        <line x1="36" y1="4" x2="36" y2="68" stroke="rgba(255,255,255,0.08)" />
+        <line x1="4" y1="36" x2="68" y2="36" stroke="rgba(255,255,255,0.08)" />
 
-        <text x="36" y="12" textAnchor="middle" fill="#48dbfb" fontSize="8" fontFamily="monospace" fontWeight="bold">
+        <text x="36" y="12" textAnchor="middle" fill="#ffffff" fontSize="8" fontFamily="monospace" fontWeight="bold">
           N
         </text>
-        <text x="63" y="39" textAnchor="middle" fill="#747d8c" fontSize="7" fontFamily="monospace">
+        <text x="63" y="39" textAnchor="middle" fill="rgba(255,255,255,0.45)" fontSize="7" fontFamily="monospace">
           E
         </text>
-        <text x="36" y="66" textAnchor="middle" fill="#747d8c" fontSize="7" fontFamily="monospace">
+        <text x="36" y="66" textAnchor="middle" fill="rgba(255,255,255,0.45)" fontSize="7" fontFamily="monospace">
           S
         </text>
-        <text x="9" y="39" textAnchor="middle" fill="#747d8c" fontSize="7" fontFamily="monospace">
+        <text x="9" y="39" textAnchor="middle" fill="rgba(255,255,255,0.45)" fontSize="7" fontFamily="monospace">
           W
         </text>
 
-        <line x1="36" y1="36" x2={sunX} y2={sunY} stroke="#ffd32a" strokeWidth="2" />
-        <circle cx={sunX} cy={sunY} r="3.5" fill="#ffd32a" />
+        <line x1="36" y1="36" x2={sunX} y2={sunY} stroke="#ffffff" strokeWidth="1.8" />
+        <circle cx={sunX} cy={sunY} r="3" fill="#ffffff" />
 
-        <line x1="36" y1="36" x2={earthX} y2={earthY} stroke="#00d2d3" strokeWidth="2" />
-        <circle cx={earthX} cy={earthY} r="3" fill="#00d2d3" />
+        <line x1="36" y1="36" x2={earthX} y2={earthY} stroke="rgba(255,255,255,0.5)" strokeWidth="1.6" />
+        <circle cx={earthX} cy={earthY} r="2.6" fill="rgba(255,255,255,0.65)" />
 
-        <circle cx="36" cy="36" r="2.5" fill="#ffffff" />
+        <circle cx="36" cy="36" r="2" fill="#ffffff" />
       </svg>
       <div className="compass-readout">
-        <span style={{ color: '#ffd32a' }}>☀ {sunAzimuthDeg.toFixed(0)}°</span>
-        <span style={{ color: '#00d2d3' }}>🌍 {earthAzimuthDeg.toFixed(0)}°</span>
+        <span style={{ color: '#ffffff', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+          <Sun size={10} /> {sunAzimuthDeg.toFixed(0)}°
+        </span>
+        <span style={{ color: 'rgba(255,255,255,0.62)', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+          <Globe2 size={10} /> {earthAzimuthDeg.toFixed(0)}°
+        </span>
       </div>
     </div>
   )

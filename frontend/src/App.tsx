@@ -1,4 +1,5 @@
 ﻿import { useState, lazy, Suspense } from 'react'
+import { ArrowLeft } from 'lucide-react'
 import TacticalSurvivalCockpit from './features/tactical/TacticalSurvivalCockpit'
 import { MissionProvider } from './features/mission/MissionContext'
 
@@ -10,7 +11,21 @@ export default function App() {
   if (showAdvanced) {
     return (
       <MissionProvider initialSiteId="site04">
-        <Suspense fallback={<div style={{ padding: 40, color: '#48dbfb', background: '#05090e', height: '100vh', fontFamily: 'monospace' }}>Cargando herramientas analíticas NASA…</div>}>
+        <Suspense
+          fallback={
+            <div
+              style={{
+                padding: 40,
+                color: '#ffffff',
+                background: '#050506',
+                height: '100vh',
+                fontFamily: 'IBM Plex Mono, monospace',
+              }}
+            >
+              Cargando herramientas analíticas NASA…
+            </div>
+          }
+        >
           <div style={{ position: 'relative' }}>
             <button
               onClick={() => setShowAdvanced(false)}
@@ -19,18 +34,22 @@ export default function App() {
                 top: 10,
                 right: 180,
                 zIndex: 9999,
-                background: '#48dbfb',
-                color: '#05090e',
-                border: 'none',
+                background: '#ffffff',
+                color: '#050506',
+                border: '1px solid rgba(255, 255, 255, 0.9)',
                 padding: '6px 12px',
-                borderRadius: 4,
-                fontFamily: 'monospace',
+                borderRadius: 3,
+                fontFamily: 'IBM Plex Mono, monospace',
                 fontSize: 11,
                 fontWeight: 600,
                 cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
               }}
             >
-              ◀ VOLVER AL PANEL TÁCTICO 3D
+              <ArrowLeft size={12} />
+              <span>VOLVER AL PANEL TÁCTICO 3D</span>
             </button>
             <MissionPlanner />
           </div>

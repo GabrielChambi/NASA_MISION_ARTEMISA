@@ -1,5 +1,8 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import {
+  AlertTriangle,
+  CheckCircle2,
+  Crosshair,
   Database,
   Globe2,
   Maximize2,
@@ -376,25 +379,41 @@ export default function TacticalSurvivalCockpit({ onOpenScientific }: { onOpenSc
             <div className="kpi-grid-tactical">
               <div className="kpi-cell">
                 <span className="kpi-cell-label">
-                  <Sun size={10} color="#ffd32a" /> ELEVACIÓN SOLAR
+                  <Sun size={10} color="#ffffff" /> ELEVACIÓN SOLAR
                 </span>
                 <div className="kpi-cell-value">
                   {currentEphem.sunElevationDeg.toFixed(2)}°
                 </div>
                 <div className={`kpi-cell-sub ${isSunOccluded ? 'text-red' : 'text-green'}`}>
-                  {isSunOccluded ? '● BLOQUEO ENERGÍA' : '● GENERANDO'}
+                  {isSunOccluded ? (
+                    <>
+                      <AlertTriangle size={10} /> BLOQUEO ENERGÍA
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 size={10} /> GENERANDO
+                    </>
+                  )}
                 </div>
               </div>
 
               <div className="kpi-cell">
                 <span className="kpi-cell-label">
-                  <Globe2 size={10} color="#00d2d3" /> LÍNEA A TIERRA
+                  <Globe2 size={10} color="rgba(255,255,255,0.75)" /> LÍNEA A TIERRA
                 </span>
                 <div className="kpi-cell-value">
                   {currentEphem.earthElevationDeg.toFixed(2)}°
                 </div>
                 <div className={`kpi-cell-sub ${isEarthBlocked ? 'text-red' : 'text-green'}`}>
-                  {isEarthBlocked ? '● CORTE SEÑAL' : '● ENLACE DIRECTO'}
+                  {isEarthBlocked ? (
+                    <>
+                      <AlertTriangle size={10} /> CORTE SEÑAL
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 size={10} /> ENLACE DIRECTO
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -404,7 +423,13 @@ export default function TacticalSurvivalCockpit({ onOpenScientific }: { onOpenSc
                   {timeToSunsetHours >= 336 ? '> 14 d' : `${timeToSunsetHours} h`}
                 </div>
                 <div className="kpi-cell-sub text-amber">
-                  {timeToSunsetHours <= 6 ? '⚠️ OCASO INMINENTE' : 'Luz continua'}
+                  {timeToSunsetHours <= 6 ? (
+                    <>
+                      <AlertTriangle size={10} /> OCASO INMINENTE
+                    </>
+                  ) : (
+                    'Luz continua'
+                  )}
                 </div>
               </div>
 
@@ -414,7 +439,13 @@ export default function TacticalSurvivalCockpit({ onOpenScientific }: { onOpenSc
                   {timeToEarthsetHours >= 336 ? '> 14 d' : `${timeToEarthsetHours} h`}
                 </div>
                 <div className="kpi-cell-sub text-amber">
-                  {timeToEarthsetHours <= 6 ? '⚠️ CORTE INMINENTE' : 'Enlace estable'}
+                  {timeToEarthsetHours <= 6 ? (
+                    <>
+                      <AlertTriangle size={10} /> CORTE INMINENTE
+                    </>
+                  ) : (
+                    'Enlace estable'
+                  )}
                 </div>
               </div>
 
@@ -422,7 +453,15 @@ export default function TacticalSurvivalCockpit({ onOpenScientific }: { onOpenSc
                 <span className="kpi-cell-label">PENDIENTE LOCAL (DESNIVEL)</span>
                 <div className="kpi-cell-value">{currentTerrain.slopeDeg}°</div>
                 <div className={`kpi-cell-sub ${isSlopeUnsafe ? 'text-red' : 'text-green'}`}>
-                  {isSlopeUnsafe ? `● RIESGO VUELCO (> ${maxSlopeDeg}°)` : `● ESTABLE (< ${maxSlopeDeg}°)`}
+                  {isSlopeUnsafe ? (
+                    <>
+                      <AlertTriangle size={10} /> RIESGO VUELCO (&gt; {maxSlopeDeg}°)
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 size={10} /> ESTABLE (&lt; {maxSlopeDeg}°)
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -436,7 +475,7 @@ export default function TacticalSurvivalCockpit({ onOpenScientific }: { onOpenSc
               <span className="block-title-text">
                 <span className="block-number">01</span> ESPACIO // COORDENADAS
               </span>
-              <MapPin size={12} color="#48dbfb" />
+              <MapPin size={12} color="rgba(255,255,255,0.65)" />
             </div>
 
             <div className="tactical-field-group">
@@ -526,26 +565,26 @@ export default function TacticalSurvivalCockpit({ onOpenScientific }: { onOpenSc
                 style={{
                   width: '100%',
                   marginTop: 6,
-                  padding: '7px 10px',
-                  borderRadius: 4,
+                  padding: '8px 10px',
+                  borderRadius: 2,
                   fontFamily: 'IBM Plex Mono, monospace',
                   fontSize: 10,
                   fontWeight: 600,
                   cursor: 'pointer',
-                  border: placementMode ? '1px solid #ffd32a' : '1px solid rgba(72, 219, 251, 0.35)',
-                  background: placementMode ? 'rgba(255, 211, 42, 0.18)' : 'rgba(72, 219, 251, 0.08)',
-                  color: placementMode ? '#ffd32a' : '#48dbfb',
+                  border: placementMode ? '1px solid #ffffff' : '1px solid rgba(255, 255, 255, 0.22)',
+                  background: placementMode ? '#ffffff' : 'rgba(255, 255, 255, 0.05)',
+                  color: placementMode ? '#050506' : '#ffffff',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 6,
                 }}
               >
-                <MapPin size={12} />
+                {placementMode ? <Crosshair size={12} /> : <MapPin size={12} />}
                 <span>
                   {placementMode
-                    ? '🎯 CLIC EN EL TERRENO 3D PARA UBICAR NAVE'
-                    : '📍 COLOCAR / ARRASTRAR NAVE EN SUPERFICIE'}
+                    ? 'CLIC EN EL TERRENO 3D PARA UBICAR NAVE'
+                    : 'COLOCAR / ARRASTRAR NAVE EN SUPERFICIE'}
                 </span>
               </button>
 
@@ -561,7 +600,7 @@ export default function TacticalSurvivalCockpit({ onOpenScientific }: { onOpenSc
                 </button>
               )}
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: '#747d8c', fontFamily: 'monospace', marginTop: 4 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: 'rgba(255,255,255,0.45)', fontFamily: 'monospace', marginTop: 4 }}>
                 <span>Elevación LOLA: {currentTerrain.elevationM} m (Fijo a superficie)</span>
                 <span>Pendiente: {currentTerrain.slopeDeg}°</span>
               </div>
@@ -576,7 +615,7 @@ export default function TacticalSurvivalCockpit({ onOpenScientific }: { onOpenSc
               <span className="block-title-text">
                 <span className="block-number">02</span> TIEMPO // CRONOGRAMA
               </span>
-              <Clock size={12} color="#48dbfb" />
+              <Clock size={12} color="rgba(255,255,255,0.65)" />
             </div>
 
             <div className="tactical-field-group">
@@ -611,7 +650,8 @@ export default function TacticalSurvivalCockpit({ onOpenScientific }: { onOpenSc
                   onClick={() => applyDelayScenario(6)}
                   title="Simula fallo de válvula: lanzamiento retrasado 6 días"
                 >
-                  +6D (20 NOV ⚠️)
+                  <AlertTriangle size={10} />
+                  <span>+6D (20 NOV)</span>
                 </button>
                 <button
                   className={`delay-pill ${delayDays === 12 ? 'active' : ''}`}
@@ -623,8 +663,9 @@ export default function TacticalSurvivalCockpit({ onOpenScientific }: { onOpenSc
               </div>
 
               {delayDays === 6 && (
-                <div style={{ fontSize: 9, color: '#ff6b81', fontFamily: 'monospace', marginTop: 4, lineHeight: 1.4 }}>
-                  ⚠️ RETRASO DE 6 DÍAS APLICADO: El Sol cambia de azimut y choca con el macizo montañoso.
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, fontSize: 9, color: 'rgba(255,255,255,0.75)', fontFamily: 'monospace', marginTop: 4, lineHeight: 1.4 }}>
+                  <AlertTriangle size={12} style={{ flexShrink: 0, marginTop: 1 }} />
+                  <span>RETRASO DE 6 DÍAS APLICADO: El Sol cambia de azimut y choca con el macizo montañoso.</span>
                 </div>
               )}
             </div>
@@ -638,7 +679,7 @@ export default function TacticalSurvivalCockpit({ onOpenScientific }: { onOpenSc
               <span className="block-title-text">
                 <span className="block-number">03</span> UMBRALES DE HARDWARE
               </span>
-              <Layers size={12} color="#48dbfb" />
+              <Layers size={12} color="rgba(255,255,255,0.65)" />
             </div>
 
             <div className="tactical-field-group">
@@ -655,7 +696,7 @@ export default function TacticalSurvivalCockpit({ onOpenScientific }: { onOpenSc
                 value={minSolarElevation}
                 onChange={e => setMinSolarElevation(Number(e.target.value))}
               />
-              <span style={{ fontSize: 9, color: '#747d8c' }}>
+              <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.42)' }}>
                 Paneles solares pierden capacidad de recarga por debajo de este ángulo.
               </span>
 
@@ -672,7 +713,7 @@ export default function TacticalSurvivalCockpit({ onOpenScientific }: { onOpenSc
                 value={maxSlopeDeg}
                 onChange={e => setMaxSlopeDeg(Number(e.target.value))}
               />
-              <span style={{ fontSize: 9, color: '#747d8c' }}>
+              <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.42)' }}>
                 Superar este límite genera riesgo de volcado del módulo al contacto.
               </span>
             </div>
@@ -751,8 +792,8 @@ export default function TacticalSurvivalCockpit({ onOpenScientific }: { onOpenSc
                 })
                 .join(' ')}
               fill="none"
-              stroke="#ffd32a"
-              strokeWidth="1.8"
+              stroke="#ffffff"
+              strokeWidth="1.6"
             />
 
             {/* Earth Elevation Path */}
@@ -765,8 +806,8 @@ export default function TacticalSurvivalCockpit({ onOpenScientific }: { onOpenSc
                 })
                 .join(' ')}
               fill="none"
-              stroke="#00d2d3"
-              strokeWidth="1.4"
+              stroke="rgba(255, 255, 255, 0.5)"
+              strokeWidth="1.3"
               strokeDasharray="4 2"
             />
 
@@ -782,7 +823,7 @@ export default function TacticalSurvivalCockpit({ onOpenScientific }: { onOpenSc
                   y="0"
                   width={w}
                   height="36"
-                  fill="rgba(255, 71, 87, 0.22)"
+                  fill="rgba(255, 255, 255, 0.14)"
                 />
               )
             })}
