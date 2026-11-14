@@ -23,11 +23,12 @@ export function validateQuery(url, catalog) {
   if (!['flat', 'terrain'].includes(mode)) throw new ScienceError('horizon_mode must be flat or terrain.')
   const site = catalog.sites.find(s => s.id === siteId)
   if (!site) throw new ScienceError('Unknown site_id. Use site01 or site04.')
-  return { site, start, end, step, height, mode, target: url.pathname === '/api/earth' ? 399 : 10 }
+  return { site, start, end, step, height, mode, target: url.pathname === '/api/earth' ? 399 : 10, includeRange:p.get('include_range')==='true' }
 }
 
 export function queryParameters(q) {
   const values = { COMMAND: String(q.target), MAKE_EPHEM: 'YES', OBJ_DATA: 'NO', EPHEM_TYPE: 'OBSERVER', CENTER: 'coord@301', COORD_TYPE: 'GEODETIC', SITE_COORD: `${q.site.longitude_deg},${q.site.latitude_deg},${((q.site.elevation_m + q.height) / 1000).toFixed(9)}`, START_TIME: iso(q.start).slice(0, 19).replace('T', ' '), STOP_TIME: iso(q.end).slice(0, 19).replace('T', ' '), STEP_SIZE: `${q.step} m`, QUANTITIES: '4', TIME_TYPE: 'UT', TIME_DIGITS: 'SECONDS', CSV_FORMAT: 'YES', ANG_FORMAT: 'DEG', APPARENT: 'AIRLESS', CAL_TYPE: 'GREGORIAN' }
+  if(q.includeRange) values.QUANTITIES='4,20'
   return { format: 'json', ...Object.fromEntries(Object.entries(values).map(([k, v]) => [k, `'${v}'`])) }
 }
 
@@ -43,7 +44,9 @@ export function parseHorizons(text, q) {
     const t = `${date[1]}-${String(month).padStart(2, '0')}-${date[3]}T${date[4]}Z`
     const az = Number(row[3]), el = Number(row[4])
     if (!month || !Number.isFinite(az) || az < 0 || az > 360 || !Number.isFinite(el) || el < -90 || el > 90 || !Number.isFinite(Date.parse(t))) throw new ScienceError('Invalid JPL time or angular value.', 503)
-    return { t_utc: t, azimuth_deg: az % 360, elevation_deg: el }
+    const sample={ t_utc: t, azimuth_deg: az % 360, elevation_deg: el }
+    if(q.includeRange){const distance=Number(row[5]),rate=Number(row[6]);if(!row[5]||!row[6]||!Number.isFinite(distance)||distance<=0||!Number.isFinite(rate))throw new ScienceError('JPL range data are missing or invalid.',503);sample.range_km=distance*149597870.7;sample.range_rate_km_s=rate}
+    return sample
   })
   if (samples.length !== (q.end - q.start) / (q.step * 60000) + 1 || samples.some((s, i) => s.t_utc !== iso(q.start + i * q.step * 60000))) throw new ScienceError('JPL timestamps do not match the complete requested UTC grid.', 503)
   return samples

@@ -42,7 +42,25 @@ async def get_earth_ephemeris(
     clearance_deg: float = Query(default=0.0, description="Antenna clearance angle in degrees"),
     delay_hours: float = Query(default=0.0, description="Scenario launch delay in hours (0-24)"),
     observer_height_m: float = Query(default=1.0, description="Observer height above surface in meters"),
+    canonical: bool = Query(default=False, description="Shared exact-query pipeline for atlas geometry"),
 ):
+    if canonical:
+        try:
+            if not 0 <= delay_hours <= 24 or not 0 <= clearance_deg <= 15:
+                raise ValueError('Delay or clearance is outside the supported range.')
+            start = datetime.fromisoformat(start_utc.replace('Z', '+00:00')) + timedelta(hours=delay_hours)
+            end = datetime.fromisoformat(end_utc.replace('Z', '+00:00')) + timedelta(hours=delay_hours)
+            base = await solar_result(site_id, start.isoformat(), end.isoformat(), step_minutes, horizon_mode, observer_height_m, target=399)
+            if clearance_deg:
+                from ..solar.windows import visibility_metrics
+                for sample in base['samples']:
+                    sample['visible'] = sample['elevation_deg'] > sample['horizon_deg'] + clearance_deg
+                base['windows'], metrics = visibility_metrics(base['samples'], base['meta']['end_utc'])
+                base['summary'] = {key.replace('sun_visible', 'earth_visible').replace('longest_dark_gap', 'longest_hidden_gap'): value for key, value in metrics.items()}
+                base['meta']['clearance_deg'] = clearance_deg
+            return base
+        except ValueError as exc:
+            return JSONResponse(status_code=422, content={'status':'unavailable','message':str(exc),'samples':[],'windows':[],'summary':None})
     if delay_hours < 0.0 or delay_hours > 24.0:
         return JSONResponse(
             status_code=422,

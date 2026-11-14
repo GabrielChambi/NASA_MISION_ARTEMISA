@@ -10,6 +10,23 @@ El repositorio contiene el frontend, backend Python, adaptador para publicación
 
 ![Mission Control 3D](docs/images/mission-control-3d.png)
 
+## Nuevo atlas regional NASA
+
+Desde la pantalla de inicio, pulsar **Explore NASA data** → **Lunar explorer**. La vista principal ahora muestra el polo sur en 3D, construido desde el DEM regional LOLA: cráteres con nombres oficiales IAU/USGS, colores de elevación, rotación, zoom, perspectiva/polo/acercamiento, selección de Site01/Site04 y línea temporal del Sol y la Tierra con resultados reales.
+
+![Atlas regional del polo sur](docs/images/polar-atlas.png)
+
+La malla es una versión ligera del raster de 80 m (791 m por vértice en escritorio); la exageración vertical se indica y puede ponerse en 1×. Los cálculos de ventanas mantienen sus DEM y perfiles científicos separados. [Método, procedencia y límites del atlas](docs/science/polar_atlas.md).
+
+Para regenerar el atlas y los datos de compatibilidad de los módulos nuevos de main:
+
+```powershell
+api/.venv/Scripts/python.exe api/scripts/prepare_polar_atlas.py
+api/.venv/Scripts/python.exe api/scripts/prepare_hosted_mission.py
+```
+
+Validación adicional (servidores activos): `node frontend/scripts/verify-atlas.mjs`. La rama main descargada incorpora también EarthMissionSuite, Site Comparison y Mission Resilience Lab; el paquete de producción incluye la compatibilidad POST necesaria para esos módulos.
+
 ## Qué funciona
 
 - **Mission Control 3D:** cohete y plataforma construidos con geometría, ignición, ascenso, viaje Tierra–Luna, descenso y aterrizaje. La región seleccionada determina el destino y su malla usa el DEM NASA preparado. Tierra y Luna tienen texturas oficiales con procedencia en [ASSET_CREDITS.md](frontend/src/components/scene/ASSET_CREDITS.md).

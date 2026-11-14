@@ -35,7 +35,7 @@ export function solarQuery(siteId: string, mission: MissionParameters) {
 }
 
 export async function fetchSolar(siteId: string, mission: MissionParameters, signal: AbortSignal, target: 'solar' | 'earth' = 'solar') {
-  const data = await getJson<SolarResult>(solarQuery(siteId, mission).replace('/api/solar?', `/api/${target}?`), signal)
+  const data = await getJson<SolarResult>(solarQuery(siteId, mission).replace('/api/solar?', `/api/${target}?`) + (target === 'earth' ? '&canonical=true' : ''), signal)
   if (data.status !== 'ok' || !data.samples?.length || data.samples.some(s => !Number.isFinite(s.azimuth_deg) || !Number.isFinite(s.elevation_deg))) {
     throw new ScientificApiError('The API did not return a complete, validated ephemeris.', 502)
   }

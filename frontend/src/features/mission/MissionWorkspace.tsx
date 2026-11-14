@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, ArrowRight, Check, ChevronDown, Compass, Database, ExternalLink, Globe2, LoaderCircle, MapPin, Moon, RefreshCw, Rocket, ShieldCheck, SlidersHorizontal, Sun, TriangleAlert, X } from 'lucide-react'
 import { MissionProvider, useMission } from './MissionContext'
 import { LunarMap2D } from '../sites/LunarMap2D'
@@ -9,11 +9,13 @@ import { EarthMissionSuite } from '../earth/EarthMissionSuite'
 import type { LunarSite, SolarResult, WorkspaceView } from './types'
 import './workspace.css'
 
+const PolarTerrainAtlas = lazy(() => import('../sites/PolarTerrainAtlas'))
+
 type Props = { initialSiteId: string; onSelectSite?: (siteId: string) => void; onClose?: () => void }
 const tabs: { id: WorkspaceView; label: string; icon: typeof Compass }[] = [
   { id: 'explorer', label: 'Lunar explorer', icon: Compass }, { id: 'solar', label: 'Solar observatory', icon: Sun }, { id: 'earth', label: 'Earth visibility', icon: Globe2 }, { id: 'compare', label: 'Compare sites', icon: SlidersHorizontal }, { id: 'evidence', label: 'Scientific evidence', icon: Database },
 ]
-const names = { explorer: 'Choose your lunar horizon.', solar: 'Find your window of light.', earth: 'A line of sight to home.', compare: 'Same mission. Two perspectives.', evidence: 'Every result has a source.' }
+const names = { explorer: 'Explore the lunar south pole.', solar: 'Find your window of light.', earth: 'A line of sight to home.', compare: 'Same mission. Two perspectives.', evidence: 'Every result has a source.' }
 const descriptions = { explorer: 'Explore the south pole. Select a study region, then investigate the conditions of your mission.', solar: 'Solar geometry from JPL Horizons, evaluated against an explicitly selected horizon.', earth: 'Understand which evidence is needed before a geometric view of Earth becomes a visibility result.', compare: 'Compare solar visibility with identical dates, observer height and horizon assumptions.', evidence: 'Follow the data from its NASA source to the calculation, with its limitations in view.' }
 type Acquisition = { url: string; status: string; resolution_m?: number; retrieved_at?: string; point_value?: number }
 const datasetProducts = [
@@ -93,10 +95,12 @@ function WorkspaceContent({ onSelectSite, onClose }: Props) {
   function updateDate(field: 'startUtc' | 'endUtc', value: string) {
     if (value && Number.isFinite(Date.parse(value + 'Z'))) updateMission({ [field]: new Date(value + 'Z').toISOString() })
   }
-  return <section className="science-workspace" aria-label="Lunar scientific workspace">
+  return <section className={`science-workspace ${view === 'explorer' ? 'science-explorer-active' : ''}`} aria-label="Lunar scientific workspace">
     <div className="science-workspace-top"><div className="science-workspace-brand"><Moon size={22} /><span>LUNAR ORACLE<small>SCIENCE OPERATIONS</small></span></div><span className="science-authentic-badge"><Database size={11} />NASA SOURCE DATA</span>{onClose && <button className="science-return" onClick={onClose}><ArrowLeft size={14} /><span>Return to launch</span><X size={14} /></button>}</div>
     <nav className="science-tabs" aria-label="Science modules">{tabs.map(tab => <button key={tab.id} className={view === tab.id ? 'active' : ''} aria-pressed={view === tab.id} onClick={() => setView(tab.id)}><tab.icon size={16} /><span>{tab.label}</span>{view === tab.id && <i />}</button>)}</nav>
     <div className="science-workspace-body"><header className="science-page-heading"><div><span className="science-eyebrow">MISSION PLANNING / LUNAR SOUTH POLE</span><h2>{names[view]}</h2><p>{descriptions[view]}</p></div><div className="science-coordinate-pill"><MapPin size={14} /><span>{selectedSite ? selectedSite.name : 'SELECT A STUDY REGION'}<small>{selectedSite ? `${selectedSite.latitude_deg.toFixed(5)}° / ${((selectedSite.longitude_deg + 360) % 360).toFixed(5)}° E` : 'Coordinates from the NASA catalog'}</small></span></div></header>
+
+      {view === 'explorer' && <Suspense fallback={<div className="science-loading" role="status">Opening NASA polar terrain…</div>}><PolarTerrainAtlas sites={sites} selectedSiteId={mission.siteIds[0]} onSelectSite={selectSite} solarResult={loading || dataError ? undefined : primary} onOpenSolar={() => setView('solar')} /></Suspense>}
 
       <div className="science-controls" aria-label="Shared mission parameters"><label><span>PRIMARY STUDY REGION</span><div className="science-select-wrap"><select aria-label="Primary study region" value={mission.siteIds[0]} disabled={!sites.length} onChange={e => selectSite(e.target.value)}>{sites.length ? sites.map(site => <option key={site.id} value={site.id}>{site.name}</option>) : <option value={mission.siteIds[0]}>Loading NASA catalog…</option>}</select><ChevronDown size={12} /></div></label><label><span>START / UTC</span><input type="datetime-local" aria-label="Start date UTC" value={utcInput(mission.startUtc)} onChange={e => updateDate('startUtc', e.target.value)} /></label><label><span>END / UTC</span><input type="datetime-local" aria-label="End date UTC" value={utcInput(mission.endUtc)} onChange={e => updateDate('endUtc', e.target.value)} /></label><label><span>SAMPLING</span><div className="science-select-wrap"><select aria-label="Sampling interval" value={mission.stepMinutes} onChange={e => updateMission({ stepMinutes: Number(e.target.value) })}>{[15, 30, 60, 120].map(step => <option key={step} value={step}>{step} min</option>)}</select><ChevronDown size={12} /></div></label><label><span>HORIZON MODEL</span><div className="science-select-wrap"><select aria-label="Horizon model" value={mission.horizonMode} onChange={e => updateMission({ horizonMode: e.target.value as 'flat' | 'terrain' })}><option value="flat">Flat · 0° approximation</option><option value="terrain">Local terrain · LOLA</option></select><ChevronDown size={12} /></div></label><button className="science-refresh" aria-label="Refresh scientific data" title="Refresh scientific data" onClick={() => setRevision(v => v + 1)}><RefreshCw size={15} className={loading ? 'spinning' : ''} /></button></div>
 

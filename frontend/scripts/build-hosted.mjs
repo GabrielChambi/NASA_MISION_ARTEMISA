@@ -29,9 +29,12 @@ await mkdir(path.join(root, '.generated'), { recursive: true })
 const entry = path.join(root, '.generated/hosted-entry.mjs')
 const resources = { sites, datasets, horizon, terrain, ephemeris, methodology }
 await writeFile(entry, `import {createScienceApi} from '../worker/science.mjs';
-const api=createScienceApi(${JSON.stringify(resources)});
+import {createMissionApi} from '../worker/mission.mjs';
+const resources=${JSON.stringify(resources)};
+const api=createScienceApi(resources);
+const mission=createMissionApi(resources,api);
 const assets=${JSON.stringify(assets)};
-export default {async fetch(request,env,ctx){const url=new URL(request.url);if(url.pathname.startsWith('/api/'))return api(request,ctx);if(!['GET','HEAD'].includes(request.method))return new Response('Method not allowed',{status:405});const asset=assets[url.pathname]||(url.pathname.includes('.')?null:assets['/index.html']);if(!asset)return new Response('Not found',{status:404});const bytes=Uint8Array.from(atob(asset.base64),v=>v.charCodeAt(0));return new Response(request.method==='HEAD'?null:bytes,{headers:{'Content-Type':asset.mime,'Cache-Control':url.pathname.startsWith('/assets/')?'public,max-age=31536000,immutable':'private,max-age=60','X-Content-Type-Options':'nosniff'}})}};`)
+export default {async fetch(request,env,ctx){const url=new URL(request.url);if(url.pathname.startsWith('/api/'))return (await mission(request,ctx))??api(request,ctx);if(!['GET','HEAD'].includes(request.method))return new Response('Method not allowed',{status:405});const asset=assets[url.pathname]||(url.pathname.includes('.')?null:assets['/index.html']);if(!asset)return new Response('Not found',{status:404});const bytes=Uint8Array.from(atob(asset.base64),v=>v.charCodeAt(0));return new Response(request.method==='HEAD'?null:bytes,{headers:{'Content-Type':asset.mime,'Cache-Control':url.pathname.startsWith('/assets/')?'public,max-age=31536000,immutable':'private,max-age=60','X-Content-Type-Options':'nosniff'}})}};`)
 await mkdir(path.join(root, 'dist/server'), { recursive: true })
 await build({ entryPoints: [entry], outfile: path.join(root, 'dist/server/index.js'), bundle: true, format: 'esm', platform: 'browser', target: 'es2022', minify: true })
 console.log(`Hosted Worker built with ${Object.keys(assets).length} local assets, ${ephemeris.length} traceable JPL records and ${datasets.datasets.length} NASA datasets.`)

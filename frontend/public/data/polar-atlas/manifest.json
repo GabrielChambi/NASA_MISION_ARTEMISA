@@ -1,0 +1,282 @@
+{
+  "version": 1,
+  "title": "Lunar south pole · NASA LOLA regional terrain",
+  "source_url": "https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/LDEM_80S_80MPP_ADJ.TIF",
+  "source_product": "LDEM_80S_80MPP_ADJ.TIF",
+  "source_resolution_m": 80,
+  "source_sha256": "82030dcbdd7c4bb0c7d858e9b4b293b9f2cda5a543ba31ec0f42784bd6beee5a",
+  "source_width": 7600,
+  "source_height": 7600,
+  "crs_wkt": "PROJCS[\"Moon (2015) - Sphere / Ocentric / South Polar\",GEOGCS[\"Moon (2015) - Sphere / Ocentric\",DATUM[\"Moon (2015) - Sphere\",SPHEROID[\"Moon (2015) - Sphere\",1737400,0]],PRIMEM[\"Reference Meridian\",0],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]]],PROJECTION[\"Polar_Stereographic\"],PARAMETER[\"latitude_of_origin\",-90],PARAMETER[\"central_meridian\",0],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1],AXIS[\"Easting\",NORTH],AXIS[\"Northing\",NORTH]]",
+  "radius_m": 1737400.0,
+  "extent_m": {
+    "xmin": -304000.0,
+    "ymin": -304000.0,
+    "xmax": 304000.0,
+    "ymax": 304000.0
+  },
+  "grid_size": 769,
+  "display_spacing_m": 790.6371911573472,
+  "sample_extent_m": {
+    "xmin": -303604.68140442134,
+    "ymin": -303604.68140442134,
+    "xmax": 303604.68140442134,
+    "ymax": 303604.68140442134
+  },
+  "scale_m": 0.5,
+  "offset_m": -16000.0,
+  "nodata": 65535,
+  "data_url": "/data/polar-atlas/south-pole-height.u16",
+  "byte_order": "little-endian",
+  "height_sha256": "a15d7f42536183db759bde24c131bf2a6c97104269c584cb68d14e35cc776900",
+  "valid_vertices": 464021,
+  "min_elevation_m": -6661.11,
+  "max_elevation_m": 6994.42,
+  "features": [
+    {
+      "name": "Shackleton",
+      "latitude_deg": -89.67,
+      "longitude_east_deg": 129.78,
+      "x_m": 7690.244,
+      "y_m": -6402.723,
+      "elevation_m": -2787.29,
+      "source_url": "https://planetarynames.wr.usgs.gov/Feature/5450"
+    },
+    {
+      "name": "Shoemaker",
+      "latitude_deg": -88.137,
+      "longitude_east_deg": 45.911,
+      "x_m": 40579.802,
+      "y_m": 39309.459,
+      "elevation_m": -3940.1,
+      "source_url": "https://planetarynames.wr.usgs.gov/Feature/5494"
+    },
+    {
+      "name": "Haworth",
+      "latitude_deg": -87.45,
+      "longitude_east_deg": 354.83000000000004,
+      "x_m": -6968.952,
+      "y_m": 77022.68,
+      "elevation_m": -3309.21,
+      "source_url": "https://planetarynames.wr.usgs.gov/Feature/14502"
+    },
+    {
+      "name": "de Gerlache",
+      "latitude_deg": -88.4849,
+      "longitude_east_deg": 271.6553,
+      "x_m": -45926.413,
+      "y_m": 1327.203,
+      "elevation_m": -1201.07,
+      "source_url": "https://planetarynames.wr.usgs.gov/Feature/1439"
+    },
+    {
+      "name": "Faustini",
+      "latitude_deg": -87.1832,
+      "longitude_east_deg": 84.3099,
+      "x_m": 85011.073,
+      "y_m": 8470.398,
+      "elevation_m": -2748.61,
+      "source_url": "https://planetarynames.wr.usgs.gov/Feature/1919"
+    },
+    {
+      "name": "Sverdrup",
+      "latitude_deg": -88.3209,
+      "longitude_east_deg": 206.6125,
+      "x_m": -22809.638,
+      "y_m": -45524.985,
+      "elevation_m": -2890.37,
+      "source_url": "https://planetarynames.wr.usgs.gov/Feature/5782"
+    },
+    {
+      "name": "Nobile",
+      "latitude_deg": -85.2752,
+      "longitude_east_deg": 53.2725,
+      "x_m": 114895.82,
+      "y_m": 85726.52,
+      "elevation_m": 899.4,
+      "source_url": "https://planetarynames.wr.usgs.gov/Feature/4321"
+    },
+    {
+      "name": "Amundsen",
+      "latitude_deg": -84.4398,
+      "longitude_east_deg": 83.0691,
+      "x_m": 167503.28,
+      "y_m": 20361.789,
+      "elevation_m": -3569.55,
+      "source_url": "https://planetarynames.wr.usgs.gov/Feature/247"
+    },
+    {
+      "name": "Cabeus",
+      "latitude_deg": -85.3303,
+      "longitude_east_deg": 317.8673,
+      "x_m": -95045.611,
+      "y_m": 105068.452,
+      "elevation_m": -3723.83,
+      "source_url": "https://planetarynames.wr.usgs.gov/Feature/953"
+    },
+    {
+      "name": "Malapert",
+      "latitude_deg": -84.9998,
+      "longitude_east_deg": 11.4031,
+      "x_m": 29996.445,
+      "y_m": 148724.258,
+      "elevation_m": -2165.85,
+      "source_url": "https://planetarynames.wr.usgs.gov/Feature/3603"
+    },
+    {
+      "name": "Mons Mouton",
+      "latitude_deg": -84.6,
+      "longitude_east_deg": 31.0,
+      "x_m": 84397.954,
+      "y_m": 140461.784,
+      "elevation_m": 5039.16,
+      "source_url": "https://planetarynames.wr.usgs.gov/Feature/16070"
+    },
+    {
+      "name": "Wiechert",
+      "latitude_deg": -84.0334,
+      "longitude_east_deg": 164.701,
+      "x_m": 47781.982,
+      "y_m": -174673.487,
+      "elevation_m": -2933.13,
+      "source_url": "https://planetarynames.wr.usgs.gov/Feature/6541"
+    },
+    {
+      "name": "Nefed'ev",
+      "latitude_deg": -81.0719,
+      "longitude_east_deg": 135.7723,
+      "x_m": 189220.286,
+      "y_m": -194391.368,
+      "elevation_m": -4698.87,
+      "source_url": "https://planetarynames.wr.usgs.gov/Feature/14538"
+    },
+    {
+      "name": "Idel'son",
+      "latitude_deg": -81.3478,
+      "longitude_east_deg": 112.6939,
+      "x_m": 242512.304,
+      "y_m": -101414.759,
+      "elevation_m": -4176.02,
+      "source_url": "https://planetarynames.wr.usgs.gov/Feature/2650"
+    },
+    {
+      "name": "Scott",
+      "latitude_deg": -82.3532,
+      "longitude_east_deg": 48.5154,
+      "x_m": 173964.893,
+      "y_m": 153827.798,
+      "elevation_m": -3820.01,
+      "source_url": "https://planetarynames.wr.usgs.gov/Feature/5395"
+    },
+    {
+      "name": "Hédervári",
+      "latitude_deg": -81.7719,
+      "longitude_east_deg": 85.6005,
+      "x_m": 249196.793,
+      "y_m": 19172.461,
+      "elevation_m": -528.3,
+      "source_url": "https://planetarynames.wr.usgs.gov/Feature/2620"
+    },
+    {
+      "name": "Cabeus A",
+      "latitude_deg": -82.077,
+      "longitude_east_deg": 319.7597,
+      "x_m": -155449.259,
+      "y_m": 183687.132,
+      "elevation_m": -3266.03,
+      "source_url": "https://planetarynames.wr.usgs.gov/Feature/8057"
+    },
+    {
+      "name": "Slater",
+      "latitude_deg": -88.0792,
+      "longitude_east_deg": 111.2881,
+      "x_m": 54275.917,
+      "y_m": -21148.311,
+      "elevation_m": -1745.48,
+      "source_url": "https://planetarynames.wr.usgs.gov/Feature/15325"
+    }
+  ],
+  "sites": [
+    {
+      "id": "site01",
+      "name": "Connecting ridge",
+      "latitude_deg": -89.46315776,
+      "longitude_deg": -137.50198491,
+      "elevation_m": 1944.767,
+      "dem_coverage": "verified",
+      "coordinate_quality": "NASA DEM reference pixel, not an approved landing site",
+      "reference_frame": "MOON_ME / DE421",
+      "radius_m": 1737400.0,
+      "source_url": "https://pgda.gsfc.nasa.gov/products/78",
+      "products": {
+        "elevation": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Site01_final_adj_5mpp_surf.tif",
+        "slope": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Site01_final_adj_5mpp_slp.tif",
+        "uncertainty": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Site01_final_adj_5mpp_toterr.tif"
+      },
+      "point_pixel": {
+        "row": 1600,
+        "col": 1600,
+        "x_m": -10997.5,
+        "y_m": -12002.5
+      },
+      "dem_bounds_m": [
+        -19000.0,
+        -20000.0,
+        -3000.0,
+        -4000.0
+      ],
+      "dem_resolution_m": 5,
+      "slope_deg": 3.7994,
+      "height_uncertainty_m": 0.1936,
+      "atlas_x_m": -10997.5,
+      "atlas_y_m": -12002.5
+    },
+    {
+      "id": "site04",
+      "name": "Shackleton rim",
+      "latitude_deg": -89.76674148,
+      "longitude_deg": -171.89280908,
+      "elevation_m": 767.979,
+      "dem_coverage": "verified",
+      "coordinate_quality": "NASA DEM reference pixel, not an approved landing site",
+      "reference_frame": "MOON_ME / DE421",
+      "radius_m": 1737400.0,
+      "source_url": "https://pgda.gsfc.nasa.gov/products/78",
+      "products": {
+        "elevation": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site04/Site04_final_adj_5mpp_surf.tif",
+        "slope": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site04/Site04_final_adj_5mpp_slp.tif",
+        "uncertainty": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site04/Site04_final_adj_5mpp_toterr.tif"
+      },
+      "point_pixel": {
+        "row": 1600,
+        "col": 1600,
+        "x_m": -997.5,
+        "y_m": -7002.5
+      },
+      "dem_bounds_m": [
+        -9000.0,
+        -15000.0,
+        7000.0,
+        1000.0
+      ],
+      "dem_resolution_m": 5,
+      "slope_deg": 32.7358,
+      "height_uncertainty_m": 0.1131,
+      "atlas_x_m": -997.5,
+      "atlas_y_m": -7002.5
+    }
+  ],
+  "nomenclature_source": "IAU / USGS Gazetteer of Planetary Nomenclature · LOLA 2011 control network",
+  "nomenclature_url": "https://planetarynames.wr.usgs.gov/GIS_Downloads",
+  "nomenclature_download_url": "https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/MOON_nomenclature_center_pts.kmz",
+  "nomenclature_sha256": "41d9493b5515d5549f2c709607d7fccaf92acaecfd94830156d9569f6ef32263",
+  "reference_visualization_url": "https://svs.gsfc.nasa.gov/5127",
+  "prepared_at": "2026-11-14T20:31:23.174344+00:00",
+  "limitations": [
+    "Browser mesh is downsampled from the 80 m NASA DEM; do not use it for local landing safety or horizon calculations.",
+    "Elevation colors encode measured heights, not optical surface colors, illumination or water ice.",
+    "Vertical exaggeration is a display-only setting and never changes ephemerides or visibility results.",
+    "IAU/USGS feature coordinates are cartographic labels, not landing sites; independent frame cross-validation is pending.",
+    "Scene lighting aids terrain inspection; it is not a ray-traced prediction of solar illumination."
+  ]
+}
