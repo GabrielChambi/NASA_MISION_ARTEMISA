@@ -4,7 +4,9 @@ Exploración del polo sur lunar con **datos reales NASA LOLA y efemérides NASA/
 
 [Abrir el sistema](https://lunar-oracle-mission-control.gptcompartir.chatgpt.site) · [Metodología científica](docs/science/solar.md) · [Cobertura del Plan A](docs/IMPLEMENTATION_STATUS.md)
 
-El despliegue de Sites conserva acceso privado. El repositorio contiene el frontend, backend Python, adaptador para publicación, datos derivados reproducibles y pruebas. No se necesita una clave NASA para usar Horizons.
+La web es pública: abre directamente en Mission Control, sin iniciar sesión en ChatGPT. El acceso se comprobó en un contexto de navegador sin cookies ni sesión. Mantener el acceso público al actualizar el despliegue de Sites.
+
+El repositorio contiene el frontend, backend Python, adaptador para publicación, datos derivados reproducibles y pruebas. No se necesita una clave NASA para usar Horizons.
 
 ![Mission Control 3D](docs/images/mission-control-3d.png)
 
