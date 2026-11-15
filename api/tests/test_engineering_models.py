@@ -66,10 +66,11 @@ def test_temperature_unavailability_locks_stored_energy_without_deleting_it():
 def test_causal_coupling_consumes_heater_energy_and_counts_rf_amplifier_power():
  q=energy(essential_load_w=5.,radio_load_w=0.)
  out=coupled_scenario(rows(hours=1,sun=False),q,None,{}, {'initial_k':270.,'heater_w':50.,'radiating_area_m2':.2}, {'tx_power_w':10.,'pa_efficiency':.2,'electronics_w':3.})
- assert out['status']=='ok' and out['converged']
+ assert out['status']=='ok' and out['integration_completed']
  assert out['effective_radio_electrical_w']==pytest.approx(53)
  assert out['budget']['summary']['heater_served_wh']>0
- assert out['thermal']['summary']['heater_demand_wh']==pytest.approx(out['budget']['summary']['heater_served_wh'])
+ assert out['thermal']['summary']['heater_served_wh']==pytest.approx(out['budget']['summary']['heater_served_wh'])
+ assert out['thermal']['summary']['heater_requested_wh']>=out['thermal']['summary']['heater_served_wh']-1e-7
  assert abs(out['budget']['summary']['energy_balance_residual_wh'])<1e-7
 def test_outside_battery_curve_is_unresolved_not_favorable():
  out=coupled_scenario(rows(1),energy(),None,{}, {'initial_k':200.})
@@ -177,3 +178,44 @@ def test_unresolved_prediction_does_not_erase_synthetic_record_identity():
  q=validate_telemetry(record(),mission());out=compare_telemetry(q,{'budget':None,'thermal':{'status':'unknown'}})
  assert out['status']=='synthetic_test' and out['comparison_status']=='unresolved'
  assert out['record']['kind']=='synthetic_test' and not out['physical_asset_connected']
+
+def test_battery_inefficiency_enters_the_thermal_node_as_heat():
+ q=energy(essential_load_w=30.,discharge_efficiency=.8,charge_efficiency=1.)
+ out=coupled_scenario(rows(1,sun=False),q,None,{}, {'radiating_area_m2':.2})
+ assert out['status']=='ok'
+ assert out['thermal']['states'][1]['battery_loss_w']==pytest.approx(30/.8-30,abs=1e-9)
+ assert out['thermal']['states'][1]['internal_w']==pytest.approx(30*.8+7.5,abs=1e-9)
+
+def test_invalid_kernel_hash_never_partially_loads_spice_pool(monkeypatch,tmp_path):
+ import json
+ from api.app import spice_service as module
+ manifest=__import__('json').loads((module.DATA/'prepared/spice_manifest.json').read_text(encoding='utf-8'))
+ (tmp_path/'prepared').mkdir();(tmp_path/'raw/spice').mkdir(parents=True)
+ (tmp_path/'prepared/spice_manifest.json').write_text(json.dumps(manifest),encoding='utf-8')
+ for item in manifest['kernels']:(tmp_path/'raw/spice'/item['name']).write_bytes(b'corrupted-kernel')
+ called=[];monkeypatch.setattr(module,'DATA',tmp_path);monkeypatch.setattr(module.spice,'furnsh',lambda path:called.append(path));module.kernel_manifest.cache_clear()
+ try:
+  with pytest.raises(module.SpiceUnavailable):module.kernel_manifest()
+  assert called==[]
+ finally:module.kernel_manifest.cache_clear()
+
+@pytest.mark.parametrize('reply',['This is a fully validated lunar mission.','You now have an operational digital twin.','El sistema es un gemelo digital operacional.'])
+def test_copilot_cannot_turn_design_models_into_operational_validation(reply):
+ from api.app.chat_science import validate_chat_reply
+ with pytest.raises(ValueError):validate_chat_reply(reply,{})
+def test_deeply_nested_json_returns_validation_failure_not_server_error():
+ from api.app.engineering import router
+ app=FastAPI();app.include_router(router)
+ result=TestClient(app).post('/api/engineering/analyze',content='['*1500+']'*1500,headers={'Content-Type':'application/json'})
+ assert result.status_code==422 and result.json()['status']=='unavailable'
+def test_numerically_unsupported_model_is_not_a_server_crash_or_a_success(monkeypatch):
+ import json
+ from pathlib import Path
+ from api.app import engineering,operations
+ async def source(*args):return {}
+ def unsupported(*args,**kwargs):raise OverflowError('Numerical domain exceeded')
+ monkeypatch.setattr(operations,'analyze',source);monkeypatch.setattr(engineering,'calculate',unsupported)
+ app=FastAPI();app.include_router(engineering.router)
+ payload=json.loads((Path(__file__).resolve().parents[2]/'data/prepared/operations_example.json').read_text(encoding='utf-8'))['request']
+ result=TestClient(app).post('/api/engineering/analyze',json=payload)
+ assert result.status_code==422 and result.json()['status']=='unavailable' and 'engineering' not in result.json()

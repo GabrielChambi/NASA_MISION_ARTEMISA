@@ -74,7 +74,7 @@ try{
  await page.screenshot({path:new URL('operations-native-mobile.png',root).pathname.replace(/^\/([A-Za-z]:)/,'$1'),fullPage:true})
  const attached={name:'real-height-example.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({name:'Diseño de estudio50m',solar_panel_height:50,antenna_height:38,center_of_gravity_tolerance:10}))}
  const tallStudy=response('/api/operations/analyze')
- await page.locator('input[type=file]').setInputFiles(attached)
+ await page.getByTestId('vehicle-profile-upload').setInputFiles(attached)
  const tall=await (await tallStudy).json()
  check('Arbitrary panel/antenna heights receive their own native DEM horizons',tall.affected.horizon.observer_heights_m.sun===50&&tall.affected.horizon.observer_heights_m.earth===38&&tall.affected.samples.length===289&&tall.affected.samples.every(s=>s.sun_horizon_deg!==null&&s.earth_horizon_deg!==null))
  const download=page.waitForEvent('download')

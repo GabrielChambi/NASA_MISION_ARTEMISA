@@ -148,3 +148,19 @@ test('invalid explicit dates never call the provider',async()=>{
  assert.equal(called,false)
  assert.equal(body.needs_clarification,true)
 })
+
+test('date ranges select the first day and disclose that the whole window was not searched',()=>{
+ for(const message of ['Quiero viajar del 1 al 15 de enero de 2027 a las 10am','En 2027 quiero viajar entre el 1 y el 15 de enero a las 10am']){
+  const parsed=parseMissionIntent(input(message))
+  assert.equal(parsed.needs_clarification,false)
+  assert.equal(parsed.intent.local_datetime,'2027-01-01T10:00')
+  assert.equal(parsed.intent.surface_hours,72)
+  assert.match(parsed.assumptions.join(' '),/primer día del intervalo/)
+ }
+})
+test('an invalid date-range endpoint does not become a valid single date',()=>{
+ const parsed=parseMissionIntent(input('Quiero viajar del 1 al 35 de enero de 2027 a las 10am'))
+ assert.equal(parsed.needs_clarification,true)
+ assert.equal(parsed.intent.departure_utc,undefined)
+ assert.match(parsed.question,/intervalo/)
+})

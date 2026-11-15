@@ -175,3 +175,18 @@ def test_bad_explicit_date_never_calls_provider(client, monkeypatch):
     body = client.post("/api/mission-intent", json=data("Viaje el 30 de febrero de 2026 a las 8 am")).json()
     assert body["needs_clarification"]
     infer.assert_not_awaited()
+
+@pytest.mark.parametrize("message",[
+ "Quiero viajar del 1 al 15 de enero de 2027 a las 10am",
+ "En 2027 quiero viajar entre el 1 y el 15 de enero a las 10am",
+])
+def test_date_range_uses_its_first_day_and_discloses_the_scope(message):
+ parsed=module.parse_mission_intent(data(message))
+ assert not parsed["needs_clarification"]
+ assert parsed["intent"]["local_datetime"]=="2027-01-01T10:00"
+ assert parsed["intent"]["surface_hours"]==72
+ assert "primer día del intervalo" in " ".join(parsed["assumptions"])
+def test_invalid_range_endpoint_never_becomes_a_valid_single_date():
+ parsed=module.parse_mission_intent(data("Quiero viajar del 1 al 35 de enero de 2027 a las 10am"))
+ assert parsed["needs_clarification"] and not parsed["intent"].get("departure_utc")
+ assert "intervalo" in parsed["question"]

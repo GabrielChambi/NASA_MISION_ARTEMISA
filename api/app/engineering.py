@@ -1,5 +1,6 @@
 """Bounded engineering studies based on recomputed NASA operations, never client-supplied predictions."""
 import asyncio,json,math,threading
+import numpy as np
 from datetime import datetime,timezone
 from fastapi import APIRouter,Request
 from fastapi.responses import JSONResponse
@@ -89,6 +90,6 @@ async def endpoint(request:Request):
     result=await run_cancellable(request,calculate,payload,report,q)
   return JSONResponse(content=result,headers={'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'})
  except InterruptedError:return JSONResponse(status_code=499,content={'status':'cancelled','message':'Study cancelled.'})
- except (ValueError,TypeError,KeyError,json.JSONDecodeError) as exc:return JSONResponse(status_code=422,content={'status':'unavailable','message':str(exc)})
+ except (ValueError,TypeError,KeyError,ArithmeticError,RecursionError,np.linalg.LinAlgError) as exc:return JSONResponse(status_code=422,content={'status':'unavailable','message':str(exc)})
  except (FileNotFoundError,HorizonsUnavailable,SpiceUnavailable,SpiceyError) as exc:
   return JSONResponse(status_code=503,content={'status':'unavailable','message':('Original NASA data or NAIF kernels are unavailable for this study.' if english else 'Faltan datos originales NASA o kernels NAIF para este estudio.'),'code':type(exc).__name__})

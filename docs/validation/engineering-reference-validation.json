@@ -1,6 +1,6 @@
 {
   "status": "pass",
-  "created_utc": "2026-11-15T21:55:00.830319+00:00",
+  "created_utc": "2026-11-15T22:30:02.207592+00:00",
   "model_version": "engineering-1",
   "cases": [
     {
@@ -18,10 +18,11 @@
       "status": "unknown",
       "reason": "Temperature leaves the declared battery curve; no extrapolation is performed.",
       "thermal": {
-        "minimum_k": 250.03056857278753,
-        "maximum_k": 294.5346863795163,
-        "outside_declared_battery_limits_hours": 0.9416666666666658,
-        "heater_demand_wh": 1875.0
+        "minimum_k": 252.98524032472545,
+        "maximum_k": 295.97943097699243,
+        "outside_declared_battery_limits_hours": 0.7083333333333333,
+        "heater_served_wh": 1869.4355148843078,
+        "heater_requested_wh": 2100.0
       },
       "budget": null,
       "budget_pass": false,
@@ -73,7 +74,7 @@
           "sha256": "82030dcbdd7c4bb0c7d858e9b4b293b9f2cda5a543ba31ec0f42784bd6beee5a"
         }
       ],
-      "seconds": 0.7960000000020955
+      "seconds": 0.8440000000118744
     },
     {
       "id": "larger_declared_battery",
@@ -94,26 +95,27 @@
       "status": "ok",
       "reason": null,
       "thermal": {
-        "minimum_k": 271.1296125208075,
-        "maximum_k": 294.5346863795163,
+        "minimum_k": 271.45588158595626,
+        "maximum_k": 303.4645283695732,
         "outside_declared_battery_limits_hours": 0.0,
-        "heater_demand_wh": 3450.0,
-        "stored_heat_change_j": -686046.2337966897
+        "heater_served_wh": 3150.0,
+        "heater_requested_wh": 3150.0,
+        "stored_heat_change_j": -651627.1283731748
       },
       "budget": {
         "minimum_usable_soc": 0.85,
-        "heater_served_wh": 3450.0,
+        "heater_served_wh": 3150.0,
         "minimum_soc": 0.85,
-        "final_soc": 0.9349999999999979,
+        "final_soc": 0.9381578947368406,
         "reserve_crossing_hour": null,
         "battery_empty_hour": null,
         "solar_generated_wh": 59969.053318532075,
-        "load_served_wh": 11040.0,
-        "battery_charge_wh": 15000.000000000062,
-        "battery_discharge_wh": 6500.000000000009,
-        "charge_loss_wh": 789.4736842105303,
-        "discharge_loss_wh": 325.0000000000001,
-        "curtailed_wh": 39314.57963432148,
+        "load_served_wh": 10740.0,
+        "battery_charge_wh": 15000.000000000027,
+        "battery_discharge_wh": 6184.210526315796,
+        "charge_loss_wh": 789.4736842105285,
+        "discharge_loss_wh": 309.21052631578965,
+        "curtailed_wh": 39314.57963432152,
         "unserved_wh": 0.0,
         "essential_unserved_wh": 0.0,
         "science_completed_hours": 6.0,
@@ -122,7 +124,7 @@
         "data_sent_gb": 0.054000000000000034,
         "buffer_final_gb": 0.0,
         "data_lost_gb": 0.0,
-        "energy_balance_residual_wh": 2.6193447411060333e-10
+        "energy_balance_residual_wh": 1.6007106751203537e-10
       },
       "budget_pass": true,
       "dsn_station_hours": {
@@ -138,7 +140,7 @@
             "id": "solar_minus_10_percent",
             "status": "ok",
             "minimum_usable_soc": 0.85,
-            "minimum_temperature_k": 271.1296125208075,
+            "minimum_temperature_k": 271.45588158595626,
             "link_hours": 71.5,
             "budget_pass": true
           },
@@ -146,7 +148,7 @@
             "id": "cold_initial_minus_5_k",
             "status": "ok",
             "minimum_usable_soc": 0.8461538461538461,
-            "minimum_temperature_k": 271.12960497753966,
+            "minimum_temperature_k": 271.45565978715945,
             "link_hours": 71.5,
             "budget_pass": true
           },
@@ -154,7 +156,7 @@
             "id": "radio_losses_plus_3_db",
             "status": "ok",
             "minimum_usable_soc": 0.85,
-            "minimum_temperature_k": 271.1296125208075,
+            "minimum_temperature_k": 271.45588158595626,
             "link_hours": 71.5,
             "budget_pass": true
           },
@@ -162,7 +164,7 @@
             "id": "combined_declared_perturbations",
             "status": "ok",
             "minimum_usable_soc": 0.8461538461538461,
-            "minimum_temperature_k": 271.12960497753966,
+            "minimum_temperature_k": 271.45565978715945,
             "link_hours": 71.5,
             "budget_pass": true
           }
@@ -207,7 +209,7 @@
           "sha256": "82030dcbdd7c4bb0c7d858e9b4b293b9f2cda5a543ba31ec0f42784bd6beee5a"
         }
       ],
-      "seconds": 4.25
+      "seconds": 4.375
     },
     {
       "id": "weak_declared_radio",
@@ -230,26 +232,27 @@
       "status": "ok",
       "reason": null,
       "thermal": {
-        "minimum_k": 271.1296023629614,
-        "maximum_k": 293.5978402694104,
+        "minimum_k": 271.45572387039476,
+        "maximum_k": 302.7463126080095,
         "outside_declared_battery_limits_hours": 0.0,
-        "heater_demand_wh": 3450.0,
-        "stored_heat_change_j": -686046.234085752
+        "heater_served_wh": 3150.0,
+        "heater_requested_wh": 3150.0,
+        "stored_heat_change_j": -651627.1328641938
       },
       "budget": {
         "minimum_usable_soc": 0.85,
-        "heater_served_wh": 3450.0,
+        "heater_served_wh": 3150.0,
         "minimum_soc": 0.85,
-        "final_soc": 0.9349999999999979,
+        "final_soc": 0.9381578947368406,
         "reserve_crossing_hour": null,
         "battery_empty_hour": null,
         "solar_generated_wh": 59969.053318532075,
-        "load_served_wh": 11010.0,
-        "battery_charge_wh": 14999.999999999995,
-        "battery_discharge_wh": 6500.000000000009,
-        "charge_loss_wh": 789.4736842105268,
-        "discharge_loss_wh": 325.0000000000001,
-        "curtailed_wh": 39344.579634321555,
+        "load_served_wh": 10710.0,
+        "battery_charge_wh": 14999.999999999978,
+        "battery_discharge_wh": 6184.210526315796,
+        "charge_loss_wh": 789.4736842105262,
+        "discharge_loss_wh": 309.21052631578965,
+        "curtailed_wh": 39344.57963432156,
         "unserved_wh": 0.0,
         "essential_unserved_wh": 0.0,
         "science_completed_hours": 6.0,
@@ -258,7 +261,7 @@
         "data_sent_gb": 0.0,
         "buffer_final_gb": 0.054000000000000034,
         "data_lost_gb": 0.0,
-        "energy_balance_residual_wh": 1.7462298274040222e-10
+        "energy_balance_residual_wh": 1.3096723705530167e-10
       },
       "budget_pass": false,
       "dsn_station_hours": {
@@ -309,9 +312,697 @@
           "sha256": "82030dcbdd7c4bb0c7d858e9b4b293b9f2cda5a543ba31ec0f42784bd6beee5a"
         }
       ],
-      "seconds": 0.8600000000005821
+      "seconds": 0.875
     }
   ],
+  "native_rover": {
+    "center": {
+      "latitude_deg": -89.46747262959843,
+      "longitude_deg": -137.50971425262983,
+      "max_slope_deg": 1.091636061668396,
+      "roughness_rms_m": 0.03785151651451013,
+      "offset_m": 130.85955937560587
+    },
+    "study_settings": {
+      "semi_major_m": 200.0,
+      "semi_minor_m": 100.0,
+      "heading_deg": 0.0,
+      "footprint_radius_m": 15.0,
+      "max_local_slope_deg": 10.0,
+      "max_roughness_m": 0.5
+    },
+    "source_resolution_m": 5.0,
+    "sources": [
+      {
+        "name": "site01.tif",
+        "url": "https://pgda.gsfc.nasa.gov/products/78",
+        "sha256": "3ba7b97cb00a2bcf21189c3aeb535f65afc21207154ab9f0d43c5bdc1f7e747e"
+      },
+      {
+        "name": "site01-slp.tif",
+        "url": "https://pgda.gsfc.nasa.gov/products/78",
+        "sha256": "3a90035a4946b4a04b7332c52f0b2b1cff71648bd8c105e14d8a7e15c6bcfe8e"
+      },
+      {
+        "name": "site01-toterr.tif",
+        "url": "https://pgda.gsfc.nasa.gov/products/78",
+        "sha256": "cf2cf52f52d2aa51e60d058010d10b0ebfb1d3e920f5a2b9a46eb6c51054ab1c"
+      }
+    ],
+    "result": {
+      "config": {
+        "mass_kg": 50.0,
+        "speed_m_s": 0.05,
+        "rolling_coefficient": 0.15,
+        "drive_efficiency": 0.5,
+        "auxiliary_w": 15.0,
+        "battery_wh": 500.0,
+        "initial_soc": 0.85,
+        "reserve_soc": 0.2,
+        "maximum_edge_slope_deg": 10.0
+      },
+      "source_resolution_m": 5.0,
+      "sources": [
+        {
+          "name": "site01.tif",
+          "url": "https://pgda.gsfc.nasa.gov/products/78",
+          "sha256": "3ba7b97cb00a2bcf21189c3aeb535f65afc21207154ab9f0d43c5bdc1f7e747e"
+        },
+        {
+          "name": "site01-slp.tif",
+          "url": "https://pgda.gsfc.nasa.gov/products/78",
+          "sha256": "3a90035a4946b4a04b7332c52f0b2b1cff71648bd8c105e14d8a7e15c6bcfe8e"
+        },
+        {
+          "name": "site01-toterr.tif",
+          "url": "https://pgda.gsfc.nasa.gov/products/78",
+          "sha256": "cf2cf52f52d2aa51e60d058010d10b0ebfb1d3e920f5a2b9a46eb6c51054ab1c"
+        }
+      ],
+      "calibrated": false,
+      "limitations": [
+        "Route is restricted to this native DEM window and cells whose declared footprint and terrain criteria are resolved.",
+        "Mass, speed, rolling resistance and efficiency are declared design parameters, not measured vehicle capabilities.",
+        "Point-mass lunar gravity, constant rolling resistance, no regenerative braking. No rocks below pixel size, wheel sinkage, slip, slopes between samples, obstacle sensing, thermal survival or communications along the route.",
+        "A reachable return in this model is not an operational safety guarantee."
+      ],
+      "status": "found",
+      "goal_selection": "farthest_affordable_roundtrip_in_window",
+      "start_index": 4324,
+      "goal_index": 368,
+      "outward_count": 50,
+      "energy_wh": 58.478382396614904,
+      "available_above_reserve_wh": 324.99999999999994,
+      "final_soc": 0.7330432352067702,
+      "unserved_energy_wh": 0.0,
+      "roundtrip_distance_m": 643.7648134833053,
+      "roundtrip_hours": 3.5764711860183644,
+      "points": [
+        {
+          "index": 4324,
+          "latitude_deg": -89.46747262959843,
+          "longitude_deg": -137.50971425262983,
+          "elevation_m": 1942.6080322265625
+        },
+        {
+          "index": 4232,
+          "latitude_deg": -89.46770558966925,
+          "longitude_deg": -137.51081335508343,
+          "elevation_m": 1942.6055908203125
+        },
+        {
+          "index": 4140,
+          "latitude_deg": -89.46793854954844,
+          "longitude_deg": -137.5119134200219,
+          "elevation_m": 1942.6214599609375
+        },
+        {
+          "index": 4048,
+          "latitude_deg": -89.46817150923572,
+          "longitude_deg": -137.51301444870933,
+          "elevation_m": 1942.689208984375
+        },
+        {
+          "index": 3956,
+          "latitude_deg": -89.46840446873082,
+          "longitude_deg": -137.51411644241193,
+          "elevation_m": 1942.8392333984375
+        },
+        {
+          "index": 3864,
+          "latitude_deg": -89.46863742803352,
+          "longitude_deg": -137.51521940239817,
+          "elevation_m": 1943.0400390625
+        },
+        {
+          "index": 3772,
+          "latitude_deg": -89.46887038714351,
+          "longitude_deg": -137.51632332993873,
+          "elevation_m": 1943.192626953125
+        },
+        {
+          "index": 3680,
+          "latitude_deg": -89.46910334606056,
+          "longitude_deg": -137.5174282263064,
+          "elevation_m": 1943.285400390625
+        },
+        {
+          "index": 3681,
+          "latitude_deg": -89.46921469044244,
+          "longitude_deg": -137.5305546178147,
+          "elevation_m": 1943.387939453125
+        },
+        {
+          "index": 3589,
+          "latitude_deg": -89.46944764681474,
+          "longitude_deg": -137.53166648005157,
+          "elevation_m": 1943.6212158203125
+        },
+        {
+          "index": 3497,
+          "latitude_deg": -89.46968060299146,
+          "longitude_deg": -137.53277931912993,
+          "elevation_m": 1943.89599609375
+        },
+        {
+          "index": 3498,
+          "latitude_deg": -89.46979191477247,
+          "longitude_deg": -137.54592322494526,
+          "elevation_m": 1944.1146240234375
+        },
+        {
+          "index": 3406,
+          "latitude_deg": -89.47002486838431,
+          "longitude_deg": -137.54704305368145,
+          "elevation_m": 1944.3326416015625
+        },
+        {
+          "index": 3314,
+          "latitude_deg": -89.4702578217979,
+          "longitude_deg": -137.54816386731852,
+          "elevation_m": 1944.4156494140625
+        },
+        {
+          "index": 3222,
+          "latitude_deg": -89.47049077501299,
+          "longitude_deg": -137.54928566715546,
+          "elevation_m": 1944.8138427734375
+        },
+        {
+          "index": 3130,
+          "latitude_deg": -89.4707237280293,
+          "longitude_deg": -137.55040845449366,
+          "elevation_m": 1944.7861328125
+        },
+        {
+          "index": 3038,
+          "latitude_deg": -89.47095668084656,
+          "longitude_deg": -137.55153223063675,
+          "elevation_m": 1945.18994140625
+        },
+        {
+          "index": 2946,
+          "latitude_deg": -89.47118963346449,
+          "longitude_deg": -137.55265699689062,
+          "elevation_m": 1945.213134765625
+        },
+        {
+          "index": 2854,
+          "latitude_deg": -89.47142258588282,
+          "longitude_deg": -137.55378275456354,
+          "elevation_m": 1945.214599609375
+        },
+        {
+          "index": 2855,
+          "latitude_deg": -89.47153385302946,
+          "longitude_deg": -137.56697440986528,
+          "elevation_m": 1945.1298828125
+        },
+        {
+          "index": 2856,
+          "latitude_deg": -89.47164509215197,
+          "longitude_deg": -137.58017162065187,
+          "elevation_m": 1945.015869140625
+        },
+        {
+          "index": 2857,
+          "latitude_deg": -89.4717563032327,
+          "longitude_deg": -137.59337438903228,
+          "elevation_m": 1944.913330078125
+        },
+        {
+          "index": 2858,
+          "latitude_deg": -89.47186748625388,
+          "longitude_deg": -137.6065827171148,
+          "elevation_m": 1944.8291015625
+        },
+        {
+          "index": 2766,
+          "latitude_deg": -89.47210042880268,
+          "longitude_deg": -137.60773371660258,
+          "elevation_m": 1944.65478515625
+        },
+        {
+          "index": 2674,
+          "latitude_deg": -89.47233337114261,
+          "longitude_deg": -137.60888573233973,
+          "elevation_m": 1944.5162353515625
+        },
+        {
+          "index": 2582,
+          "latitude_deg": -89.47256631327342,
+          "longitude_deg": -137.61003876567176,
+          "elevation_m": 1944.6181640625
+        },
+        {
+          "index": 2490,
+          "latitude_deg": -89.47279925519477,
+          "longitude_deg": -137.61119281794666,
+          "elevation_m": 1945.0975341796875
+        },
+        {
+          "index": 2398,
+          "latitude_deg": -89.47303219690643,
+          "longitude_deg": -137.6123478905147,
+          "elevation_m": 1945.7021484375
+        },
+        {
+          "index": 2306,
+          "latitude_deg": -89.47326513840808,
+          "longitude_deg": -137.61350398472868,
+          "elevation_m": 1946.292236328125
+        },
+        {
+          "index": 2214,
+          "latitude_deg": -89.47349807969944,
+          "longitude_deg": -137.61466110194365,
+          "elevation_m": 1946.5411376953125
+        },
+        {
+          "index": 2122,
+          "latitude_deg": -89.47373102078024,
+          "longitude_deg": -137.6158192435171,
+          "elevation_m": 1946.428955078125
+        },
+        {
+          "index": 2030,
+          "latitude_deg": -89.47396396165017,
+          "longitude_deg": -137.616978410809,
+          "elevation_m": 1946.273193359375
+        },
+        {
+          "index": 1938,
+          "latitude_deg": -89.47419690230893,
+          "longitude_deg": -137.61813860518157,
+          "elevation_m": 1946.05126953125
+        },
+        {
+          "index": 1846,
+          "latitude_deg": -89.47442984275628,
+          "longitude_deg": -137.61929982799958,
+          "elevation_m": 1945.777587890625
+        },
+        {
+          "index": 1754,
+          "latitude_deg": -89.4746627829919,
+          "longitude_deg": -137.62046208063018,
+          "elevation_m": 1945.4468994140625
+        },
+        {
+          "index": 1661,
+          "latitude_deg": -89.47478457185434,
+          "longitude_deg": -137.60833769560188,
+          "elevation_m": 1945.501953125
+        },
+        {
+          "index": 1569,
+          "latitude_deg": -89.47501751413198,
+          "longitude_deg": -137.60949586947373,
+          "elevation_m": 1945.22216796875
+        },
+        {
+          "index": 1477,
+          "latitude_deg": -89.47525045619925,
+          "longitude_deg": -137.61065507161257,
+          "elevation_m": 1945.0447998046875
+        },
+        {
+          "index": 1385,
+          "latitude_deg": -89.47548339805587,
+          "longitude_deg": -137.61181530338743,
+          "elevation_m": 1944.77001953125
+        },
+        {
+          "index": 1293,
+          "latitude_deg": -89.47571633970156,
+          "longitude_deg": -137.61297656616983,
+          "elevation_m": 1944.4285888671875
+        },
+        {
+          "index": 1201,
+          "latitude_deg": -89.47594928113601,
+          "longitude_deg": -137.61413886133366,
+          "elevation_m": 1944.0345458984375
+        },
+        {
+          "index": 1109,
+          "latitude_deg": -89.47618222235896,
+          "longitude_deg": -137.61530219025528,
+          "elevation_m": 1943.503662109375
+        },
+        {
+          "index": 1016,
+          "latitude_deg": -89.47630400119037,
+          "longitude_deg": -137.6031414275095,
+          "elevation_m": 1943.3199462890625
+        },
+        {
+          "index": 923,
+          "latitude_deg": -89.47642575642081,
+          "longitude_deg": -137.59097500825703,
+          "elevation_m": 1943.116943359375
+        },
+        {
+          "index": 830,
+          "latitude_deg": -89.4765474880338,
+          "longitude_deg": -137.5788029296482,
+          "elevation_m": 1942.904296875
+        },
+        {
+          "index": 737,
+          "latitude_deg": -89.47666919601288,
+          "longitude_deg": -137.56662518883275,
+          "elevation_m": 1942.6390380859375
+        },
+        {
+          "index": 644,
+          "latitude_deg": -89.47679088034154,
+          "longitude_deg": -137.55444178295986,
+          "elevation_m": 1942.39990234375
+        },
+        {
+          "index": 552,
+          "latitude_deg": -89.47702383253953,
+          "longitude_deg": -137.5555803930568,
+          "elevation_m": 1941.8660888671875
+        },
+        {
+          "index": 460,
+          "latitude_deg": -89.47725678453513,
+          "longitude_deg": -137.55672001797436,
+          "elevation_m": 1941.5496826171875
+        },
+        {
+          "index": 368,
+          "latitude_deg": -89.47748973632807,
+          "longitude_deg": -137.55786065906895,
+          "elevation_m": 1941.2047119140625
+        },
+        {
+          "index": 460,
+          "latitude_deg": -89.47725678453513,
+          "longitude_deg": -137.55672001797436,
+          "elevation_m": 1941.5496826171875
+        },
+        {
+          "index": 552,
+          "latitude_deg": -89.47702383253953,
+          "longitude_deg": -137.5555803930568,
+          "elevation_m": 1941.8660888671875
+        },
+        {
+          "index": 644,
+          "latitude_deg": -89.47679088034154,
+          "longitude_deg": -137.55444178295986,
+          "elevation_m": 1942.39990234375
+        },
+        {
+          "index": 737,
+          "latitude_deg": -89.47666919601288,
+          "longitude_deg": -137.56662518883275,
+          "elevation_m": 1942.6390380859375
+        },
+        {
+          "index": 830,
+          "latitude_deg": -89.4765474880338,
+          "longitude_deg": -137.5788029296482,
+          "elevation_m": 1942.904296875
+        },
+        {
+          "index": 923,
+          "latitude_deg": -89.47642575642081,
+          "longitude_deg": -137.59097500825703,
+          "elevation_m": 1943.116943359375
+        },
+        {
+          "index": 1016,
+          "latitude_deg": -89.47630400119037,
+          "longitude_deg": -137.6031414275095,
+          "elevation_m": 1943.3199462890625
+        },
+        {
+          "index": 1109,
+          "latitude_deg": -89.47618222235896,
+          "longitude_deg": -137.61530219025528,
+          "elevation_m": 1943.503662109375
+        },
+        {
+          "index": 1201,
+          "latitude_deg": -89.47594928113601,
+          "longitude_deg": -137.61413886133366,
+          "elevation_m": 1944.0345458984375
+        },
+        {
+          "index": 1293,
+          "latitude_deg": -89.47571633970156,
+          "longitude_deg": -137.61297656616983,
+          "elevation_m": 1944.4285888671875
+        },
+        {
+          "index": 1385,
+          "latitude_deg": -89.47548339805587,
+          "longitude_deg": -137.61181530338743,
+          "elevation_m": 1944.77001953125
+        },
+        {
+          "index": 1477,
+          "latitude_deg": -89.47525045619925,
+          "longitude_deg": -137.61065507161257,
+          "elevation_m": 1945.0447998046875
+        },
+        {
+          "index": 1569,
+          "latitude_deg": -89.47501751413198,
+          "longitude_deg": -137.60949586947373,
+          "elevation_m": 1945.22216796875
+        },
+        {
+          "index": 1661,
+          "latitude_deg": -89.47478457185434,
+          "longitude_deg": -137.60833769560188,
+          "elevation_m": 1945.501953125
+        },
+        {
+          "index": 1754,
+          "latitude_deg": -89.4746627829919,
+          "longitude_deg": -137.62046208063018,
+          "elevation_m": 1945.4468994140625
+        },
+        {
+          "index": 1846,
+          "latitude_deg": -89.47442984275628,
+          "longitude_deg": -137.61929982799958,
+          "elevation_m": 1945.777587890625
+        },
+        {
+          "index": 1938,
+          "latitude_deg": -89.47419690230893,
+          "longitude_deg": -137.61813860518157,
+          "elevation_m": 1946.05126953125
+        },
+        {
+          "index": 2030,
+          "latitude_deg": -89.47396396165017,
+          "longitude_deg": -137.616978410809,
+          "elevation_m": 1946.273193359375
+        },
+        {
+          "index": 2122,
+          "latitude_deg": -89.47373102078024,
+          "longitude_deg": -137.6158192435171,
+          "elevation_m": 1946.428955078125
+        },
+        {
+          "index": 2214,
+          "latitude_deg": -89.47349807969944,
+          "longitude_deg": -137.61466110194365,
+          "elevation_m": 1946.5411376953125
+        },
+        {
+          "index": 2306,
+          "latitude_deg": -89.47326513840808,
+          "longitude_deg": -137.61350398472868,
+          "elevation_m": 1946.292236328125
+        },
+        {
+          "index": 2398,
+          "latitude_deg": -89.47303219690643,
+          "longitude_deg": -137.6123478905147,
+          "elevation_m": 1945.7021484375
+        },
+        {
+          "index": 2490,
+          "latitude_deg": -89.47279925519477,
+          "longitude_deg": -137.61119281794666,
+          "elevation_m": 1945.0975341796875
+        },
+        {
+          "index": 2582,
+          "latitude_deg": -89.47256631327342,
+          "longitude_deg": -137.61003876567176,
+          "elevation_m": 1944.6181640625
+        },
+        {
+          "index": 2674,
+          "latitude_deg": -89.47233337114261,
+          "longitude_deg": -137.60888573233973,
+          "elevation_m": 1944.5162353515625
+        },
+        {
+          "index": 2766,
+          "latitude_deg": -89.47210042880268,
+          "longitude_deg": -137.60773371660258,
+          "elevation_m": 1944.65478515625
+        },
+        {
+          "index": 2858,
+          "latitude_deg": -89.47186748625388,
+          "longitude_deg": -137.6065827171148,
+          "elevation_m": 1944.8291015625
+        },
+        {
+          "index": 2857,
+          "latitude_deg": -89.4717563032327,
+          "longitude_deg": -137.59337438903228,
+          "elevation_m": 1944.913330078125
+        },
+        {
+          "index": 2856,
+          "latitude_deg": -89.47164509215197,
+          "longitude_deg": -137.58017162065187,
+          "elevation_m": 1945.015869140625
+        },
+        {
+          "index": 2855,
+          "latitude_deg": -89.47153385302946,
+          "longitude_deg": -137.56697440986528,
+          "elevation_m": 1945.1298828125
+        },
+        {
+          "index": 2854,
+          "latitude_deg": -89.47142258588282,
+          "longitude_deg": -137.55378275456354,
+          "elevation_m": 1945.214599609375
+        },
+        {
+          "index": 2946,
+          "latitude_deg": -89.47118963346449,
+          "longitude_deg": -137.55265699689062,
+          "elevation_m": 1945.213134765625
+        },
+        {
+          "index": 3038,
+          "latitude_deg": -89.47095668084656,
+          "longitude_deg": -137.55153223063675,
+          "elevation_m": 1945.18994140625
+        },
+        {
+          "index": 3130,
+          "latitude_deg": -89.4707237280293,
+          "longitude_deg": -137.55040845449366,
+          "elevation_m": 1944.7861328125
+        },
+        {
+          "index": 3222,
+          "latitude_deg": -89.47049077501299,
+          "longitude_deg": -137.54928566715546,
+          "elevation_m": 1944.8138427734375
+        },
+        {
+          "index": 3314,
+          "latitude_deg": -89.4702578217979,
+          "longitude_deg": -137.54816386731852,
+          "elevation_m": 1944.4156494140625
+        },
+        {
+          "index": 3406,
+          "latitude_deg": -89.47002486838431,
+          "longitude_deg": -137.54704305368145,
+          "elevation_m": 1944.3326416015625
+        },
+        {
+          "index": 3498,
+          "latitude_deg": -89.46979191477247,
+          "longitude_deg": -137.54592322494526,
+          "elevation_m": 1944.1146240234375
+        },
+        {
+          "index": 3497,
+          "latitude_deg": -89.46968060299146,
+          "longitude_deg": -137.53277931912993,
+          "elevation_m": 1943.89599609375
+        },
+        {
+          "index": 3589,
+          "latitude_deg": -89.46944764681474,
+          "longitude_deg": -137.53166648005157,
+          "elevation_m": 1943.6212158203125
+        },
+        {
+          "index": 3681,
+          "latitude_deg": -89.46921469044244,
+          "longitude_deg": -137.5305546178147,
+          "elevation_m": 1943.387939453125
+        },
+        {
+          "index": 3680,
+          "latitude_deg": -89.46910334606056,
+          "longitude_deg": -137.5174282263064,
+          "elevation_m": 1943.285400390625
+        },
+        {
+          "index": 3772,
+          "latitude_deg": -89.46887038714351,
+          "longitude_deg": -137.51632332993873,
+          "elevation_m": 1943.192626953125
+        },
+        {
+          "index": 3864,
+          "latitude_deg": -89.46863742803352,
+          "longitude_deg": -137.51521940239817,
+          "elevation_m": 1943.0400390625
+        },
+        {
+          "index": 3956,
+          "latitude_deg": -89.46840446873082,
+          "longitude_deg": -137.51411644241193,
+          "elevation_m": 1942.8392333984375
+        },
+        {
+          "index": 4048,
+          "latitude_deg": -89.46817150923572,
+          "longitude_deg": -137.51301444870933,
+          "elevation_m": 1942.689208984375
+        },
+        {
+          "index": 4140,
+          "latitude_deg": -89.46793854954844,
+          "longitude_deg": -137.5119134200219,
+          "elevation_m": 1942.6214599609375
+        },
+        {
+          "index": 4232,
+          "latitude_deg": -89.46770558966925,
+          "longitude_deg": -137.51081335508343,
+          "elevation_m": 1942.6055908203125
+        },
+        {
+          "index": 4324,
+          "latitude_deg": -89.46747262959843,
+          "longitude_deg": -137.50971425262983,
+          "elevation_m": 1942.6080322265625
+        }
+      ]
+    }
+  },
+  "implementation_sha256": {
+    "api/app/engineering_models.py": "a0dbb12447aeb5346034ee025c763267a51672794340e590e07bea9c77c375e1",
+    "api/app/energy_model.py": "16609d573e2725cd297b3ac1206f7359baefa8030fec42807de1f703fb1d5a04",
+    "api/app/trajectory_design.py": "64d1840bae50af36d1e11732a15f3ad9f290a2281ffedf41d6f55b0e7c17442c",
+    "api/app/rover_route.py": "0cc286db49213c21c6ce4219acc04d3ea0e9f5f7d60cdeaa58cf89d94bb95c35",
+    "api/app/dsn_geometry.py": "fe74dcbbc6a65dc6f15cd8d92534bbdf9596fa8fc6624c83343ba19f740fa67c",
+    "api/app/native_terrain.py": "275679deb94be323a31bb42b5bb46caae598bbb2ceceeacc3d0341a0481ee6e2"
+  },
   "trajectory": {
     "status": "closed",
     "checks": [
@@ -340,7 +1031,7 @@
         "tight_tolerance_endpoint_difference_km": 1.5527900152039142e-06
       }
     ],
-    "seconds": 26.297000000005937,
+    "seconds": 26.843999999997322,
     "model": "Earth central gravity plus direct-minus-indirect Moon and Sun point masses, geometric J2000; DOP853; Lambert seed and differential correction.",
     "limitations": [
       "Notional parking-orbit phase and plane; the actual launch site is not targeted.",

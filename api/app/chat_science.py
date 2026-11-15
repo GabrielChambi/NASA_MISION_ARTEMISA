@@ -28,7 +28,7 @@ def engineering_facts(raw):
   value=raw.get(key)
   if value not in allowed:raise ValueError('Estado físico inválido: '+key)
   clean[key]=value
- bounds={'temperature_min_k':(0,2000),'temperature_max_k':(0,2000),'outside_temperature_limits_hours':(0,336),'minimum_usable_soc':(0,1),'rf_minimum_margin_db':(-500,500),'rf_model_hours':(0,336),'rover_energy_wh':(0,1e15),'rover_roundtrip_m':(0,1e8)}
+ bounds={'thermal_modelled_hours':(0,336),'temperature_min_k':(0,2000),'temperature_max_k':(0,2000),'outside_temperature_limits_hours':(0,336),'minimum_usable_soc':(0,1),'rf_minimum_margin_db':(-500,500),'rf_model_hours':(0,336),'rover_energy_wh':(0,1e15),'rover_roundtrip_m':(0,1e8)}
  for key,(lo,hi) in bounds.items():
   value=raw.get(key)
   if value is not None and not finite(value,lo,hi):raise ValueError('Medición física inválida: '+key)
@@ -157,6 +157,7 @@ def baseline_chat(value):
 def validate_chat_reply(reply,facts):
  if not isinstance(reply,str) or not 12<=len(reply.strip())<=2400 or re.search(r'<[^>]*>|[\x00-\x08\x0b\x0c\x0e-\x1f]|https?://',reply):raise ValueError('Respuesta no válida.')
  clean=reply.strip();normalized=clean.lower()
+ if re.search(r'fully validated|completely validated|operational digital twin|gemelo digital operacional|flight[- ]ready|list[oa] para (?:el )?vuelo|nasa[- ]grade',normalized):raise ValueError('Operational validation is not established by design-model evidence.')
  if re.search(r'garantiz|aprobado por nasa|certificad|aterrizaje seguro|zona segura|sobrevivir[áa]|sobrevive|tolerancia de vuelco|probabilidad de [ée]xito',normalized):raise ValueError('Conclusión no respaldada.')
  if re.search(r'\b(?:two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|twenty|thirty|forty|fifty|hundred|thousand)\b|guarantee|certif|approved by nasa|nasa.approved|safe landing|safe zone|risk.free|will survive|survives',normalized):raise ValueError('Conclusión no respaldada.')
  numbers=[]

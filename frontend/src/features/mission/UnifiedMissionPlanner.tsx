@@ -157,7 +157,7 @@ const CATALOG_EXAMPLES:Record<string,VehicleProfile>={
 
 
 export const LUNAR_OBJECTS:Record<string,VehicleProfile>={
-  reference:{lander_name:'Referencia regional · 2 m',solar_panel_height:2,antenna_height:2,center_of_gravity_tolerance:10,category:'Referencia del modelo',description:'Observador de 2 m con perfiles de horizonte preparados.'},
+  reference:{lander_name:'Referencia regional · 2 m',solar_panel_height:2,antenna_height:2,center_of_gravity_tolerance:10,category:'Referencia del modelo',description:'Observador de 2 m con perfiles de horizonte preparados. No representa una nave real.'},
   ...Object.fromEntries(Object.entries(CATALOG_EXAMPLES).map(([key,value])=>[key,{...value,category:value.category,description:value.description+' Parámetros hipotéticos editables; no son especificaciones verificadas del fabricante.'}]))
 }
 
@@ -1119,7 +1119,7 @@ export default function UnifiedMissionPlanner(){
           onDragLeave={()=>setComposerDrag(false)}
           onDrop={e=>{e.preventDefault();setComposerDrag(false);const f=e.dataTransfer.files?.[0];if(f)void handleProfileFile(f)}}
         >
-          <input ref={fileInputRef} type="file" accept=".json,.gltf" hidden onChange={e=>{const f=e.target.files?.[0];if(f)void handleProfileFile(f);e.target.value=''}}/>
+          <input ref={fileInputRef} data-testid="vehicle-profile-upload" aria-label={tr("Importar perfil de nave o modelo GLTF")} type="file" accept=".json,.gltf" hidden onChange={e=>{const f=e.target.files?.[0];if(f)void handleProfileFile(f);e.target.value=''}}/>
 
           {/* Active Vehicle and Pinned Target Chips inside the composer box */}
           <div className="composer-attachment-bar">

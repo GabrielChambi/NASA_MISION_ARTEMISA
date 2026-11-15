@@ -62,13 +62,17 @@ function rawParse(input){
   const monthFirst=text.match(/\b(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)\s+(\d{1,2})(?:[,\s]+(?:de\s+|del\s+)?|\s+)(\d{4})\b/)
   const rangeMatch=text.match(/(?:^|\b)(?:del?|entre)?\s*(?:el\s+)?(\d{1,2})\s*(?:al?|hasta|y|-)\s*(?:el\s+)?(\d{1,2})\s*(?:de|del)?\s*(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)(?:[,\s]+(?:de\s+el|en\s+el|del|de|el|en|ano|año|,|-|\/)\s*|\s+)?(\d{4})?\b/)
   const numeric=text.match(/\b(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})\b/)
-  if(named){local_date=named[3]+'-'+pad(MONTHS[named[2]])+'-'+pad(Number(named[1]));index=named.index}
+  if(rangeMatch){
+   const y=rangeMatch[4]||(text.match(/\b(19\d{2}|20\d{2}|2100)\b/)||[null,null])[1]
+   if(y){
+    local_date=y+'-'+pad(MONTHS[rangeMatch[3]])+'-'+pad(Number(rangeMatch[1]));index=rangeMatch.index
+    const endDate=y+'-'+pad(MONTHS[rangeMatch[3]])+'-'+pad(Number(rangeMatch[2]))
+    if(!validDate(endDate)||Number(rangeMatch[2])<Number(rangeMatch[1]))fatal='El intervalo de fechas no es válido.'
+   }
+  }
+  else if(named){local_date=named[3]+'-'+pad(MONTHS[named[2]])+'-'+pad(Number(named[1]));index=named.index}
   else if(yearFirst){local_date=yearFirst[1]+'-'+pad(MONTHS[yearFirst[3]])+'-'+pad(Number(yearFirst[2]));index=yearFirst.index}
   else if(monthFirst){local_date=monthFirst[3]+'-'+pad(MONTHS[monthFirst[1]])+'-'+pad(Number(monthFirst[2]));index=monthFirst.index}
-  else if(rangeMatch){
-   const y=rangeMatch[4]||(text.match(/\b(19\d{2}|20\d{2}|2100)\b/)||[null,null])[1]
-   if(y){local_date=y+'-'+pad(MONTHS[rangeMatch[3]])+'-'+pad(Number(rangeMatch[1]));index=rangeMatch.index}
-  }
   else if(numeric){local_date=numeric[3]+'-'+pad(Number(numeric[2]))+'-'+pad(Number(numeric[1]));index=numeric.index}
  }
  if(!local_time){
@@ -105,6 +109,7 @@ function finish(input,raw,mode='parser',reason=null){
  const assumptions=[],params={...input.defaults},explicit=raw.explicit_fields??FIELDS.filter(k=>raw[k]!==null&&raw[k]!==undefined)
  for(const k of FIELDS)if(raw[k]!==null&&raw[k]!==undefined)params[k]=raw[k]
  let problem=raw.fatal
+ if(/\b(?:del|entre)\s*(?:el\s+)?\d{1,2}\s*(?:al|hasta|y|-)\s*(?:el\s+)?\d{1,2}\b/.test(clean(input.message)))assumptions.push('Se evalúa el primer día del intervalo indicado; no se ha buscado toda esa ventana ni cambiado automáticamente la estancia.')
  if(!finite(params.surface_hours,1,336)||!Number.isInteger(params.surface_hours))problem='La estancia debe ser un número entero entre 1 y 336 horas.'
  if(!finite(params.max_slope_deg,0,45))problem='La pendiente máxima debe estar entre 0 y 45 grados.'
  for(const k of ['min_sun_hours','min_earth_hours']){

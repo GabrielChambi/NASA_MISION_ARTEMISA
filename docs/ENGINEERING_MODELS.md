@@ -29,7 +29,7 @@ The equivalent isothermal node solves, in SI units:
 
 ~~~text
 C dT/dt = α S(1 AU / r)² A_abs V
-        + f_heat P_served_nonheater + P_served_heater
+        + f_heat P_served_nonheater + P_battery_loss + P_served_heater
         + ε σ A_rad [F_ground T_ground⁴ + (1−F_ground) T_space⁴ − T⁴]
 ~~~
 
@@ -39,7 +39,7 @@ Radiation uses RK4 with steps no larger than 30 s and a local radiative stabilit
 
 Battery curves provide temperature, accessible capacity, charge-power and discharge-power factors. Linear interpolation is confined to their domain. Out-of-domain temperatures stop the supported coupled prediction. Inaccessible stored charge is locked rather than deleted; temperature changes do not create or destroy electrical energy.
 
-The heater receives only power actually served after other essential loads. RF electrical consumption is at least transmitted power divided by amplifier efficiency plus transmitting electronics load. Optional equipment respects the full-power transmitting fraction. Electrical and data conservation are checked separately from physical calibration.
+Battery charge/discharge losses from the same electrical state ledger enter as heat. The heater receives only power actually served after other essential loads. RF electrical consumption is at least transmitted power divided by amplifier efficiency plus transmitting electronics load. Optional equipment respects the full-power transmitting fraction. Electrical and data conservation are checked separately from physical calibration.
 
 The shipped curve and thermal parameters are **design assumptions**, not manufacturer data. The equivalent node is not an independently measured battery-cell temperature.
 
@@ -149,3 +149,5 @@ node frontend/scripts/test-lunar-studio.mjs
 ~~~
 
 Analytical checks include heating, radiative cooling/equilibrium/refinement, the published RF benchmark, battery locking/conservation, directed return costs, invalid telemetry, circular-orbit Lambert boundaries and impacts. Positive browser results use original NASA responses; only explicit failure cases are intercepted.
+
+The [system verification record](validation/engineering-system-verification.json) lists the final 366 Python tests, 225 JavaScript tests, build, five browser flows and live HTTP checks, with source hashes. Passing these checks does not establish universal correctness or physical qualification.

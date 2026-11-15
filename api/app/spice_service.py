@@ -15,11 +15,13 @@ def kernel_manifest():
  manifest=json.loads(path.read_text(encoding='utf-8'))
  expected={'naif0012.tls','de440s.bsp','moon_pa_de440_200625.bpc','moon_de440_250416.tf','pck00011.tpc','earth_000101_270210_261114.bpc'}
  if {k['name'] for k in manifest['kernels']}!=expected:raise SpiceUnavailable('Unexpected kernel manifest.')
+ paths=[]
+ for item in manifest['kernels']:
+  path=DATA/'raw/spice'/item['name']
+  if not path.exists() or hashlib.sha256(path.read_bytes()).hexdigest()!=item['sha256']:raise SpiceUnavailable('Missing or altered NAIF kernel: '+item['name'])
+  paths.append(path)
  with LOCK:
-  for item in manifest['kernels']:
-   path=DATA/'raw/spice'/item['name']
-   if not path.exists() or hashlib.sha256(path.read_bytes()).hexdigest()!=item['sha256']:raise SpiceUnavailable('Missing or altered NAIF kernel: '+item['name'])
-   spice.furnsh(str(path))
+  for path in paths:spice.furnsh(str(path))
  return manifest
 def ephemeris_time(utc):
  kernel_manifest()

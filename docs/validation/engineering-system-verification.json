@@ -1,0 +1,87 @@
+{
+  "status": "passed",
+  "checked_at_utc": "2026-11-15T22:40:41.461427+00:00",
+  "source_parent_commit": "6ef7b264fd971f3681bb72df522f8c51ff89d8c5",
+  "verification": {
+    "python_tests_passed": 366,
+    "javascript_tests_passed": 225,
+    "build": "passed",
+    "browsers": [
+      {
+        "name": "engineering",
+        "status": "passed",
+        "recorded_check_entries": 21,
+        "uncaught_errors": [],
+        "report_sha256": "fb198cded63c5f07f9cd86b7a702f883f51211dea7de1e7ff7e0c8563333fb60"
+      },
+      {
+        "name": "operations",
+        "status": "passed",
+        "recorded_check_entries": 28,
+        "uncaught_errors": [],
+        "report_sha256": "41f69048cf0b4c5e122312b6dcc110dc7a93b485ddfbd13782ce2b3c61337e77"
+      },
+      {
+        "name": "vehicle_profiles",
+        "status": "passed",
+        "recorded_check_entries": 56,
+        "uncaught_errors": [],
+        "report_sha256": "5d803657772213fdbb448fbeb6fb0e06a5b179dc3b9874c45c002a1c7b8c87bc"
+      },
+      {
+        "name": "three_dimensional_studio",
+        "status": "passed",
+        "recorded_check_entries": 13,
+        "uncaught_errors": [],
+        "report_sha256": "99242ff9732fdefc7cb3fa57c7d6b760408a42414ba9e66bd1f2ae77673ee2b3"
+      },
+      {
+        "name": "automatic_whole_cap",
+        "status": "passed",
+        "recorded_check_entries": 52,
+        "uncaught_errors": [],
+        "report_sha256": "3c739136507f603716c9db9efaf6e1320cb8e885eedb7d28c94ca08a332e5e8c"
+      }
+    ],
+    "live_http_smoke": {
+      "status": "pass",
+      "frontend_status": 200,
+      "api_status": 200,
+      "engineering_status": "ok",
+      "coupled_budget_pass": true,
+      "heater_requested_wh": 3150.0,
+      "heater_served_wh": 3150.0,
+      "date_range_departure_utc": "2027-01-01T15:00:00Z",
+      "physical_asset_connected": false
+    },
+    "spice_reference": "spice-reference-validation.json",
+    "engineering_reference": "engineering-reference-validation.json"
+  },
+  "source_sha256": {
+    "api/app/engineering.py": "8bb1927659c951885f060af38c4aafcd4f6688cbcd19a83da0b95679a87a3bd1",
+    "api/app/engineering_models.py": "a0dbb12447aeb5346034ee025c763267a51672794340e590e07bea9c77c375e1",
+    "api/app/energy_model.py": "16609d573e2725cd297b3ac1206f7359baefa8030fec42807de1f703fb1d5a04",
+    "api/app/dsn_geometry.py": "fe74dcbbc6a65dc6f15cd8d92534bbdf9596fa8fc6624c83343ba19f740fa67c",
+    "api/app/spice_service.py": "01127b9985b979caf21fe700541c4602ae494d6b1d0ea9d4153e39db18d69658",
+    "api/app/trajectory_design.py": "64d1840bae50af36d1e11732a15f3ad9f290a2281ffedf41d6f55b0e7c17442c",
+    "api/app/rover_route.py": "0cc286db49213c21c6ce4219acc04d3ea0e9f5f7d60cdeaa58cf89d94bb95c35",
+    "api/app/native_terrain.py": "275679deb94be323a31bb42b5bb46caae598bbb2ceceeacc3d0341a0481ee6e2",
+    "api/app/telemetry.py": "7ad2a4d45b55e36b4912c760ecdfdbb6e4bf072ed1279e6324bb309e18dc2b1a",
+    "api/app/hardware_profile.py": "3dbdb2ed8c1c09f3f3f2ca535dcedf70a839aedc5f9bd8bd0b2246827e1c45f4",
+    "api/app/chat_science.py": "7ffe3912dfde5c9e4e6e0c049d28e681b2fbe316f62851a424d46db0dcfe4cd8",
+    "api/app/mission_intent.py": "e5b625ff84c7eae220a6e9c6937b3466c7e3359e0161d0f5267a6a556b5261d5",
+    "api/app/operations.py": "9cbcc9a4131282cbaf80d2b7b06939e8981d4d20a40402dbf1df7295c96c5a50",
+    "frontend/src/features/mission/EngineeringPanel.tsx": "f4b1f947631a80b13421d52dd94ee40b9a141ed715a236aed564dbc9f697839c",
+    "frontend/src/features/mission/MissionDecisionBrief.tsx": "8c2f726a38c40799bedc998be1e119fe10c6ffb5dcd5514d6f87c68124f4f5a7",
+    "frontend/src/features/mission/MissionOperationsPanel.tsx": "638d5bad243898bc68f1c4d7ebb08ee0c96fd3319524f5e7b513a9fccad1d822",
+    "frontend/src/features/mission/UnifiedMissionPlanner.tsx": "0e09be66ce2ce6fe629874e3a0ef86fde1e2f6331a1cb6b470d9bb22e80ca28b",
+    "frontend/src/features/mission/engineering.css": "7315c485ae9b15b69c44a40d42c4ff8eea5ff6d16ba6360bb45cdbd35837e64c",
+    "frontend/worker/mission-intent.mjs": "d7ffa1af0f218f74ec6d51ed81b7df0e1710e4da7257b07de141f02ddaaae8df"
+  },
+  "physical_validation": {
+    "authenticated_spacecraft_connected": false,
+    "hardware_calibrated": false,
+    "independent_flight_qualification": false,
+    "scope": "Numerical and software verification of the enumerated cases. Does not establish absence of all defects, physical calibration, complete uncertainty bounds, flight safety or NASA endorsement."
+  }
+}

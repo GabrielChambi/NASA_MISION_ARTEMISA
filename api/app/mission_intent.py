@@ -135,16 +135,19 @@ def raw_parse(value):
         month_first = re.search(r"\b(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)\s+(\d{1,2})(?:[,\s]+(?:de\s+|del\s+)?|\s+)(\d{4})\b", text)
         range_match = re.search(r"(?:^|\b)(?:del?|entre)?\s*(?:el\s+)?(\d{1,2})\s*(?:al?|hasta|y|-)\s*(?:el\s+)?(\d{1,2})\s*(?:de|del)?\s*(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)(?:[,\s]+(?:de\s+el|en\s+el|del|de|el|en|ano|año|,|-|/)\s*|\s+)?(\d{4})?\b", text)
         numeric = re.search(r"\b(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})\b", text)
-        if named:
+        if range_match:
+            y = range_match[4] or (re.search(r"\b(19\d{2}|20\d{2}|2100)\b", text) or [None, None])[1]
+            if y:
+                date, index = f"{y}-{MONTHS[range_match[3]]:02d}-{int(range_match[1]):02d}", range_match.start()
+                end_date = f"{y}-{MONTHS[range_match[3]]:02d}-{int(range_match[2]):02d}"
+                if not valid_date(end_date) or int(range_match[2]) < int(range_match[1]):
+                    fatal = "El intervalo de fechas no es válido."
+        elif named:
             date, index = f"{named[3]}-{MONTHS[named[2]]:02d}-{int(named[1]):02d}", named.start()
         elif year_first:
             date, index = f"{year_first[1]}-{MONTHS[year_first[3]]:02d}-{int(year_first[2]):02d}", year_first.start()
         elif month_first:
             date, index = f"{month_first[3]}-{MONTHS[month_first[1]]:02d}-{int(month_first[2]):02d}", month_first.start()
-        elif range_match:
-            y = range_match[4] or (re.search(r"\b(19\d{2}|20\d{2}|2100)\b", text) or [None, None])[1]
-            if y:
-                date, index = f"{y}-{MONTHS[range_match[3]]:02d}-{int(range_match[1]):02d}", range_match.start()
         elif numeric:
             date, index = f"{numeric[3]}-{int(numeric[2]):02d}-{int(numeric[1]):02d}", numeric.start()
     if not time:
@@ -190,6 +193,8 @@ def finish(value, raw, mode="parser", reason=None):
     explicit = raw.get("explicit_fields", [key for key in FIELDS if raw.get(key) is not None])
     params.update({key: raw[key] for key in FIELDS if raw.get(key) is not None})
     problem, assumptions = raw.get("fatal"), []
+    if re.search(r"\b(?:del|entre)\s*(?:el\s+)?\d{1,2}\s*(?:al|hasta|y|-)\s*(?:el\s+)?\d{1,2}\b", clean(value["message"])):
+        assumptions.append("Se evalúa el primer día del intervalo indicado; no se ha buscado toda esa ventana ni cambiado automáticamente la estancia.")
     if not finite(params["surface_hours"], 1, 336) or params["surface_hours"] % 1:
         problem = "La estancia debe ser un número entero entre 1 y 336 horas."
     if not finite(params["max_slope_deg"], 0, 45):

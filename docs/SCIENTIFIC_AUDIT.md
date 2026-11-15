@@ -78,3 +78,9 @@ node frontend/scripts/test-lunar-studio.mjs
 ~~~
 
 Las cachés JPL deben corresponder al observador, intervalo y parámetros exactos. Las pruebas de indisponibilidad inyectan fallos, no escenarios positivos artificiales.
+
+## Resultado de esta entrega
+
+Pasaron 366 pruebas Python, 225 pruebas JavaScript, la compilación y cinco flujos de navegador con datos positivos NASA originales. La comprobación HTTP final verifica la aplicación sin login, el presupuesto acoplado y la corrección del intervalo de fechas.
+
+El [registro de verificación del sistema](validation/engineering-system-verification.json) conserva las huellas del código, los resultados y el alcance. Estos resultados no cambian los requisitos pendientes de calibración física y revisión independiente.

@@ -408,7 +408,7 @@
   "Torre Solar Vertical (NASA VSAT)": "Vertical solar tower (NASA VSAT)",
   "Referencia regional · 2 m": "Regional reference · 2 m",
   "Referencia del modelo": "Model reference",
-  "Observador de 2 m con perfiles de horizonte preparados. No representa una nave real.": "2 m observer with prepared horizon profiles. Does not represent an actual spacecraft.",
+  "Observador de 2 m con perfiles de horizonte preparados. No representa una nave real.": "Two-metre observer with prepared horizon profiles. It does not represent a real spacecraft.",
   "Ejemplo hipotético ·": "Hypothetical example ·",
   "Parámetros de demostración editables. No son especificaciones verificadas del fabricante.": "Editable demonstration parameters. These are not verified manufacturer specifications.",
   "Dime las características de tu viaje (fecha, tiempo o vehículo) y calculamos tu mejor lugar de alunizaje en el Polo Sur Lunar.": "Tell me your travel details (date, stay or vehicle), and we will calculate your best candidate landing site at the lunar South Pole.",
@@ -878,5 +878,8 @@
   "Cálculo físico automático pendiente": "Automatic physics calculation pending",
   "Presupuesto acoplado compatible; falta calibración": "Coupled budget meets the model; calibration is pending",
   "Revisa calefacción, batería y contactos con estaciones": "Review heating, battery and station contacts",
-  ". Declara aquí los equipos críticos sin el calefactor independiente. El estudio físico añade su consumo y puede cambiar la conclusión del presupuesto básico.": ". Enter critical equipment loads without the independent heater. The physics study adds its consumption and may change the basic budget conclusion."
+  ". Declara aquí los equipos críticos sin el calefactor independiente. El estudio físico añade su consumo y puede cambiar la conclusión del presupuesto básico.": ". Enter critical equipment loads without the independent heater. The physics study adds its consumption and may change the basic budget conclusion.",
+  "Importar perfil de nave o modelo GLTF": "Import spacecraft profile or GLTF model",
+  "Se evalúa el primer día del intervalo indicado; no se ha buscado toda esa ventana ni cambiado automáticamente la estancia.": "The first day of the stated range is evaluated; the entire window has not been searched and the surface stay has not been changed automatically.",
+  "El intervalo de fechas no es válido.": "The date range is invalid."
 }

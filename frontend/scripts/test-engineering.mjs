@@ -1,4 +1,4 @@
-﻿import {chromium} from 'playwright'
+import {chromium} from 'playwright'
 import assert from 'node:assert/strict'
 import {writeFile} from 'node:fs/promises'
 const checks=[],errors=[],base=process.env.LUNAR_ORACLE_TEST_URL||'http://127.0.0.1:5173/'
@@ -35,7 +35,10 @@ try{
  check('Changing a thermal parameter recalculates without changing the requested date',edited.configuration.thermal.initial_k===300&&edited.mission.departure_utc===first.mission.departure_utc)
  const identity={asset_id:'TEST-ASSET',name:'Synthetic browser test profile',revision:'test-1',references:[{url:'https://www.nasa.gov/smallsat-institute/sst-soa/thermal-control/',kind:'design_assumption'}]}
  wait=nextStudy()
- await panel.getByLabel('Importar perfil físico JSON',{exact:true}).setInputFiles(upload({hardware:identity},'hardware-test.json'))
+ const chooserEvent=page.waitForEvent('filechooser')
+ await panel.locator('label.engineering-file').filter({hasText:'Importar perfil físico JSON'}).click()
+ const chooser=await chooserEvent;await chooser.setFiles(upload({hardware:identity},'hardware-test.json'))
+ check('The visible profile button opens its own file chooser',true)
  const identified=await (await wait).json()
  check('Hardware identity keeps provenance without self-certification',identified.configuration.hardware.asset_id==='TEST-ASSET'&&!identified.configuration.hardware.calibrated)
  const telemetry={asset_id:'TEST-ASSET',source:'Synthetic browser test, not physical measurements',kind:'synthetic_test',mode:'replay',uncertainty:{temperature_k:1,soc:.02},samples:[{t_utc:first.mission.arrival_utc,temperature_k:295,soc:.8}]}
