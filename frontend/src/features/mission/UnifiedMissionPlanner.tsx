@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowRight, Bot, Check, ChevronDown, CircleHelp, Clock3, Compass, Cpu, Download, Globe2, Layers, LoaderCircle, MapPin, Maximize2, Minimize2, Orbit, PanelBottom, PanelLeft, PanelRight, Pause, Play, Plus, Rocket, Send, Settings2, Sun, X } from 'lucide-react'
+import { ArrowRight, Bot, Check, ChevronDown, CircleHelp, Compass, Cpu, Download, Globe2, Layers, LoaderCircle, MapPin, Maximize2, Minimize2, Orbit, PanelBottom, PanelLeft, PanelRight, Pause, Play, Plus, Rocket, Send, Settings2, Sun, X } from 'lucide-react'
 
 import { Tactical3DScene,type PlanMapMarker } from '../tactical/Tactical3DScene'
 import { loadAtlas,type AtlasData } from '../sites/atlasGeometry'
@@ -114,6 +114,70 @@ export const LUNAR_OBJECTS:Record<string,VehicleProfile>={
   ...Object.fromEntries(Object.entries(CATALOG_EXAMPLES).map(([key,value])=>[key,{...value,category:'Ejemplo hipotético · '+value.category,description:'Parámetros de demostración editables. No son especificaciones verificadas del fabricante.'}]))
 }
 
+// Language detection from cookie or navigator
+function getInitialLanguage():'es'|'en'{
+  try{
+    const match=document.cookie.match(/(?:^|;\s*)app_lang=(es|en)(?:;|$)/)
+    if(match&&match[1])return match[1] as 'es'|'en'
+    const nav=navigator.language?.toLowerCase()||''
+    if(nav.startsWith('en'))return 'en'
+  }catch{}
+  return 'es'
+}
+
+const STRINGS={
+  es:{
+    chatGreeting:'Dime las características de tu viaje (fecha, tiempo o vehículo) y calculamos tu mejor lugar de alunizaje en el Polo Sur Lunar.',
+    exampleBtn:'Probar el viaje del 25 dic · 08:00',
+    manualSettings:'Configurar fecha y requisitos manualmente (sin IA)',
+    manualTitle:'Configuración manual de la misión',
+    placeholder:'Escribe la fecha de tu viaje o pregunta al copiloto…',
+    planBtn:'Planificar mi misión',
+    calculating:'Calculando…',
+    howItWorks:'Cómo funciona',
+    allPole:'Todo el polo',
+    zoomSite:'Acercar destino',
+    fullscreen:'Pantalla grande',
+    exitFullscreen:'Salir de pantalla grande',
+    timelineTitle:'Línea de tiempo unificada',
+    sunLabel:'Sol',
+    earthLabel:'Tierra',
+    slopeP95:'Pendiente P95',
+    landingDay:'Fecha de alunizaje',
+    departureDay:'Fecha de salida',
+    stayDuration:'Tiempo en la Luna',
+    maxSlope:'Pendiente regional máxima · grados',
+    minSun:'Horas mínimas de Sol',
+    minEarth:'Horas mínimas de Tierra visible',
+    recalcBtn:'Recalcular con estos cambios'
+  },
+  en:{
+    chatGreeting:'Tell me the details of your trip (date, stay, or vehicle) and we will calculate your best lunar landing site at the South Pole.',
+    exampleBtn:'Try the Dec 25 · 08:00 trip',
+    manualSettings:'Configure date and criteria manually (without AI)',
+    manualTitle:'Manual Mission Configuration',
+    placeholder:'Enter departure date or ask the mission copilot…',
+    planBtn:'Plan my mission',
+    calculating:'Calculating…',
+    howItWorks:'How it works',
+    allPole:'Whole pole',
+    zoomSite:'Zoom target',
+    fullscreen:'Fullscreen',
+    exitFullscreen:'Exit fullscreen',
+    timelineTitle:'Unified Timeline',
+    sunLabel:'Sun',
+    earthLabel:'Earth',
+    slopeP95:'Slope P95',
+    landingDay:'Landing date',
+    departureDay:'Departure date',
+    stayDuration:'Stay duration on the Moon',
+    maxSlope:'Maximum regional slope · degrees',
+    minSun:'Minimum Sun hours',
+    minEarth:'Minimum Earth visible hours',
+    recalcBtn:'Recalculate with these changes'
+  }
+}
+
 const USER_TIMEZONE=(()=>{
   try{return Intl.DateTimeFormat().resolvedOptions().timeZone||TIMEZONE}catch{return TIMEZONE}
 })()
@@ -168,6 +232,8 @@ function matchCatalogVehicleFromText(text:string):VehicleProfile|null{
 }
 
 export default function UnifiedMissionPlanner(){
+  const [lang]=useState<'es'|'en'>(getInitialLanguage)
+  const t=STRINGS[lang]
   const [atlas,setAtlas]=useState<AtlasData|null>(null),[polar,setPolar]=useState<PolarSurface|null>(null)
   const [loadError,setLoadError]=useState(''),[retry,setRetry]=useState(0)
   const [message,setMessage]=useState(''),[intent,setIntent]=useState<MissionIntent|null>(null),[assumptions,setAssumptions]=useState<string[]>([])
@@ -476,9 +542,69 @@ export default function UnifiedMissionPlanner(){
     }
   }
 
-  function invalidate(){
-    request.current?.abort();requestId.current++;setBusy(null);setPlan(null);setIntent(null);setAdopted(null);setError('');setTimeline(0);setPlaying(false);setFlight(null);setFlying(false)
+  async function askMissionQA(question:string){
+    if(!plan||!selected)return
+    appendChatTurn('user',question,vehicle)
+    setBusy('intent')
+    const activeVeh=plan.vehicle_profile??vehicle
+    try{
+      const res=await fetch('/api/copilot',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          message:question,
+          context:{
+            selected:{
+              id:selected.id,
+              name:`Sector ${selected.id.replace('polar:','')}`,
+              lat:selected.latitude_deg,
+              lon:selected.longitude_deg,
+              slopeDeg:selected.regional_slope_deg,
+              resolutionM:80,
+              coverage:'regional'
+            },
+            regional:{
+              scope:'Polo Sur Lunar (80°S — 90°S)',
+              sourceResolutionM:80,
+              totalCells:plan.total_cells??12892,
+              knownCells:((plan.counts?.green??0)+(plan.counts?.yellow??0)+(plan.counts?.red??0))||12800,
+              evaluated:true
+            },
+            simulation:{
+              status:selected.time_series?.length?'ready':'not_run',
+              risk:selected.risk,
+              reasons:selected.reasons??[],
+              sunHours:selected.sun_hours,
+              earthHours:selected.earth_hours
+            },
+            alternatives:plan.alternatives?.slice(0,4).map(a=>({
+              id:a.id,
+              name:`${num(Math.abs(a.latitude_deg),2)}°S ${longitude(a.longitude_deg,2)}`,
+              lat:a.latitude_deg,
+              lon:a.longitude_deg,
+              slopeDeg:a.regional_slope_deg,
+              resolutionM:80,
+              coverage:'regional'
+            }))??[]
+          }
+        })
+      })
+      const data=await res.json()
+      if(data.status==='ok'&&data.explanation){
+        appendChatTurn('assistant',data.explanation,activeVeh)
+        if(data.action?.type==='select_cell'&&data.action.target_id){
+          choose(data.action.target_id)
+        }
+      }else{
+        appendChatTurn('assistant',data.message||'No se pudo obtener respuesta del copiloto en este momento.')
+      }
+    }catch(e){
+      appendChatTurn('assistant',e instanceof Error?e.message:'Error al consultar al copiloto.')
+    }finally{
+      setBusy(null)
+    }
   }
+
   function clearResult(){setAdopted(null);request.current?.abort();requestId.current++;setBusy(null);setPlan(null);setError('');setFlight(null);setFlying(false);setPlaying(false)}
   async function calculate(text=message,reuseIntent?:MissionIntent,overrideVehicle?:VehicleProfile,skipUserBubble=false,alternative?:AdoptedAlternative){
     const detectedVehicle=!overrideVehicle&&text?matchCatalogVehicleFromText(text):null
@@ -599,7 +725,18 @@ export default function UnifiedMissionPlanner(){
     <div className={layoutClass}>
       {!hideLeftPanel&&<aside className="trip-panel chat-linked-panel">
         <div className="chat-panel-top">
-          <span className="micro-title">COPILOTO DE MISIÓN</span>
+          <div className="chat-panel-top-bar">
+            <span className="micro-title">COPILOTO DE MISIÓN</span>
+            <button
+              type="button"
+              className={'chat-settings-gear-btn'+(preferences?' active':'')}
+              onClick={()=>setPreferences(v=>!v)}
+              aria-label={t.manualSettings}
+              title={t.manualSettings}
+            >
+              <Settings2 size={16}/>
+            </button>
+          </div>
           <h1>Dinos cuándo y <em>encontramos dónde.</em></h1>
         </div>
 
@@ -608,8 +745,8 @@ export default function UnifiedMissionPlanner(){
           {chatTurns.length===0&&!plan&&!busy&&<div className="gemini-msg assistant">
             <div className="gemini-msg-head"><Bot size={15}/><span>Copiloto de misión</span></div>
             <div className="gemini-msg-content">
-              <p>Escribe la fecha de tu viaje al Polo Sur Lunar. Desde la casilla inferior puedes adjuntar un archivo <code>.json</code> o <code>.gltf</code> con <strong>+</strong> o elegir perfiles de referencia y ejemplos hipotéticos; sus parámetros no son fichas verificadas de fabricante.</p>
-              <button type="button" className="example-trip" onClick={()=>{setMessage(EXAMPLE);void calculate(EXAMPLE)}} disabled={!atlas||!polar}>Probar el viaje del 25 dic · 08:00 <ArrowRight size={12}/></button>
+              <p>{t.chatGreeting}</p>
+              <button type="button" className="example-trip" onClick={()=>{setMessage(EXAMPLE);void calculate(EXAMPLE)}} disabled={!atlas||!polar}>{t.exampleBtn} <ArrowRight size={12}/></button>
             </div>
           </div>}
 
@@ -688,7 +825,17 @@ export default function UnifiedMissionPlanner(){
         {/* ChatGPT / Gemini style unified composer with single + (.json/.gltf) and Lunar Object Selector */}
         <form
           className={'chat-composer-box'+(composerDrag?' dragging':'')}
-          onSubmit={e=>{e.preventDefault();void calculate()}}
+          onSubmit={e=>{
+            e.preventDefault()
+            const txt=message.trim()
+            if(!txt)return
+            setMessage('')
+            if(plan&&selected&&!/(\d{1,2}\s+de\s+[a-z]+|\d{4}-\d{2}-\d{2}|viaj|aluniz|salid)/i.test(txt)){
+              void askMissionQA(txt)
+            }else{
+              void calculate(txt)
+            }
+          }}
           onDragOver={e=>{e.preventDefault();setComposerDrag(true)}}
           onDragLeave={()=>setComposerDrag(false)}
           onDrop={e=>{e.preventDefault();setComposerDrag(false);const f=e.dataTransfer.files?.[0];if(f)void handleProfileFile(f)}}
@@ -709,11 +856,23 @@ export default function UnifiedMissionPlanner(){
             id="mission-request"
             aria-label="Describe tu misión"
             value={message}
-            onChange={e=>{invalidate();setMessage(e.target.value)}}
-            onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();if(!busy&&atlas&&polar)void calculate()}}}
+            onChange={e=>setMessage(e.target.value)}
+            onKeyDown={e=>{
+              if(e.key==='Enter'&&!e.shiftKey){
+                e.preventDefault()
+                const txt=message.trim()
+                if(!txt||busy||!atlas||!polar)return
+                setMessage('')
+                if(plan&&selected&&!/(\d{1,2}\s+de\s+[a-z]+|\d{4}-\d{2}-\d{2}|viaj|aluniz|salid)/i.test(txt)){
+                  void askMissionQA(txt)
+                }else{
+                  void calculate(txt)
+                }
+              }
+            }}
             rows={3}
             maxLength={1600}
-            placeholder="Escribe la fecha de tu viaje o pregunta a Gemini (ej. 25 de diciembre 2026 a las 8 am)…"
+            placeholder={t.placeholder}
           />
 
           {/* Popover menu for all Lunar South Pole vehicles, rovers & habitats */}
@@ -776,19 +935,25 @@ export default function UnifiedMissionPlanner(){
 
             <button className="primary-plan composer-send-btn" type="submit" disabled={Boolean(busy)||!atlas||!polar}>
               {busy?<LoaderCircle className="spin" size={15}/>:<Send size={14}/>}
-              <span>{busy?'Calculando…':'Planificar mi misión'}</span>
+              <span>{busy?t.calculating:t.planBtn}</span>
             </button>
           </div>
           {uploadNotice&&<small className="upload-notice">{uploadNotice}</small>}
         </form>
         {adopted&&<div className="adopted-alternative" data-testid="adopted-alternative"><Check size={14}/><div><strong>Alternativa aplicada</strong><span>{adopted.original.date_kind==='landing'?'Alunizaje':'Salida'} original: {localDate(adopted.original.departure_utc)}<br/>Nueva fecha: {localDate(adopted.proposal.proposed_request.departure_utc)}</span><small>La solicitud original queda guardada en la comparación. La estancia y los requisitos no cambian.</small></div></div>}
-        <p className="profile-provenance" data-testid="profile-provenance">Perfil de referencia: horizontes preparados a 2 m. Los objetos del catálogo son ejemplos hipotéticos editables, no fichas de fabricante.</p><div className="trip-assumption"><Clock3 size={13}/><span>{localTimeZoneLabel()}<br/>Estancia de ejemplo: {num(Number(stay),0)} h, editable abajo.</span></div>
-        <button className="preferences-toggle" onClick={()=>setPreferences(v=>!v)} aria-expanded={preferences}><Settings2 size={13}/> {plan?'Cambiar fecha o requisitos':'Preferencias del viaje'}</button>
-        {preferences&&<div className="trip-preferences">
-          {intent&&<label>{intent.date_kind==='landing'?'Fecha de alunizaje':'Fecha de salida'} · {localTimeZoneLabel()}<input aria-label="Fecha de viaje" type="datetime-local" value={departureInput} onChange={e=>{clearResult();setDepartureInput(e.target.value)}}/></label>}
-          <label>Tiempo en la Luna<select aria-label="Estancia en la Luna" value={stay} onChange={e=>{clearResult();setStay(e.target.value)}}><option value="24">1 día · 24 h</option><option value="48">2 días · 48 h</option><option value="72">3 días · 72 h</option><option value="168">7 días · 168 h</option>{!['24','48','72','168'].includes(stay)&&<option value={stay}>{stay} horas</option>}</select></label>
-          <label>Pendiente regional máxima · grados<input aria-label="Pendiente máxima" type="number" min={0} max={45} value={slope} onChange={e=>{clearResult();setSlope(Number(e.target.value))}}/></label><label>Horas mínimas de Sol<input aria-label="Horas mínimas de Sol" type="number" min={0} max={Number(stay)} value={sunHours} onChange={e=>{clearResult();setSunHours(Number(e.target.value))}}/></label><label>Horas mínimas de Tierra visible<input aria-label="Horas mínimas de Tierra" type="number" min={0} max={Number(stay)} value={earthHours} onChange={e=>{clearResult();setEarthHours(Number(e.target.value))}}/></label><p>El viaje de ida y vuelta se estima por separado. La estancia no es la duración total.</p>
-          {intent&&<button onClick={recalculate} disabled={Boolean(busy)}>Recalcular con estos cambios</button>}
+        <p className="profile-provenance sr-only-label" data-testid="profile-provenance">Perfil de referencia: horizontes preparados a 2 m. Los objetos del catálogo son ejemplos hipotéticos editables, no fichas de fabricante.</p>
+        {preferences&&<div className="trip-preferences chat-manual-modal">
+          <div className="manual-modal-head">
+            <strong>{t.manualTitle}</strong>
+            <button type="button" onClick={()=>setPreferences(false)} aria-label="Cerrar configuración manual"><X size={14}/></button>
+          </div>
+          {intent&&<label>{intent.date_kind==='landing'?t.landingDay:t.departureDay} · {localTimeZoneLabel()}<input aria-label="Fecha de viaje" type="datetime-local" value={departureInput} onChange={e=>{clearResult();setDepartureInput(e.target.value)}}/></label>}
+          <label>{t.stayDuration}<select aria-label="Estancia en la Luna" value={stay} onChange={e=>{clearResult();setStay(e.target.value)}}><option value="24">1 día · 24 h</option><option value="48">2 días · 48 h</option><option value="72">3 días · 72 h</option><option value="168">7 días · 168 h</option>{!['24','48','72','168'].includes(stay)&&<option value={stay}>{stay} horas</option>}</select></label>
+          <label>{t.maxSlope}<input aria-label="Pendiente máxima" type="number" min={0} max={45} value={slope} onChange={e=>{clearResult();setSlope(Number(e.target.value))}}/></label>
+          <label>{t.minSun}<input aria-label="Horas mínimas de Sol" type="number" min={0} max={Number(stay)} value={sunHours} onChange={e=>{clearResult();setSunHours(Number(e.target.value))}}/></label>
+          <label>{t.minEarth}<input aria-label="Horas mínimas de Tierra visible" type="number" min={0} max={Number(stay)} value={earthHours} onChange={e=>{clearResult();setEarthHours(Number(e.target.value))}}/></label>
+          <p>El viaje de ida y vuelta se estima por separado. La estancia no es la duración total.</p>
+          {intent&&<button onClick={recalculate} disabled={Boolean(busy)}>{t.recalcBtn}</button>}
         </div>}
       </aside>}
 
