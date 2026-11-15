@@ -247,3 +247,128 @@ async def copilot(request:Request):
             return respond(guide_reply(value,provider_reason(exc)))
     except CopilotError as exc:
         return respond({'status':'unavailable','message':str(exc)},exc.status)
+
+LANDER_REVIEW_SCHEMA={
+    'type':'object','additionalProperties':False,
+    'properties':{
+        'summary':{'type':'string'},
+        'risk_alert':{'type':'string'},
+        'site_recommendation':{'type':'string'},
+        'hardware_recommendation':{'type':'string'}
+    },
+    'required':['summary','risk_alert','site_recommendation','hardware_recommendation']
+}
+
+LANDER_REVIEW_SYSTEM=(
+    'Eres el Ingeniero Jefe de Misión de LUNAR ORACLE (Gemini Copilot). Analiza en español técnico, claro y directo '
+    'la compatibilidad entre el vehículo lunar subido (lander_name, solar_panel_height, antenna_height, center_of_gravity_tolerance) '
+    'y el terreno NASA LOLA + efemérides JPL Horizons del punto seleccionado. Usa únicamente las cifras provistas en TELEMETRY. '
+    'En summary: presenta la evaluación del módulo y sus alturas en la coordenada y fecha actuales. '
+    'En risk_alert: explica el estado de los paneles solares vs la antena DTE, a qué hora (+Xh) y en qué dirección cardinal ocurre algún bloqueo montañoso, y cómo está la pendiente frente a center_of_gravity_tolerance. '
+    'En site_recommendation: recomienda el cambio de sitio hacia la coordenada alternativa calculada indicando distancia en km, dirección y pendiente. '
+    'En hardware_recommendation: explica si cambiar a un vehículo más alto como Starship HLS (Paneles a 50 m, Antena a 38 m) salva o mejora la misión en esta misma coordenada.'
+)
+
+def _build_baseline_lander_review(data:dict)->dict:
+    vp=data.get('vehicle_profile') or {}
+    lander=str(vp.get('lander_name') or 'Módulo Lunar')
+    sh_m=float(vp.get('solar_panel_height') or 2)
+    ah_m=float(vp.get('antenna_height') or 2)
+    tol=float(vp.get('center_of_gravity_tolerance') or 10)
+    sel=data.get('selected') or {}
+    alt=data.get('alternative') or {}
+    stay=int(data.get('surface_hours') or 72)
+    arrival=str(data.get('arrival_label') or 'la fecha seleccionada')
+    lat=float(sel.get('latitude_deg') or -89.0)
+    lon=float(sel.get('longitude_deg') or 0.0)
+    slope=float(sel.get('regional_slope_deg') or 0.0)
+    sun_h=sel.get('sun_hours')
+    earth_h=sel.get('earth_hours')
+    diag=sel.get('diagnostics') or {}
+    f_sun_h=diag.get('first_sun_block_hour')
+    f_sun_dir=diag.get('first_sun_block_cardinal') or 'del cráter'
+    f_earth_h=diag.get('first_earth_block_hour')
+    f_earth_dir=diag.get('first_earth_block_cardinal') or 'del relieve'
+    base_shadow_h=int(diag.get('base_in_shadow_while_panels_lit_hours') or 0)
+    starship_sh=diag.get('starship_sun_hours',sun_h)
+    starship_ok=bool(diag.get('starship_would_survive'))
+
+    summary=f"He evaluado el perfil de tu módulo '{lander}' (Paneles a {sh_m:g} m · Antena DTE a {ah_m:g} m) en la coordenada {abs(lat):.3f}°S, {lon:.3f}°E para {arrival} ({stay} h de estancia)."
+
+    risks=[]
+    if slope>tol:
+        risks.append(f"Riesgo crítico de vuelco: la pendiente local ({slope:.1f}°) supera la tolerancia del centro de gravedad de '{lander}' ({tol:g}°).")
+    elif slope>=tol*0.82:
+        risks.append(f"Tu tolerancia de inclinación ({tol:g}°) está cerca del límite (terreno actual: {slope:.1f}°).")
+    else:
+        risks.append(f"Inclinación mecánica dentro de margen ({slope:.1f}° frente a {tol:g}° máx).")
+
+    if f_sun_h is not None and (sun_h is not None and sun_h<stay):
+        risks.append(f"El relieve montañoso al {f_sun_dir} bloqueará tus paneles solares (a {sh_m:g} m) a las +{f_sun_h} h de estancia ({sun_h} h de luz acumulada de {stay} h).")
+    elif base_shadow_h>0:
+        risks.append(f"La base a ras de suelo entra en sombra durante {base_shadow_h} h, pero la altura de tus paneles ({sh_m:g} m) mantiene ENERGÍA NOMINAL por encima de la sombra topográfica.")
+    elif sun_h is not None:
+        risks.append(f"Los paneles solares a {sh_m:g} m mantienen línea de visión despejada con el Sol ({sun_h} h de {stay} h).")
+
+    if f_earth_h is not None and (earth_h is not None and earth_h<stay):
+        risks.append(f"La antena DTE (a {ah_m:g} m) pierde enlace directo con la Tierra a las +{f_earth_h} h por obstrucción al {f_earth_dir} ({earth_h} h visibles).")
+    elif earth_h is not None:
+        risks.append(f"La antena DTE (a {ah_m:g} m) mantiene enlace directo con la Tierra ({earth_h} h visibles).")
+
+    risk_alert=' '.join(risks)
+
+    if alt and alt.get('latitude_deg') is not None:
+        dx=float(alt.get('x_m',0))-float(sel.get('x_m',0))
+        dy=float(alt.get('y_m',0))-float(sel.get('y_m',0))
+        dist_km=math.hypot(dx,dy)/1000.0
+        dirs=('Norte','Noreste','Este','Sureste','Sur','Suroeste','Oeste','Noroeste')
+        az=(math.degrees(math.atan2(dx,dy))%360)
+        card=dirs[int(((az+22.5)//45))%8]
+        alt_lat=abs(float(alt['latitude_deg']))
+        alt_lon=float(alt['longitude_deg'])
+        alt_slope=float(alt.get('regional_slope_deg') or 0)
+        alt_sh=alt.get('sun_hours',stay)
+        site_rec=f"Mover la coordenada objetivo {dist_km:.1f} km hacia el {card} (Latitud -{alt_lat:.3f}°, Longitud {alt_lon:.3f}°E). Ahí el terreno tiene {alt_slope:.1f}° de pendiente y ofrece {alt_sh} h de Sol despejado."
+    else:
+        site_rec="Esta coordenada ya se encuentra entre las de mejor despeje topográfico para los requisitos actuales."
+
+    if sh_m<45:
+        if (sun_h is not None and starship_sh is not None and starship_sh>sun_h) or starship_ok:
+            hw_rec=f"Si la coordenada es inamovible por razones científicas, un módulo tipo 'Starship HLS' (Paneles a 50 m, Antena a 38 m) eleva los emisores sobre la cresta y alcanza {starship_sh} h de energía solar en este mismo punto. ¿Quieres recalcular la misión usando el perfil de Starship HLS?"
+        else:
+            hw_rec=f"Incluso elevando el vehículo a un perfil tipo 'Starship HLS' (Paneles a 50 m), este punto obtiene {starship_sh} h de Sol; prioriza el cambio de sitio o ajusta la ventana temporal."
+    else:
+        hw_rec=f"Ya estás operando con una arquitectura de gran altura ({sh_m:g} m), maximizando el despeje geométrico sobre las crestas locales."
+
+    return {
+        'summary':summary,
+        'risk_alert':risk_alert,
+        'site_recommendation':site_rec,
+        'hardware_recommendation':hw_rec
+    }
+
+@router.post('/lander-review')
+async def lander_review(request:Request):
+    try:
+        raw=json.loads(await request.body())
+    except Exception:
+        return respond({'status':'unavailable','message':'JSON inválido.'},422)
+    baseline=_build_baseline_lander_review(raw if isinstance(raw,dict) else {})
+    config=configuration()
+    if config and config['provider']=='gemini':
+        try:
+            url=config['base']+'/models/'+quote(config['model'],safe='')+':generateContent'
+            prompt_payload=json.dumps({'TELEMETRY':raw,'BASELINE_ANALYSIS':baseline},ensure_ascii=False)
+            body={
+                'systemInstruction':{'parts':[{'text':LANDER_REVIEW_SYSTEM}]},
+                'contents':[{'role':'user','parts':[{'text':prompt_payload}]}],
+                'generationConfig':{'responseMimeType':'application/json','responseJsonSchema':LANDER_REVIEW_SCHEMA,'maxOutputTokens':900}
+            }
+            payload=await provider_json(url,config,body,timeout=15)
+            text=''.join(p.get('text','') for p in payload.get('candidates',[{}])[0].get('content',{}).get('parts',[]))
+            parsed=json.loads(text)
+            if all(isinstance(parsed.get(k),str) and len(parsed[k].strip())>10 for k in ('summary','risk_alert','site_recommendation','hardware_recommendation')):
+                return respond({'status':'ok','mode':'ai','model':config['model'],**parsed})
+        except Exception:
+            pass
+    return respond({'status':'ok','mode':'guide','model':None,**baseline})

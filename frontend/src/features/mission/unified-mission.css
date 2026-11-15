@@ -150,6 +150,30 @@ button:disabled{cursor:default;opacity:.43}
 .mission-marker-label.best>span{position:absolute;bottom:41px;left:50%;transform:translateX(-50%);border-radius:5px;padding:5px 8px;color:#10271b;background:#baf4d2;font:600 11px Barlow,sans-serif;white-space:nowrap}
 .unified-mission button.mission-marker-label.rejected{width:23px;height:23px;border:1.5px solid #ff737b;background:#3b1720dc;color:#ffabb1;box-shadow:none;font-size:16px}
 .selected-color.gray{background:#8d9aaa}
+.lander-profile-box{margin:16px 0;padding:13px;border:1px solid #2e3e4e;border-radius:10px;background:#0b1118;transition:border-color .15s,background .15s}
+.lander-profile-box.dragging{border-color:var(--green);background:#12221b}
+.lander-profile-head,.lander-profile-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
+.lander-profile-head .lander-sample-btn,.lander-profile-header .download-sample{border:0;background:transparent;padding:2px 6px;font:9px 'IBM Plex Mono',monospace;color:#8cb7a1}
+.lander-profile-box .upload-lander-btn{width:100%;font-size:12px;border-style:dashed;border-color:#44596f;background:#101924;color:#d6e6f2;padding:10px}
+.lander-preset-pills{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.lander-preset-pills button{font-size:10px;padding:6px 4px;border-radius:6px;background:#0e151f;color:#9eb0c2}
+.lander-preset-pills button.active{border-color:var(--green);background:#182e24;color:#d6fce6}
+.lander-specs-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px;padding-top:9px;border-top:1px solid #1f2b37;text-align:center}
+.lander-specs-grid small{display:block;font-size:9px;color:var(--muted)}
+.lander-specs-grid strong{display:block;font:600 12px 'IBM Plex Mono',monospace;color:#e3f2ea;margin-top:3px}
+.upload-notice,.lander-status{display:block;margin-top:7px;font-size:10px;color:var(--green)}
+.conditions-readouts b.kpi-ok{color:var(--green)}
+.conditions-readouts b.kpi-warn{color:#ff9b73}
+.gemini-engineer-card{margin-top:18px;padding:14px;border:1px solid #355445;border-radius:10px;background:#0d1915}
+.gemini-engineer-header,.gemini-engineer-head{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+.gemini-engineer-header strong{display:block;font-size:12px}
+.gemini-engineer-header small,.gemini-engineer-head small{display:block;font:9px 'IBM Plex Mono',monospace;color:var(--green)}
+.gemini-engineer-card .engineer-summary{font-size:12px;color:#d6e7de;line-height:1.55;margin:0 0 10px}
+.gemini-engineer-card .engineer-alert{display:flex;gap:8px;align-items:flex-start;padding:9px 10px;border-left:2px solid #f0b265;background:#1d1912;border-radius:5px;font-size:11px;color:#f3d6ae;line-height:1.5;margin-bottom:10px}
+.gemini-engineer-card .engineer-alert strong{color:#ffca85}
+.gemini-engineer-card .engineer-recs{display:flex;flex-direction:column;gap:9px;font-size:11px;color:#bfd4c8;line-height:1.5}
+.gemini-engineer-card .engineer-recs strong{color:#e7f6ee}
+.gemini-engineer-card .engineer-rec-item button,.gemini-engineer-card .engineer-action-btn{margin-top:6px;width:100%;font-size:11px;padding:8px 10px;background:#193126;border-color:#598c6c;color:#d6fce6}
 @media(prefers-reduced-motion:reduce){.spin{animation:none}}
 
 /* Complete regional evaluation: the map stays clear while every area is classified. */

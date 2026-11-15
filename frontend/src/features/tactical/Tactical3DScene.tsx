@@ -29,6 +29,7 @@ export interface Tactical3DSceneProps {
   scienceReady?:boolean;assessmentRisk?:Risk;assessments?:CellAssessment[]
   active?:boolean;altitudeM?:number;landed?:boolean
   overview?:boolean;focusZone?:boolean;onShadingStatus?:(status:string)=>void;polarSurface?:PolarSurface|null;polarAssessments?:PolarAssessment[];polarSelection?:PolarCell|null
+  solarPanelHeightM?:number;antennaHeightM?:number;landerName?:string;vehiclePulseKey?:number
 }
 const EXAGGERATION=1
 const COLORS:Record<Risk,string>={green:'#62e6a0',yellow:'#f5cb67',red:'#ff797f',unknown:'#788e9e'}
@@ -59,10 +60,10 @@ export function Tactical3DScene(props:Tactical3DSceneProps){
       <button className="tactical-surface-place-btn" onClick={props.onTogglePlacementMode} aria-pressed={props.placementMode}>{props.placementMode?<Crosshair size={12}/>:<MapPin size={12}/>} {props.placementMode?'CLIC PARA ELEGIR DESTINO':'ELEGIR SOBRE LA SUPERFICIE'}</button>
       <span>{hover&&props.placementMode?hover[0].toFixed(5)+'°, '+hover[1].toFixed(5)+'°':'Arrastra para orbitar · rueda para acercar'}</span>
     </div>
-    <Canvas frameloop={props.active===false?'never':'always'} dpr={[1,1.7]} camera={{position:[12,7,14],near:props.overview?0.1:0.001,far:props.overview?2500:5000,fov:45}} gl={{antialias:true,alpha:false,localClippingEnabled:true}}>
+    <Canvas frameloop={props.active===false?'never':'always'} dpr={[1,1.25]} camera={{position:[12,7,14],near:props.overview?0.1:0.001,far:props.overview?2500:5000,fov:45}} gl={{antialias:true,alpha:false,localClippingEnabled:true,powerPreference:'high-performance'}}>
       <color attach="background" args={['#03080d']}/>
       <ambientLight intensity={0.45}/>
-      <Stars radius={1100} depth={200} count={2000} factor={2} fade/>
+      <Stars radius={1100} depth={200} count={900} factor={2} fade/>
       {props.atlasData&&<Terrain {...props} dragging={dragging} onHover={setHover}/>}
       {props.atlasData&&(!props.overview||props.showSurfaceVehicle||props.scienceReady)&&<Spacecraft {...props} onDrag={()=>setDragging(true)}/>}
       {props.scienceReady&&props.detailAtlasData&&props.assessments?.length&&<LandingContours data={props.detailAtlasData} assessments={props.assessments}/>}
@@ -112,10 +113,10 @@ function visualGeometry(data:AtlasData,stride:number,props:Tactical3DSceneProps,
   return g
 }
 function Terrain(props:Tactical3DSceneProps&{dragging:boolean;onHover:(v:[number,number]|null)=>void}){
-  const {gl,size}=useThree()
+  const {gl}=useThree()
   const coverageHovered=useRef<string|null>(null)
   const regional=props.atlasData!,detail=props.detailAtlasData,context=props.contextAtlasData
-  const stride=props.overview&&size.width>=650?1:2
+  const stride=props.overview?3:2
   const [shading,setShading]=useState<THREE.Texture|null>(null)
   useEffect(()=>{
     if(!props.overview)return
@@ -156,13 +157,10 @@ function Terrain(props:Tactical3DSceneProps&{dragging:boolean;onHover:(v:[number
   const focusedTexture=focus&&localShading?.id===focus.manifest.data_url?localShading.texture:null
   const focusGeometry=useMemo(()=>{
     if(!focus)return null
-    const g=visualGeometry(focus,1,props,Boolean(focusedTexture)),positions=g.getAttribute('position')
-    const b=focus.manifest.sample_extent_m,side=focus.manifest.grid_size,spacing=focus.manifest.display_spacing_m
+    const g=visualGeometry(focus,2,props,Boolean(focusedTexture)),positions=g.getAttribute('position')
+    const b=focus.manifest.sample_extent_m,side=Math.floor((focus.manifest.grid_size-1)/2)+1,spacing=focus.manifest.display_spacing_m*2
     const transition=regional.manifest.display_spacing_m*stride*2
-    // Join the visible LOD to the coarser triangles along its perimeter. This
-    // changes display geometry only; native NASA science never reads this mesh.
     for(let i=0;i<positions.count;i++){
-      if(focus.heights[i]===focus.manifest.nodata)continue
       const x=b.xmin+(i%side)*spacing,y=b.ymax-Math.floor(i/side)*spacing
       const distance=Math.min(x-b.xmin,b.xmax-x,y-b.ymin,b.ymax-y)
       if(distance>=transition)continue
@@ -200,7 +198,9 @@ function Terrain(props:Tactical3DSceneProps&{dragging:boolean;onHover:(v:[number
     if(place&&cell&&props.onCoverageSelect)props.onCoverageSelect(cell.id)
     else if(place||props.dragging)props.onSurfacePlace?.(lat,lon)
   }
-  const handlers={onPointerMove:(e:ThreeEvent<PointerEvent>)=>hit(e,false),onClick:(e:ThreeEvent<MouseEvent>)=>{if((props.placementMode||hasCoverage)&&e.delta<=5)hit(e,true)},onDoubleClick:(e:ThreeEvent<MouseEvent>)=>hit(e,true),onPointerOut:()=>{props.onHover(null);if(coverageHovered.current!==null){coverageHovered.current=null;props.onCoverageHover?.(null)}}}
+  const handlers=props.dragging
+    ?{onPointerMove:(e:ThreeEvent<PointerEvent>)=>hit(e,false),onClick:(e:ThreeEvent<MouseEvent>)=>{if((props.placementMode||hasCoverage)&&e.delta<=5)hit(e,true)},onDoubleClick:(e:ThreeEvent<MouseEvent>)=>hit(e,true),onPointerOut:()=>{props.onHover(null);if(coverageHovered.current!==null){coverageHovered.current=null;props.onCoverageHover?.(null)}}}
+    :{onClick:(e:ThreeEvent<MouseEvent>)=>{if((props.placementMode||hasCoverage)&&e.delta<=5)hit(e,true)},onDoubleClick:(e:ThreeEvent<MouseEvent>)=>hit(e,true),onPointerOut:()=>{if(coverageHovered.current!==null){coverageHovered.current=null;props.onCoverageHover?.(null)}}}
   return <group>
     <directionalLight position={direction.clone().multiplyScalar(300)} color="#fff1d4" intensity={props.scienceReady?2:1.4}/>
     <directionalLight position={[70,100,-90]} color="#809fac" intensity={0.35}/>
@@ -256,15 +256,36 @@ function Spacecraft(props:Tactical3DSceneProps&{onDrag:()=>void}){
   const site={latitude_deg:props.latDeg,longitude_deg:props.lonDeg} as never
   const up=bodyDirection(site,0,90),position=base.position.clone().addScaledVector(up,(props.altitudeM??0)/1000)
   const rotation=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),(props.altitudeM??0)>0?up:base.normal)
-  // Visibility rays belong to the queried 2 m surface observer, including during descent.
-  const emitter=base.position.clone().addScaledVector(up,props.observerHeightM/1000)
-  const sun=emitter.clone().addScaledVector(bodyDirection(site,props.sunAzimuthDeg,props.sunElevationDeg),380)
-  const earth=emitter.clone().addScaledVector(bodyDirection(site,props.earthAzimuthDeg,props.earthElevationDeg),340)
-  const colour=COLORS[props.assessmentRisk??'unknown']
+  const solarH=props.solarPanelHeightM??props.observerHeightM
+  const antennaH=props.antennaHeightM??props.observerHeightM
   const showVehicle=!props.overview||props.showSurfaceVehicle||props.focusZone
+  const vehicleScale=props.focusZone&&!props.showSurfaceVehicle?0.45:0.008
+  const maxH=Math.max(solarH,antennaH,4)
+  const heightStretch=THREE.MathUtils.clamp(maxH/12,0.75,3.2)
+  const noseTopLocalY=(1.05+1.4*heightStretch+0.8)*vehicleScale
+  const antennaLocalY=(THREE.MathUtils.clamp((antennaH/maxH)*(2.6*heightStretch)+0.45,0.75,3.1*heightStretch))*vehicleScale
+  const sideDir=bodyDirection(site,90,0)
+
+  const solarEmitter=showVehicle
+    ?position.clone().addScaledVector(up,noseTopLocalY)
+    :base.position.clone().addScaledVector(up,Math.max(solarH/1000,0.02))
+  const earthEmitter=showVehicle
+    ?position.clone().addScaledVector(up,antennaLocalY).addScaledVector(sideDir,1.25*vehicleScale)
+    :base.position.clone().addScaledVector(up,Math.max(antennaH/1000,0.015)).addScaledVector(sideDir,0.18)
+
+  const sun=solarEmitter.clone().addScaledVector(bodyDirection(site,props.sunAzimuthDeg,props.sunElevationDeg),380)
+  const earth=earthEmitter.clone().addScaledVector(bodyDirection(site,props.earthAzimuthDeg,props.earthElevationDeg),340)
+  const colour=COLORS[props.assessmentRisk??'unknown']
   return <group>
     {showVehicle&&<group position={position} quaternion={rotation} onPointerDown={e=>{e.stopPropagation();props.onDrag()}}>
-      <LunarRocketLanderModel isSafe={props.assessmentRisk==='green'} scale={props.focusZone&&!props.showSurfaceVehicle?0.45:0.008} statusColor={colour}/>
+      <LunarRocketLanderModel
+        isSafe={props.assessmentRisk==='green'}
+        scale={vehicleScale}
+        statusColor={colour}
+        solarPanelHeightM={solarH}
+        antennaHeightM={antennaH}
+        pulseKey={props.vehiclePulseKey}
+      />
       {(props.altitudeM??0)>0&&<mesh position={[0,-.008,0]} rotation={[Math.PI,0,0]}><coneGeometry args={[.003,.015,12]}/><meshBasicMaterial color="#8adaff" transparent opacity={.7}/></mesh>}
     </group>}
     {showVehicle&&<group position={base.position} quaternion={new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1),base.normal)}>
@@ -272,18 +293,19 @@ function Spacecraft(props:Tactical3DSceneProps&{onDrag:()=>void}){
       {props.landed&&<mesh raycast={()=>null}><circleGeometry args={[.007,24]}/><meshBasicMaterial color={colour} side={THREE.DoubleSide}/></mesh>}
     </group>}
     {props.scienceReady&&<>
-      <Line points={[emitter,sun]} color={props.sunRaycast.hit?'#ff797f':'#f5cb67'} lineWidth={2.2} transparent opacity={.9}/>
-      <Line points={[emitter,earth]} color={props.earthRaycast.hit?'#ff797f':'#8ddfe9'} lineWidth={2.2} transparent opacity={.9}/>
-      <mesh position={sun} raycast={()=>null}><sphereGeometry args={[8,32,24]}/><meshBasicMaterial color="#ffe8ad"/></mesh>
+      <Line points={[solarEmitter,sun]} color={props.sunRaycast.hit?'#ff797f':'#f5cb67'} lineWidth={2.4} transparent opacity={.92}/>
+      <Line points={[earthEmitter,earth]} color={props.earthRaycast.hit?'#ff797f':'#8ddfe9'} lineWidth={2.2} transparent opacity={.9}/>
+      <mesh position={sun} raycast={()=>null}><sphereGeometry args={[8,24,18]}/><meshBasicMaterial color="#ffe8ad"/></mesh>
       <group position={earth}>
-        <mesh raycast={()=>null}><sphereGeometry args={[10,40,32]}/><meshStandardMaterial color="#447fbc" roughness={1}/></mesh>
-        <mesh raycast={()=>null}><sphereGeometry args={[10.1,24,16]}/><meshBasicMaterial color="#bfe2e4" wireframe transparent opacity={.22}/></mesh>
+        <mesh raycast={()=>null}><sphereGeometry args={[10,28,20]}/><meshStandardMaterial color="#447fbc" roughness={1}/></mesh>
+        <mesh raycast={()=>null}><sphereGeometry args={[10.1,20,14]}/><meshBasicMaterial color="#bfe2e4" wireframe transparent opacity={.22}/></mesh>
       </group>
     </>}
   </group>
 }
 function Camera(props:Tactical3DSceneProps&{dragging:boolean}){
   const {camera,size}=useThree(),controls=useRef<Controls>(null)
+  const lastCamPos=useRef(new THREE.Vector3())
   const data=props.detailAtlasData??(props.showSurfaceVehicle?props.focusTerrainData:null)??props.atlasData
   const target=useMemo(()=>data?surfacePoint(data,props.latDeg,props.lonDeg).position:new THREE.Vector3(),[data,props.latDeg,props.lonDeg])
   useEffect(()=>{
@@ -322,6 +344,8 @@ function Camera(props:Tactical3DSceneProps&{dragging:boolean}){
       const offset=new THREE.Vector3(.14,.10,.18)
       camera.position.copy(vehicle).add(offset);controls.current.target.copy(vehicle);controls.current.update()
     }
+    if(camera.position.distanceToSquared(lastCamPos.current)<1e-6)return
+    lastCamPos.current.copy(camera.position)
     const radial=camera.position.clone().add(new THREE.Vector3(0,region.manifest.radius_m/1000,0)).normalize()
     const lat=-Math.asin(THREE.MathUtils.clamp(radial.y,-1,1))*180/Math.PI,lon=Math.atan2(-radial.x,radial.z)*180/Math.PI
     const [x,y]=latLonToStereoM(lat,lon), terrain=props.detailAtlasData&&inside(props.detailAtlasData,x,y)?props.detailAtlasData:props.contextAtlasData&&inside(props.contextAtlasData,x,y)?props.contextAtlasData:region
