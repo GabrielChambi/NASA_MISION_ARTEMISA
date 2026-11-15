@@ -15,6 +15,7 @@ from .landing import router as landing_router
 from .polar import router as polar_router
 from .copilot import router as copilot_router
 from .automatic_plan import router as automatic_plan_router
+from .mission_rescue import router as mission_rescue_router
 from .mission_intent import router as mission_intent_router
 
 app=FastAPI(title='Lunar Oracle scientific API',version='1.0.0',description='NASA LOLA catalog and JPL Horizons geometric visibility. No simulated science.')
@@ -75,6 +76,7 @@ async def solar_endpoint(site_id:str='site04',start_utc:str='2026-12-01T00:00:00
         if isinstance(exc,HorizonUnavailable): raise
         return JSONResponse(status_code=422,content={'status':'unavailable','message':str(exc),'samples':[],'windows':[],'summary':None})
 
+app.include_router(mission_rescue_router)
 app.include_router(automatic_plan_router)
 app.include_router(mission_intent_router)
 app.include_router(polar_router)

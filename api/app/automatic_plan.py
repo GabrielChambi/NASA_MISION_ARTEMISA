@@ -39,23 +39,28 @@ def validate_plan_request(value):
         start=datetime.strptime(raw,'%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc)
         if not 1962<=start.year<=2099:raise ValueError()
     except (ValueError,TypeError):raise ValueError('La fecha debe ser UTC explícita, válida y con minutos completos (1962–2099).')
-    vp=value.get('vehicle_profile') if isinstance(value.get('vehicle_profile'),dict) else {}
-    lander_name=str(vp.get('lander_name') or value.get('lander_name') or 'Módulo Estándar Artemis').strip()[:80]
+    vp=value.get('vehicle_profile',{})
+    if vp is None:vp={}
+    if not isinstance(vp,dict):raise ValueError('El perfil del vehículo debe ser un objeto.')
+    lander_name=str(vp.get('lander_name') or value.get('lander_name') or 'Perfil de referencia 2 m').strip()[:80]
     solar_h=vp.get('solar_panel_height',value.get('solar_panel_height',2))
     antenna_h=vp.get('antenna_height',value.get('antenna_height',2))
-    cog_tol=vp.get('center_of_gravity_tolerance',value.get('max_slope_deg',10))
+    user_slope=value.get('max_slope_deg',10)
+    vehicle_slope=vp.get('center_of_gravity_tolerance',value.get('center_of_gravity_tolerance',user_slope))
     q={'departure_utc':raw,'date_kind':value.get('date_kind','departure'),'surface_hours':value.get('surface_hours',72),
-       'max_slope_deg':cog_tol,'min_sun_hours':value.get('min_sun_hours',12),
-       'min_earth_hours':value.get('min_earth_hours',12),'observer_height_m':value.get('observer_height_m',2),
-       'lander_name':lander_name,'solar_panel_height':float(solar_h) if finite(solar_h,0.5,200) else -1,
-       'antenna_height':float(antenna_h) if finite(antenna_h,0.5,200) else -1}
-    if q['date_kind'] not in ('departure','landing') or not finite(q['surface_hours'],1,336) or not isinstance(q['surface_hours'],int) or not finite(q['max_slope_deg'],0,45) or not finite(q['min_sun_hours'],0,q['surface_hours']) or not finite(q['min_earth_hours'],0,q['surface_hours']) or q['observer_height_m']!=2 or q['solar_panel_height']<0 or q['antenna_height']<0:
-        raise ValueError('Revisa duración (1–336 h), pendiente (0–45°), horas requeridas y alturas del vehículo (0.5–200 m).')
+       'max_slope_deg':user_slope,'min_sun_hours':value.get('min_sun_hours',12),'min_earth_hours':value.get('min_earth_hours',12),
+       'observer_height_m':value.get('observer_height_m',2)}
+    if q['date_kind'] not in ('departure','landing') or not finite(q['surface_hours'],1,336) or not isinstance(q['surface_hours'],int) or not finite(user_slope,0,45) or not finite(vehicle_slope,0,45) or not finite(q['min_sun_hours'],0,q['surface_hours']) or not finite(q['min_earth_hours'],0,q['surface_hours']) or q['observer_height_m']!=2 or not finite(solar_h,.5,200) or not finite(antenna_h,.5,200):
+        raise ValueError('Revisa duración (1–336 h), pendientes (0–45°), horas requeridas, referencia de 2 m y alturas del vehículo (0.5–200 m).')
+    q.update(effective_max_slope_deg=min(user_slope,vehicle_slope),lander_name=lander_name,solar_panel_height=solar_h,antenna_height=antenna_h,
+             vehicle_profile={'lander_name':lander_name,'solar_panel_height':solar_h,'antenna_height':antenna_h,'center_of_gravity_tolerance':vehicle_slope})
     return q
 
-def height_clearance_bonus_deg(height_m:float)->float:
-    if height_m==2:return 0.0
-    return math.degrees(math.atan2(height_m-2.0,1200.0))
+def height_support(q,h):
+    profile_height=h['observer_height_m']
+    supported=q.get('solar_panel_height',2)==profile_height and q.get('antenna_height',2)==profile_height
+    return {'supported':supported,'profile_height_m':profile_height,
+            'reason':'Horizontes del DEM preparados para paneles y antena a 2 m.' if supported else 'Faltan horizontes del DEM calculados para estas alturas de paneles o antena. El perfil de 2 m no se corrige con una distancia supuesta.'}
 
 def cardinal_es(az:float)->str:
     dirs=('norte','noreste','este','sureste','sur','suroeste','oeste','noroeste')
@@ -186,17 +191,18 @@ def horizon_sensitivity(profile,azimuth,quant=.05):
     return {'nominal':a*(1-fraction)+b*fraction,'lower':min(a,b)-quant,'upper':max(a,b)}
 
 def sky_arrays(cell,profile,positions,hours,quant,solar_h=2.0,antenna_h=2.0):
+    # Heights require their own DEM-derived horizon. No arbitrary obstacle distance.
+    if solar_h!=2 or antenna_h!=2:raise ValueError('No hay horizontes preparados para estas alturas.')
     # One vectorized time array per cell avoids Python loops over every epoch.
     basis=np.asarray(frame(cell['latitude_deg'],cell['longitude_deg']),dtype=np.float64)
     lookup=np.asarray(profile,dtype=np.float64)*quant
     output=[]
     for body,emitter_h in (('sun',solar_h),('earth',antenna_h)):
-        bonus=height_clearance_bonus_deg(emitter_h)
         projected=positions[body][:hours]@basis.T
         az=np.mod(np.degrees(np.arctan2(projected[:,0],projected[:,1])),360)
         el=np.degrees(np.arctan2(projected[:,2]-(R+cell['elevation_m']+emitter_h),np.hypot(projected[:,0],projected[:,1])))
         p=az/5;index=np.floor(p).astype(np.int64);fraction=p-index
-        a,b=lookup[index]-bonus,lookup[(index+1)%72]-bonus
+        a,b=lookup[index],lookup[(index+1)%72]
         output.append((el-(a*(1-fraction)+b*fraction),el-np.maximum(a,b),el-(np.minimum(a,b)-quant)))
     return output
 
@@ -239,7 +245,10 @@ def evaluate_cell(cell,profile_info,q,positions,h,spacing):
         row['reason']='Borde del casquete sin perfil de observador preparado; no se extiende el resultado vecino.';row['reasons']=[row['reason']];return row
     if not cell.get('known') or not all(finite(cell.get(k),-1e12,1e12) for k in ('elevation_m','regional_slope_deg','max_slope_deg')):
         row['reasons']=[row['reason']];return row
-    terrain_failed=cell['regional_slope_deg']>q['max_slope_deg']
+    support=height_support(q,h)
+    if not support['supported']:
+        row['reason']=support['reason'];row['reasons']=[row['reason']];return row
+    terrain_failed=cell['regional_slope_deg']>q['effective_max_slope_deg']
     profile_known=profile is not None and len(profile)==72 and all(finite(v,-1e6,1e6) for v in profile) and finite(validto,20000,250000)
     if not profile_known:
         row['risk']='red' if terrain_failed else 'unknown'
@@ -284,7 +293,7 @@ def evaluation_meta(polar,h,sky,q=None):
     solar_h=(q or {}).get('solar_panel_height',2)
     antenna_h=(q or {}).get('antenna_height',2)
     return {'generated_at':datetime.now(timezone.utc).isoformat(),'source_resolution_m':80,'regional_cell_spacing_m':polar['cell_spacing_m'],'horizon_quality':h['quality'],
-        'horizon_azimuth_step_deg':5,'observer_height_m':2,'solar_panel_height_m':solar_h,'antenna_height_m':antenna_h,'temporal_step_minutes':60,'arrival_clearance_deg':.3,'minimum_horizon_coverage_m':20000,'terrain_source_sha256':polar['source_sha256'],
+        'horizon_azimuth_step_deg':5,'observer_height_m':2,'solar_panel_height_m':solar_h,'antenna_height_m':antenna_h,'height_support':height_support(q or {},h),'requested_max_slope_deg':(q or {}).get('max_slope_deg',10),'effective_max_slope_deg':(q or {}).get('effective_max_slope_deg',10),'temporal_step_minutes':60,'arrival_clearance_deg':.3,'minimum_horizon_coverage_m':20000,'terrain_source_sha256':polar['source_sha256'],
         'screening_unit':'4.75 km regional cell represented by its center observer; not a resolved landing footprint.',
         'sensitivity_method':'Adjacent 5-degree horizon-bin min/max, including upward-quantization interval of 0.05 degrees; scenario sensitivity, not physical uncertainty bounds.',
         'score_definition':'100 × menor fracción nominal de horas con Sol/Tierra. Los empates se resuelven con interrupciones, margen y pendiente.',
@@ -296,42 +305,32 @@ def evaluation_meta(polar,h,sky,q=None):
             'El borde no representado por centros preparados permanece desconocido. No se extrapolan las clases vecinas.']}
 
 def attach_timeline(row,profiles,sky,h,positions,q=None,mission=None):
+    support=height_support(q or {},h)
+    if not support['supported']:
+        return row|{'time_series':[],'diagnostics':{'height_support':support,'base_in_shadow_while_panels_lit_hours':None,'vehicle_comparison_status':'not_computed'}}
     profile,_,validto=profiles.get(row['id'],(None,None,None))
     if profile is None or not finite(validto,20000,250000) or not finite(row['elevation_m'],-1e12,1e12) or row['latitude_deg']>-80:return row|{'time_series':[]}
     basis=frame(row['latitude_deg'],row['longitude_deg']);series=[]
-    solar_h=(q or {}).get('solar_panel_height',2.0);antenna_h=(q or {}).get('antenna_height',2.0)
-    custom_heights=(solar_h!=2 or antenna_h!=2)
-    sun_bonus=height_clearance_bonus_deg(solar_h);earth_bonus=height_clearance_bonus_deg(antenna_h)
-    starship_sun_bonus=height_clearance_bonus_deg(50.0);starship_earth_bonus=height_clearance_bonus_deg(38.0)
     quant=h['quantization_deg'];margin=.3
     surface_hours=(mission or {}).get('surface_hours',len(sky['sun']['samples'])-1)
     first_sun_block_h=None;first_sun_block_dir=None;first_earth_block_h=None;first_earth_block_dir=None
-    starship_sh=0;starship_eh=0;base_shadow_hours=0
     for i,sample in enumerate(sky['sun']['samples']):
-        saz,sel=angles(positions['sun'][i],basis,row['elevation_m'],solar_h if custom_heights else 2.0)
-        eaz,eel=angles(positions['earth'][i],basis,row['elevation_m'],antenna_h if custom_heights else 2.0)
-        base_shor=horizon_value(profile,saz,quant);base_ehor=horizon_value(profile,eaz,quant)
-        shor=round(base_shor-sun_bonus,3) if custom_heights else round(base_shor,3)
-        ehor=round(base_ehor-earth_bonus,3) if custom_heights else round(base_ehor,3)
-        series.append({'t_utc':sample['t_utc'],'sun_azimuth_deg':round(saz,3),'sun_elevation_deg':round(sel,3),'sun_horizon_deg':shor,
-            'earth_azimuth_deg':round(eaz,3),'earth_elevation_deg':round(eel,3),'earth_horizon_deg':ehor,
-            'base_sun_horizon_deg':round(base_shor,3)})
+        saz,sel=angles(positions['sun'][i],basis,row['elevation_m'],2)
+        eaz,eel=angles(positions['earth'][i],basis,row['elevation_m'],2)
+        shor=horizon_value(profile,saz,quant);ehor=horizon_value(profile,eaz,quant)
+        series.append({'t_utc':sample['t_utc'],'sun_azimuth_deg':round(saz,3),'sun_elevation_deg':round(sel,3),'sun_horizon_deg':round(shor,3),
+            'earth_azimuth_deg':round(eaz,3),'earth_elevation_deg':round(eel,3),'earth_horizon_deg':round(ehor,3),
+            'base_sun_horizon_deg':round(shor,3)})
         if i<surface_hours:
             if sel-shor<=margin and first_sun_block_h is None:
                 first_sun_block_h=i;first_sun_block_dir=cardinal_es(saz)
             if eel-ehor<=margin and first_earth_block_h is None:
                 first_earth_block_h=i;first_earth_block_dir=cardinal_es(eaz)
-            if (sel-base_shor<=margin) and (sel-shor>margin):
-                base_shadow_hours+=1
-            if sel-(base_shor-starship_sun_bonus)>margin:starship_sh+=1
-            if eel-(base_ehor-starship_earth_bonus)>margin:starship_eh+=1
-    min_sun=(q or {}).get('min_sun_hours',12);min_earth=(q or {}).get('min_earth_hours',12)
     return row|{'time_series':series,'diagnostics':{
         'first_sun_block_hour':first_sun_block_h,'first_sun_block_cardinal':first_sun_block_dir,
         'first_earth_block_hour':first_earth_block_h,'first_earth_block_cardinal':first_earth_block_dir,
-        'base_in_shadow_while_panels_lit_hours':base_shadow_hours,
-        'starship_sun_hours':starship_sh,'starship_earth_hours':starship_eh,
-        'starship_would_survive':starship_sh>=min_sun and starship_eh>=min_earth and (row.get('regional_slope_deg') or 99)<=8.0
+        'height_support':support,'clearance_threshold_deg':margin,'cadence_minutes':60,
+        'base_in_shadow_while_panels_lit_hours':None,'vehicle_comparison_status':'not_computed'
     }}
 
 def evaluate_global_plan(request,polar,h,sky,transfer):
@@ -348,7 +347,7 @@ def evaluate_global_plan(request,polar,h,sky,transfer):
     reds=separated(sorted((r for r in results if r['risk']=='red'),key=lambda r:(-(r['regional_slope_deg'] or 0),r['id'])),8,50000)
     attach=lambda row:attach_timeline(row,profiles,sky,h,positions,q,mission) if row else None
     return {'status':'ok','mission':mission,
-        'vehicle_profile':{'lander_name':q['lander_name'],'solar_panel_height':q['solar_panel_height'],'antenna_height':q['antenna_height'],'center_of_gravity_tolerance':q['max_slope_deg']},
+        'vehicle_profile':q['vehicle_profile'],
         'best':attach(greens[0]) if greens else None,'closest_candidate':None if greens else attach(ranked[0]) if ranked else None,
         'alternatives':[attach(r) for r in greens[1:4]],'caution_candidates':[attach(r) for r in yellows],'rejected':reds,'counts':counts,'total_cells':len(results),
         'cells':results,'coverage':coverage_for(results,polar),'meta':evaluation_meta(polar,h,sky,q)}
@@ -358,7 +357,7 @@ def evaluate_plan_cell(request,polar,h,sky,transfer,cell_id):
     cell=next((c for c in polar['cells'] if c['id']==cell_id),None)
     if cell is None:raise ValueError('La celda solicitada no pertenece al catálogo regional.')
     row=evaluate_cell(cell,profiles.get(cell['id']),q,positions,h,polar['cell_spacing_m'])
-    return {'status':'ok','mission':mission,'cell':attach_timeline(row,profiles,sky,h,positions,q,mission),'meta':evaluation_meta(polar,h,sky,q)}
+    return {'status':'ok','mission':mission,'vehicle_profile':q['vehicle_profile'],'cell':attach_timeline(row,profiles,sky,h,positions,q,mission),'meta':evaluation_meta(polar,h,sky,q)}
 
 async def get_sky(target,start,end):
     rows,record,cached=await fetch_samples(REFERENCE,start,end,60,2,10 if target=='Sun' else 399,True)

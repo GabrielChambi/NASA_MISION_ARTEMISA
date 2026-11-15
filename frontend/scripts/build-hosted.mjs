@@ -37,17 +37,19 @@ import {createLandingApi} from '../worker/landing.mjs';
 import {createPolarApi} from '../worker/polar.mjs';
 import {createCopilotApi} from '../worker/copilot.mjs';
 import {createAutomaticPlanApi} from '../worker/automatic-plan.mjs';
+import {createMissionRescueApi} from '../worker/mission-rescue.mjs';
 import {createMissionIntentApi} from '../worker/mission-intent.mjs';
 const resources=${JSON.stringify(resources)};
 const api=createScienceApi(resources);
 const polar=createPolarApi(resources);
 const copilot=createCopilotApi();
 const automatic=createAutomaticPlanApi(resources);
+const rescue=createMissionRescueApi(resources);
 const intent=createMissionIntentApi();
 const landing=createLandingApi(resources);
 const mission=createMissionApi(resources,api);
 const assets=${JSON.stringify(assets)};
-export default {async fetch(request,env,ctx){const url=new URL(request.url);if(url.pathname.startsWith('/api/'))return (await intent(request,env))??(await automatic(request,ctx))??(await copilot(request,env))??(await polar(request,ctx))??(await landing(request,ctx))??(await mission(request,ctx))??api(request,ctx);if(!['GET','HEAD'].includes(request.method))return new Response('Method not allowed',{status:405});const asset=assets[url.pathname]||(url.pathname.includes('.')?null:assets['/index.html']);if(!asset)return new Response('Not found',{status:404});const bytes=Uint8Array.from(atob(asset.base64),v=>v.charCodeAt(0));return new Response(request.method==='HEAD'?null:bytes,{headers:{'Content-Type':asset.mime,'Cache-Control':url.pathname.startsWith('/assets/')?'public,max-age=31536000,immutable':'private,max-age=60','X-Content-Type-Options':'nosniff'}})}};`)
+export default {async fetch(request,env,ctx){const url=new URL(request.url);if(url.pathname.startsWith('/api/'))return (await intent(request,env))??(await rescue(request,ctx))??(await automatic(request,ctx))??(await copilot(request,env))??(await polar(request,ctx))??(await landing(request,ctx))??(await mission(request,ctx))??api(request,ctx);if(!['GET','HEAD'].includes(request.method))return new Response('Method not allowed',{status:405});const asset=assets[url.pathname]||(url.pathname.includes('.')?null:assets['/index.html']);if(!asset)return new Response('Not found',{status:404});const bytes=Uint8Array.from(atob(asset.base64),v=>v.charCodeAt(0));return new Response(request.method==='HEAD'?null:bytes,{headers:{'Content-Type':asset.mime,'Cache-Control':url.pathname.startsWith('/assets/')?'public,max-age=31536000,immutable':'private,max-age=60','X-Content-Type-Options':'nosniff'}})}};`)
 await mkdir(path.join(root, 'dist/server'), { recursive: true })
 await build({ entryPoints: [entry], outfile: path.join(root, 'dist/server/index.js'), bundle: true, format: 'esm', platform: 'browser', target: 'es2022', minify: true })
 console.log(`Hosted Worker built with ${Object.keys(assets).length} local assets, ${ephemeris.length} traceable JPL records and ${datasets.datasets.length} NASA datasets.`)

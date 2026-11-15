@@ -191,3 +191,34 @@ Las APIs anteriores se conservan para compatibilidad y auditoría; no forman un 
 El siguiente trabajo científico consiste en ampliar y validar horizontes, propagar incertidumbres y añadir peligros locales, energía, temperatura, radio y trayectorias completas. El sistema usa datos reales con modelos regionales acotados: **no es un gemelo digital certificado**.
 
 La [verificación de paridad](validation/surface-parity.json) compara las 12.892 celdas y diez campos entre Python y JavaScript usando las mismas tres respuestas originales de NASA, sin conexión. Comprueba consistencia de implementaciones y cierre de áreas; no es una certificación independiente de seguridad.
+
+
+## Responder a una misión sin candidatos favorables
+
+POST /api/mission-rescue recibe los mismos parámetros que el planificador y un límite search_days de 1 a 14 días. La interfaz lo invoca automáticamente cuando el mapa no contiene candidatos verdes. Una fecha ya viable no dispara esta búsqueda adicional.
+
+El motor primero separa los sectores con terreno compatible y horizonte suficiente. Las zonas desconocidas se diagnostican como falta de datos, y las pendientes que incumplen permanecen descartadas: cambiar la fecha no cambia el relieve. La búsqueda usa ese conjunto elegible, no presenta su conteo como una reevaluación de todos los centros del casquete.
+
+Tres series por lotes de JPL aportan la distancia Tierra–Luna para cada partida y Sol/Tierra para las llegadas y estancias. Las partidas explícitas conservan sus minutos; la llegada usa el redondeo horario declarado por el modelo de transferencia. Una fecha explícita de alunizaje conserva su minuto original. No se interpolan filas NASA ni se reemplaza una consulta por otra con fase temporal distinta.
+
+Se examinan inicios diarios dentro del límite y se refinan las 23 horas anteriores al primer inicio diario favorable. El máximo es 38 escenarios. La clasificación conserva el análisis de sensibilidad angular del motor existente. Las alternativas mantienen pendiente, estancia, horas requeridas y altura: sólo proponen cambiar la fecha. El orden y las etiquetas se refieren a escenarios efectivamente probados, no a todos los instantes o a un óptimo global.
+
+El JSON incluye diagnóstico, parámetros originales, propuestas, cambios, fechas realmente probadas y URLs de las tres consultas NASA. La aplicación posterior vuelve a calcular el mapa completo con consultas canónicas del escenario elegido. El texto del formulario se actualiza a esa nueva fecha y la solicitud original queda en adopted_alternative.original_text del archivo exportado. No se mezclan el mapa de una fecha con las métricas de otra.
+
+El caso guardado en ../data/prepared/rescue_example.json reproduce la solicitud del 1 de diciembre de 2026 a las 10:00 Bolivia. El primer inicio favorable entre los evaluados es 7 dic 12:00 Bolivia (+146 h), con llegada 12 dic 20:00 Bolivia. La aplicación exacta devuelve un candidato verde y 72 h de visibilidad nominal de Sol y Tierra. El P95 de ese sector es 9,9843°, cercano al umbral de 10°: cumplir esta preselección regional no resuelve peligros locales ni incertidumbre de pendiente.
+
+La interfaz informa búsqueda detenida, falta de datos o fallo de la fuente sin fabricar alternativas. Cancelar o cambiar la solicitud retira los resultados pendientes; una respuesta anterior no se aplica sobre nuevos criterios.
+
+### Ventanas para operar
+
+getOperationalWindows calcula intervalos de despeje por encima del margen de 0,3° para Sol, Tierra y ambos simultáneamente. El último punto es el límite del intervalo y no suma una hora adicional. Un cambio observado devuelve el intervalo entre muestras, mientras que la ausencia de un cambio sólo se informa hasta el fin de los datos. Muestras ausentes permanecen desconocidas; no significan bloqueo ni visibilidad.
+
+Los contadores tienen resolución horaria y pueden omitir cortes breves entre muestras. No representan producción eléctrica, temperatura, potencia recibida o capacidad de transmisión. Esos estados requieren modelos de recursos y parámetros de una nave, identificados como fases siguientes en DECISION_SUPPORT_AND_TWIN_ROADMAP.md.
+
+Validación adicional:
+
+~~~powershell
+node frontend/scripts/test-mission-rescue.mjs
+~~~
+
+Este recorrido utiliza el caso NASA real, aplica la alternativa al mapa completo, comprueba que una nueva planificación conserva la fecha adoptada, verifica ventanas y fin de datos, y prueba cancelación, error de fuente, respuestas antiguas y móvil.

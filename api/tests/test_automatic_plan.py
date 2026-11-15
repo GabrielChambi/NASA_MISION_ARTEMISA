@@ -191,3 +191,37 @@ def test_cell_endpoint_returns_real_prepared_non_suggestion():
     assert len(result['cell']['time_series'])==73
     assert 'cells' not in result
     assert all(s['cache_hit'] for s in result['meta']['sources'])
+
+def test_vehicle_tolerance_only_tightens_user_requirement_and_normalization_is_stable():
+    loose=plan.validate_plan_request(Q|{'max_slope_deg':4,'vehicle_profile':{'lander_name':'Hypothetical X','solar_panel_height':2,'antenna_height':2,'center_of_gravity_tolerance':25}})
+    assert loose['max_slope_deg']==loose['effective_max_slope_deg']==4
+    assert plan.validate_plan_request(loose)==loose
+    strict=plan.validate_plan_request(Q|{'max_slope_deg':10,'vehicle_profile':{'lander_name':'Hypothetical X','solar_panel_height':2,'antenna_height':2,'center_of_gravity_tolerance':1}})
+    assert strict['max_slope_deg']==10 and strict['effective_max_slope_deg']==1
+    polar,h,sky=fixture();result=plan.evaluate_global_plan(strict,polar,h,sky,TRANSFER)
+    assert result['best'] is None and result['counts']['green']==0
+    assert next(c for c in result['cells'] if c['id']=='flat')['risk']=='red'
+    assert result['meta']['requested_max_slope_deg']==10 and result['meta']['effective_max_slope_deg']==1
+
+def test_unprepared_vehicle_heights_remain_unknown_without_a_clearance_bonus():
+    polar,h,sky=fixture()
+    custom=Q|{'vehicle_profile':{'lander_name':'Hypothetical tall lander','solar_panel_height':50,'antenna_height':38,'center_of_gravity_tolerance':8}}
+    result=plan.evaluate_global_plan(custom,polar,h,sky,TRANSFER)
+    assert result['best'] is None and result['closest_candidate'] is None
+    assert result['counts']=={'green':0,'yellow':0,'red':0,'unknown':4}
+    assert not result['meta']['height_support']['supported'] and result['meta']['height_support']['profile_height_m']==2
+    assert result['vehicle_profile']['solar_panel_height']==50 and result['vehicle_profile']['antenna_height']==38
+    assert all(c['sun_hours'] is None and c['earth_hours'] is None and c['risk']=='unknown' for c in result['cells'])
+    cell=plan.evaluate_plan_cell(custom,polar,h,sky,TRANSFER,'flat')
+    assert cell['cell']['time_series']==[] and not cell['cell']['diagnostics']['height_support']['supported']
+    assert 'starship_would_survive' not in cell['cell']['diagnostics']
+
+def test_two_metre_diagnostics_report_sampled_obstruction_without_survival_claims():
+    polar,h,sky=fixture();result=plan.evaluate_plan_cell(Q,polar,h,sky,TRANSFER,'blocked')
+    diagnostic=result['cell']['diagnostics']
+    assert diagnostic['first_sun_block_hour']==0 and diagnostic['first_sun_block_cardinal']=='norte'
+    assert diagnostic['clearance_threshold_deg']==.3
+    assert diagnostic['base_in_shadow_while_panels_lit_hours'] is None
+    assert diagnostic['vehicle_comparison_status']=='not_computed'
+    assert 'starship_would_survive' not in diagnostic
+    assert all(s['sun_horizon_deg']==s['base_sun_horizon_deg'] for s in result['cell']['time_series'])

@@ -21,11 +21,23 @@ export function validatePlanRequest(input){
  if(typeof text!=='string'||!/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:00Z$/.test(text))throw new ScienceError('La fecha debe incluir UTC explícito y minutos completos.')
  const start=Date.parse(text)
  if(!Number.isFinite(start)||iso(start)!==text||new Date(start).getUTCFullYear()<1962||new Date(start).getUTCFullYear()>2099)throw new ScienceError('La fecha UTC no es válida o queda fuera de 1962–2099.')
- const q={departure_utc:text,date_kind:input.date_kind??'departure',surface_hours:input.surface_hours??72,max_slope_deg:input.max_slope_deg??10,
+ const vp=input.vehicle_profile??{}
+ if(typeof vp!=='object'||Array.isArray(vp))throw new ScienceError('El perfil del vehículo debe ser un objeto.')
+ const name=String(vp.lander_name||input.lander_name||'Perfil de referencia 2 m').trim().slice(0,80)
+ const pick=(key,fallback)=>Object.hasOwn(vp,key)?vp[key]:Object.hasOwn(input,key)?input[key]:fallback
+ const solar=pick('solar_panel_height',2),antenna=pick('antenna_height',2)
+ const userSlope=input.max_slope_deg??10,vehicleSlope=pick('center_of_gravity_tolerance',userSlope)
+ const q={departure_utc:text,date_kind:input.date_kind??'departure',surface_hours:input.surface_hours??72,max_slope_deg:userSlope,
   min_sun_hours:input.min_sun_hours??12,min_earth_hours:input.min_earth_hours??12,observer_height_m:input.observer_height_m??2}
- if(!['departure','landing'].includes(q.date_kind)||!Number.isInteger(q.surface_hours)||!finite(q.surface_hours,1,336)||!finite(q.max_slope_deg,0,45)||!finite(q.min_sun_hours,0,q.surface_hours)||!finite(q.min_earth_hours,0,q.surface_hours)||q.observer_height_m!==2)throw new ScienceError('Revisa duración (1–336 h), pendiente (0–45°), horas requeridas y altura de observador (2 m).')
- return q
+ if(!['departure','landing'].includes(q.date_kind)||!Number.isInteger(q.surface_hours)||!finite(q.surface_hours,1,336)||!finite(userSlope,0,45)||!finite(vehicleSlope,0,45)||!finite(q.min_sun_hours,0,q.surface_hours)||!finite(q.min_earth_hours,0,q.surface_hours)||q.observer_height_m!==2||!finite(solar,.5,200)||!finite(antenna,.5,200))throw new ScienceError('Revisa duración (1–336 h), pendientes (0–45°), horas requeridas, referencia de 2 m y alturas del vehículo (0.5–200 m).')
+ return {...q,effective_max_slope_deg:Math.min(userSlope,vehicleSlope),lander_name:name,solar_panel_height:solar,antenna_height:antenna,
+  vehicle_profile:{lander_name:name,solar_panel_height:solar,antenna_height:antenna,center_of_gravity_tolerance:vehicleSlope}}
 }
+export function heightSupport(q,h){
+ const height=h.observer_height_m,supported=(q.solar_panel_height??2)===height&&(q.antenna_height??2)===height
+ return {supported,profile_height_m:height,reason:supported?'Horizontes del DEM preparados para paneles y antena a 2 m.':'Faltan horizontes del DEM calculados para estas alturas de paneles o antena. El perfil de 2 m no se corrige con una distancia supuesta.'}
+}
+
 const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2]
 function frame(lat,lon){const p=lat*RAD,l=lon*RAD;return {east:[-Math.sin(l),Math.cos(l),0],north:[-Math.sin(p)*Math.cos(l),-Math.sin(p)*Math.sin(l),Math.cos(p)],up:[Math.cos(p)*Math.cos(l),Math.cos(p)*Math.sin(l),Math.sin(p)]}}
 export function bodyPosition(sample,reference=REFERENCE){
@@ -33,8 +45,8 @@ export function bodyPosition(sample,reference=REFERENCE){
  const f=frame(reference.latitude_deg,reference.longitude_deg),a=sample.azimuth_deg*RAD,e=sample.elevation_deg*RAD,d=sample.range_km*1000
  return f.up.map((u,i)=>u*(R+reference.elevation_m+2)+d*(f.east[i]*Math.sin(a)*Math.cos(e)+f.north[i]*Math.cos(a)*Math.cos(e)+u*Math.sin(e)))
 }
-function angles(position,f,elevation){
- const v=position.map((x,i)=>x-f.up[i]*(R+elevation+2)),east=dot(v,f.east),north=dot(v,f.north)
+function angles(position,f,elevation,emitterHeight=2){
+ const v=position.map((x,i)=>x-f.up[i]*(R+elevation+emitterHeight)),east=dot(v,f.east),north=dot(v,f.north)
  return {azimuth_deg:(Math.atan2(east,north)/RAD+360)%360,elevation_deg:Math.atan2(dot(v,f.up),Math.hypot(east,north))/RAD}
 }
 export function estimateTransfer(earthSample){
@@ -77,7 +89,7 @@ function timelineFor(cell,profile,sky,h){
  return sky.sun.samples.map((s,i)=>{
   const sun=angles(bodyPosition(s),f,cell.elevation_m),earth=angles(bodyPosition(sky.earth.samples[i]),f,cell.elevation_m)
   return {t_utc:s.t_utc,sun_azimuth_deg:rounded(sun.azimuth_deg),sun_elevation_deg:rounded(sun.elevation_deg),sun_horizon_deg:rounded(horizonValue(profile,sun.azimuth_deg,h.quantization_deg)),
-   earth_azimuth_deg:rounded(earth.azimuth_deg),earth_elevation_deg:rounded(earth.elevation_deg),earth_horizon_deg:rounded(horizonValue(profile,earth.azimuth_deg,h.quantization_deg))}
+   earth_azimuth_deg:rounded(earth.azimuth_deg),earth_elevation_deg:rounded(earth.elevation_deg),earth_horizon_deg:rounded(horizonValue(profile,earth.azimuth_deg,h.quantization_deg)),base_sun_horizon_deg:rounded(horizonValue(profile,sun.azimuth_deg,h.quantization_deg))}
  })
 }
 export function decodeProfile(values,encoding){
@@ -168,7 +180,9 @@ function evaluateCell(c,p,q,positions,h,spacing){
   nominal_pass:false,sensitivity_pass:false,horizon_quality:h.quality,horizon_coverage_min:Number.isFinite(p?.coverage)?p.coverage/1000:null,horizon_min_distance_m:p?.valid_to??null}
  if(c.latitude_deg> -80||c.latitude_deg< -90){row.reason='Borde del casquete sin perfil de observador preparado; no se extiende el resultado vecino.';row.reasons=[row.reason];return row}
  if(!c.known||![c.elevation_m,c.regional_slope_deg,c.max_slope_deg].every(Number.isFinite)){row.reasons=[row.reason];return row}
- const terrainFailed=c.regional_slope_deg>q.max_slope_deg
+ const support=heightSupport(q,h)
+ if(!support.supported){row.reason=support.reason;row.reasons=[row.reason];return row}
+ const terrainFailed=c.regional_slope_deg>q.effective_max_slope_deg
  const profileKnown=p?.values?.length===72&&p.values.every(Number.isFinite)&&finite(p.valid_to,20000,250000)
  if(!profileKnown){
   row.risk=terrainFailed?'red':'unknown';row.reason=terrainFailed?'Pendiente regional por encima del límite.':'Cobertura del horizonte inferior a 20 km; faltan obstáculos distantes.'
@@ -212,7 +226,7 @@ function prepareEvaluation(request,resources,sky,transfer,onlyId){
 }
 function evaluationMeta(p,sky){
  return {generated_at:new Date().toISOString(),source_resolution_m:80,regional_cell_spacing_m:p.polar.cell_spacing_m,horizon_quality:p.h.quality,horizon_azimuth_step_deg:5,
-  observer_height_m:2,temporal_step_minutes:60,arrival_clearance_deg:.3,minimum_horizon_coverage_m:20000,terrain_source_sha256:p.polar.source_sha256,
+  observer_height_m:2,solar_panel_height_m:p.q.solar_panel_height,antenna_height_m:p.q.antenna_height,height_support:heightSupport(p.q,p.h),requested_max_slope_deg:p.q.max_slope_deg,effective_max_slope_deg:p.q.effective_max_slope_deg,temporal_step_minutes:60,arrival_clearance_deg:.3,minimum_horizon_coverage_m:20000,terrain_source_sha256:p.polar.source_sha256,
   screening_unit:'4.75 km regional cell represented by its center observer; not a resolved landing footprint.',
   sensitivity_method:'Adjacent 5-degree horizon-bin min/max, including upward-quantization interval of 0.05 degrees; scenario sensitivity, not physical uncertainty bounds.',
   score_definition:'100 × menor fracción nominal de horas con Sol/Tierra. Los empates se resuelven con interrupciones, margen y pendiente.',
@@ -223,9 +237,21 @@ function evaluationMeta(p,sky){
    'El borde no representado por centros preparados permanece desconocido. No se extrapolan las clases vecinas.']}
 }
 function attachTimeline(row,p,sky){
- const info=p.profiles.get(row.id),profile=info?.values
- return {...row,time_series:profile&&finite(info.valid_to,20000,250000)&&Number.isFinite(row.elevation_m)&&row.latitude_deg<=-80?timelineFor(row,profile,sky,p.h):[]}
+ const support=heightSupport(p.q,p.h),info=p.profiles.get(row.id),profile=info?.values
+ if(!support.supported)return {...row,time_series:[],diagnostics:{height_support:support,base_in_shadow_while_panels_lit_hours:null,vehicle_comparison_status:'not_computed'}}
+ if(!profile||!finite(info.valid_to,20000,250000)||!Number.isFinite(row.elevation_m)||row.latitude_deg> -80)return {...row,time_series:[]}
+ const series=timelineFor(row,profile,sky,p.h),f=frame(row.latitude_deg,row.longitude_deg)
+ let sunHour=null,earthHour=null,sunDirection=null,earthDirection=null
+ const cardinal=az=>['norte','noreste','este','sureste','sur','suroeste','oeste','noroeste'][Math.floor((((az%360)+360)%360+22.5)/45)%8]
+ for(let i=0;i<p.q.surface_hours;i++){
+  const sun=angles(p.positions.sun[i],f,row.elevation_m),earth=angles(p.positions.earth[i],f,row.elevation_m)
+  if(sunHour===null&&sun.elevation_deg-horizonValue(profile,sun.azimuth_deg,p.h.quantization_deg)<=.3){sunHour=i;sunDirection=cardinal(sun.azimuth_deg)}
+  if(earthHour===null&&earth.elevation_deg-horizonValue(profile,earth.azimuth_deg,p.h.quantization_deg)<=.3){earthHour=i;earthDirection=cardinal(earth.azimuth_deg)}
+ }
+ return {...row,time_series:series,diagnostics:{first_sun_block_hour:sunHour,first_sun_block_cardinal:sunDirection,first_earth_block_hour:earthHour,first_earth_block_cardinal:earthDirection,
+  height_support:support,clearance_threshold_deg:.3,cadence_minutes:60,base_in_shadow_while_panels_lit_hours:null,vehicle_comparison_status:'not_computed'}}
 }
+
 export function evaluateGlobalPlan(request,resources,sky,transfer){
  const p=prepareEvaluation(request,resources,sky,transfer),results=[],counts={green:0,yellow:0,red:0,unknown:0}
  for(const cell of p.polar.cells){
@@ -238,7 +264,7 @@ export function evaluateGlobalPlan(request,resources,sky,transfer){
  const green=separated(ranked.filter(c=>c.risk==='green'),5,30000),yellow=separated(ranked.filter(c=>c.risk==='yellow'),3,30000)
  const red=separated(results.filter(c=>c.risk==='red').sort((a,b)=>(b.regional_slope_deg??0)-(a.regional_slope_deg??0)||a.id.localeCompare(b.id)),8,50000)
  const best=green[0]??null,closest=best?null:ranked[0]??null
- return {status:'ok',mission:p.mission,best:best?attachTimeline(best,p,sky):null,closest_candidate:closest?attachTimeline(closest,p,sky):null,
+ return {status:'ok',mission:p.mission,vehicle_profile:p.q.vehicle_profile,best:best?attachTimeline(best,p,sky):null,closest_candidate:closest?attachTimeline(closest,p,sky):null,
   alternatives:green.slice(1,4).map(c=>attachTimeline(c,p,sky)),caution_candidates:yellow.map(c=>attachTimeline(c,p,sky)),rejected:red,counts,total_cells:results.length,
   cells:results,coverage:coverageFor(results,p.polar),meta:evaluationMeta(p,sky)}
 }
@@ -247,7 +273,7 @@ export function evaluatePlanCell(request,resources,sky,transfer,cellId){
  const cell=p.polar.cells.find(c=>c.id===cellId)
  if(!cell)throw new ScienceError('La celda solicitada no pertenece al catálogo regional.',404)
  const row=evaluateCell(cell,p.profiles.get(cell.id),p.q,p.positions,p.h,p.polar.cell_spacing_m)
- return {status:'ok',mission:p.mission,cell:attachTimeline(row,p,sky),meta:evaluationMeta(p,sky)}
+ return {status:'ok',mission:p.mission,vehicle_profile:p.q.vehicle_profile,cell:attachTimeline(row,p,sky),meta:evaluationMeta(p,sky)}
 }
 
 

@@ -164,3 +164,22 @@ Los TIFF se guardan en `data/raw`, ignorado por Git. Los derivados registran fue
 Las APIs científicas anteriores se conservan para compatibilidad y auditoría. El recorrido principal utiliza la interfaz unificada y no envía al visitante a pantallas antiguas.
 
 La [verificación de paridad](docs/validation/surface-parity.json) compara las 12.892 celdas y diez campos entre Python y JavaScript usando las mismas tres respuestas originales de NASA, sin conexión. Comprueba consistencia de implementaciones y cierre de áreas; no es una certificación independiente de seguridad.
+
+
+## Cuando la fecha solicitada no cumple: alternativas calculadas
+
+El sistema ya no se limita a mostrar un mapa rojo. Si no hay candidatos verdes, inicia automáticamente una búsqueda acotada de otras fechas, conservando estancia, pendiente máxima, mínimos de Sol/Tierra y altura del observador. Compara hasta 15 fechas diarias de los siguientes 14 días y refina hasta 23 inicios horarios antes del primer día evaluado que cumple: como máximo 38 escenarios. El resultado es el primer inicio que cumple **entre los examinados**, no un óptimo continuo global.
+
+El panel explica los bloqueos de la fecha original y ofrece hasta tres propuestas calculadas. **Aplicar y recalcular** cambia la fecha de forma explícita, vuelve a evaluar las 12.892 zonas y actualiza el texto del viaje. El texto y los parámetros originales quedan guardados en la comparación y en el JSON exportado. Los datos desconocidos no se convierten en alternativas y un fallo de NASA no genera propuestas inventadas.
+
+Caso reproducible: «quiero viajar el 1 de diciembre de 2026 a las 10am», hora de Bolivia, estancia de 72 h, pendiente regional máxima 10° y mínimos de 12 h de Sol y Tierra. La fecha original no tiene candidatos verdes. Entre las fechas examinadas, la propuesta con menor retraso es **7 dic 2026, 12:00 Bolivia**, 146 h después; llegada estimada **12 dic, 20:00 Bolivia**. Recalcular todo el casquete confirma el sector polar:32:95, con 72 h de Sol y Tierra en el modelo. Su P95 de 9,9843° está cerca del límite de 10°: la interfaz muestra esa limitación y exige estudio local; no certifica una huella de aterrizaje.
+
+![Alternativas calculadas para la misión del 1 de diciembre](docs/images/mission-rescue-options.png)
+
+El bloque **¿Cuánto margen queda?** muestra la próxima pérdida o recuperación del despeje del Sol y de la Tierra en el sector seleccionado, con intervalos horarios e identificación del fin de datos. Puede verse la lista de ventanas individuales y simultáneas. No extrapola ni convierte visibilidad en energía eléctrica o enlace RF garantizado.
+
+~~~powershell
+node frontend/scripts/test-mission-rescue.mjs
+~~~
+
+Las seis respuestas originales NASA de la búsqueda y de la aplicación exacta se identifican en data/prepared/rescue_example.json. Las suites Node y Python validan ese caso sin red. El detalle del algoritmo y la evolución propuesta hacia un gemelo ambiental y operacional están en [DECISION_SUPPORT_AND_TWIN_ROADMAP.md](docs/DECISION_SUPPORT_AND_TWIN_ROADMAP.md).
