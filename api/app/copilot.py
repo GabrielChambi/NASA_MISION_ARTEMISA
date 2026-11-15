@@ -6,6 +6,7 @@ import math
 import os
 import re
 import unicodedata
+from pathlib import Path
 from urllib.parse import urlparse, quote
 import httpx
 from fastapi import APIRouter,Request
@@ -115,8 +116,22 @@ def guide_reply(value,reason='model_not_configured'):
         action={'type':'details'}
     return {'status':'ok','mode':'guide','reason':reason,'intent':intent,'explanation':explanation,'action':action,'evidence':evidence(context),'sources':SOURCES}
 
+def _load_dotenv_fallback():
+    dotenv = Path(__file__).resolve().parents[2] / '.env'
+    if not dotenv.is_file():
+        return {}
+    out = {}
+    for line in dotenv.read_text(encoding='utf-8').splitlines():
+        line = line.strip()
+        if not line or line.startswith('#') or '=' not in line:
+            continue
+        k, v = line.split('=', 1)
+        out[k.strip()] = v.strip().strip('"').strip("'")
+    return out
+
 def configuration(env=None):
-    env=os.environ if env is None else env
+    if env is None:
+        env = dict(_load_dotenv_fallback(), **os.environ) if 'PYTEST_CURRENT_TEST' not in os.environ else os.environ
     provider=short(env.get('AI_PROVIDER'),40) or 'gemini'
     model=short(env.get('AI_MODEL'),120) or (GEMINI_MODEL if provider=='gemini' else None)
     if provider not in ('gemini','openai_compatible','openai','ollama') or not model:return None
