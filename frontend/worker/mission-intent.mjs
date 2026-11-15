@@ -57,8 +57,14 @@ function rawParse(input){
    else {const ms=Date.parse(utcOverride);if(Number.isFinite(ms)){const d=new Date(ms).toISOString();local_date=d.slice(0,10);local_time=d.slice(11,16);tz='UTC'}}
   }
  }else{
-  const named=text.match(/(?:^|\b|(?<=el)|(?<=del)|(?<=al))(\d{1,2})(?:\s*(?:de|del|el|,|-|\/)\s*|\s+)(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)(?:\s*(?:de\s+el|en\s+el|del|de|el|en|ano|año|,|-|\/)\s*|\s+)(\d{4})\b/),numeric=text.match(/\b(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})\b/),m=named||numeric
-  if(m){local_date=m[3]+'-'+pad(named?MONTHS[m[2]]:Number(m[2]))+'-'+pad(Number(m[1]));index=m.index}
+  const named=text.match(/(?:^|\b|(?<=el)|(?<=del)|(?<=al))(\d{1,2})(?:\s*(?:de|del|el|,|-|\/)\s*|\s+)(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)(?:\s*(?:de\s+el|en\s+el|del|de|el|en|ano|año|,|-|\/)\s*|\s+)(\d{4})\b/)
+  const yearFirst=text.match(/\b(\d{4})\b[,\s]+(?:el\s+|del\s+|en\s+)?(\d{1,2})(?:\s*(?:de|del|,|-|\/)\s*|\s+)(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)\b/)
+  const monthFirst=text.match(/\b(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)\s+(\d{1,2})(?:[,\s]+(?:de\s+|del\s+)?|\s+)(\d{4})\b/)
+  const numeric=text.match(/\b(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})\b/)
+  if(named){local_date=named[3]+'-'+pad(MONTHS[named[2]])+'-'+pad(Number(named[1]));index=named.index}
+  else if(yearFirst){local_date=yearFirst[1]+'-'+pad(MONTHS[yearFirst[3]])+'-'+pad(Number(yearFirst[2]));index=yearFirst.index}
+  else if(monthFirst){local_date=monthFirst[3]+'-'+pad(MONTHS[monthFirst[1]])+'-'+pad(Number(monthFirst[2]));index=monthFirst.index}
+  else if(numeric){local_date=numeric[3]+'-'+pad(Number(numeric[2]))+'-'+pad(Number(numeric[1]));index=numeric.index}
  }
  if(!local_time){
   const time=text.match(/(?:\ba\s*las?\s*|\blas\s+|\b(?:hora|a)\s+)(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)?\b/)||text.match(/\b(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)\b/)||text.match(/\b(\d{1,2}):(\d{2})\b/)
