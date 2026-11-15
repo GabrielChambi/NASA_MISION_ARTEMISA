@@ -60,10 +60,15 @@ function rawParse(input){
   const named=text.match(/(?:^|\b|(?<=el)|(?<=del)|(?<=al))(\d{1,2})(?:\s*(?:de|del|el|,|-|\/)\s*|\s+)(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)(?:\s*(?:de\s+el|en\s+el|del|de|el|en|ano|año|,|-|\/)\s*|\s+)(\d{4})\b/)
   const yearFirst=text.match(/\b(\d{4})\b[,\s]+(?:el\s+|del\s+|en\s+)?(\d{1,2})(?:\s*(?:de|del|,|-|\/)\s*|\s+)(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)\b/)
   const monthFirst=text.match(/\b(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)\s+(\d{1,2})(?:[,\s]+(?:de\s+|del\s+)?|\s+)(\d{4})\b/)
+  const rangeMatch=text.match(/(?:^|\b)(?:del?|entre)?\s*(?:el\s+)?(\d{1,2})\s*(?:al?|hasta|y|-)\s*(?:el\s+)?(\d{1,2})\s*(?:de|del)?\s*(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)(?:[,\s]+(?:de\s+el|en\s+el|del|de|el|en|ano|año|,|-|\/)\s*|\s+)?(\d{4})?\b/)
   const numeric=text.match(/\b(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})\b/)
   if(named){local_date=named[3]+'-'+pad(MONTHS[named[2]])+'-'+pad(Number(named[1]));index=named.index}
   else if(yearFirst){local_date=yearFirst[1]+'-'+pad(MONTHS[yearFirst[3]])+'-'+pad(Number(yearFirst[2]));index=yearFirst.index}
   else if(monthFirst){local_date=monthFirst[3]+'-'+pad(MONTHS[monthFirst[1]])+'-'+pad(Number(monthFirst[2]));index=monthFirst.index}
+  else if(rangeMatch){
+   const y=rangeMatch[4]||(text.match(/\b(19\d{2}|20\d{2}|2100)\b/)||[null,null])[1]
+   if(y){local_date=y+'-'+pad(MONTHS[rangeMatch[3]])+'-'+pad(Number(rangeMatch[1]));index=rangeMatch.index}
+  }
   else if(numeric){local_date=numeric[3]+'-'+pad(Number(numeric[2]))+'-'+pad(Number(numeric[1]));index=numeric.index}
  }
  if(!local_time){

@@ -133,6 +133,7 @@ def raw_parse(value):
         named = re.search(r"(?:^|\b|(?<=el)|(?<=del)|(?<=al))(\d{1,2})(?:\s*(?:de|del|el|,|-|/)\s*|\s+)(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)(?:\s*(?:de\s+el|en\s+el|del|de|el|en|ano|año|,|-|/)\s*|\s+)(\d{4})\b", text)
         year_first = re.search(r"\b(\d{4})\b[,\s]+(?:el\s+|del\s+|en\s+)?(\d{1,2})(?:\s*(?:de|del|,|-|/)\s*|\s+)(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)\b", text)
         month_first = re.search(r"\b(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)\s+(\d{1,2})(?:[,\s]+(?:de\s+|del\s+)?|\s+)(\d{4})\b", text)
+        range_match = re.search(r"(?:^|\b)(?:del?|entre)?\s*(?:el\s+)?(\d{1,2})\s*(?:al?|hasta|y|-)\s*(?:el\s+)?(\d{1,2})\s*(?:de|del)?\s*(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)(?:[,\s]+(?:de\s+el|en\s+el|del|de|el|en|ano|año|,|-|/)\s*|\s+)?(\d{4})?\b", text)
         numeric = re.search(r"\b(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})\b", text)
         if named:
             date, index = f"{named[3]}-{MONTHS[named[2]]:02d}-{int(named[1]):02d}", named.start()
@@ -140,6 +141,10 @@ def raw_parse(value):
             date, index = f"{year_first[1]}-{MONTHS[year_first[3]]:02d}-{int(year_first[2]):02d}", year_first.start()
         elif month_first:
             date, index = f"{month_first[3]}-{MONTHS[month_first[1]]:02d}-{int(month_first[2]):02d}", month_first.start()
+        elif range_match:
+            y = range_match[4] or (re.search(r"\b(19\d{2}|20\d{2}|2100)\b", text) or [None, None])[1]
+            if y:
+                date, index = f"{y}-{MONTHS[range_match[3]]:02d}-{int(range_match[1]):02d}", range_match.start()
         elif numeric:
             date, index = f"{numeric[3]}-{int(numeric[2]):02d}-{int(numeric[1]):02d}", numeric.start()
     if not time:
