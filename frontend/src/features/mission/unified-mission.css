@@ -188,20 +188,20 @@ button:disabled{cursor:default;opacity:.43}
 .unified-mission .map-simulate-icon-btn.active{background:#94edbb;border-color:#e0f8e9;color:#0d2318}
 
 /* Fluid Gemini-style conversational UI (no heavy boxes around assistant responses) */
-.chat-linked-panel{display:flex;flex-direction:column;gap:12px;position:relative;height:calc(100vh - 83px);box-sizing:border-box;overflow:hidden}
+.chat-linked-panel{display:flex;flex-direction:column;gap:12px;position:relative;height:calc(100vh - 83px);box-sizing:border-box;overflow:hidden;background:rgba(15, 22, 30, 0.78);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-right:1px solid rgba(255, 255, 255, 0.08)}
 .chat-panel-top-bar{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .unified-mission .chat-settings-gear-btn{width:28px;height:28px;padding:0;border-radius:6px;background:transparent;border:1px solid #2a3746;color:#a4b6c7}
 .unified-mission .chat-settings-gear-btn:hover{background:#18232f;border-color:#53677b;color:#f0f5fa}
 .unified-mission .chat-settings-gear-btn.active{background:#23352c;border-color:#659a7c;color:#a7f2c6}
 .chat-panel-top h1{font:500 31px/1.08 'Barlow Condensed',sans-serif;margin:6px 0 2px}
-.chat-manual-modal{position:absolute;left:14px;right:14px;top:72px;z-index:95;background:#101822;border:1px solid #35475a;border-radius:12px;box-shadow:0 18px 48px #000c;padding:14px;max-height:calc(100% - 90px);overflow-y:auto}
+.chat-manual-modal{position:absolute;left:14px;right:14px;top:72px;z-index:95;background:rgba(16, 24, 34, 0.95);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid #35475a;border-radius:14px;box-shadow:0 18px 48px rgba(0, 0, 0, 0.65);padding:14px;max-height:calc(100% - 90px);overflow-y:auto}
 .manual-modal-head{display:flex;align-items:center;justify-content:space-between;padding-bottom:10px;margin-bottom:8px;border-bottom:1px solid #233342}
 .manual-modal-head strong{font:500 13px 'Barlow Condensed',sans-serif;letter-spacing:.5px;color:#d5e4f2;text-transform:uppercase}
 .unified-mission .manual-modal-head button{padding:3px;border:0;background:transparent;color:#91a3b5}
 .mission-chat-thread{display:flex;flex-direction:column;gap:16px;flex:1;min-height:220px;overflow-y:auto;padding-right:4px;scrollbar-width:thin;scrollbar-color:#2c3a48 transparent}
 .gemini-msg{display:flex;flex-direction:column;gap:6px;font-size:13px;line-height:1.58}
 .gemini-msg.user{align-items:flex-end}
-.user-pill{max-width:88%;padding:10px 14px;border-radius:18px 18px 4px 18px;background:#1c2530;color:#eef4f8}
+.user-pill{max-width:88%;padding:10px 14px;border-radius:18px 18px 4px 18px;background:rgba(28, 37, 48, 0.65);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255, 255, 255, 0.07);color:#eef4f8}
 .user-pill p{margin:0;font-size:13px;line-height:1.45}
 .user-pill-meta{display:block;margin-top:4px;font:9px 'IBM Plex Mono',monospace;color:#93a6b8}
 .gemini-msg-head{display:flex;align-items:center;gap:7px;font-size:12px;color:#b8c7d4}
@@ -226,13 +226,13 @@ button:disabled{cursor:default;opacity:.43}
 .unified-mission .inline-cancel{border:0;background:transparent;padding:0 4px;font-size:11px;color:#a8b8c8;text-decoration:underline}
 
 /* Fluid Gemini-style Composer Box */
-.chat-composer-box{position:relative;flex-shrink:0;border:1px solid #2b3948;background:#141b24;border-radius:18px;padding:10px 12px 9px;transition:border-color .15s,background .15s}
-.chat-composer-box:focus-within,.chat-composer-box.dragging{border-color:#53687e;background:#161f29}
+.chat-composer-box{position:relative;flex-shrink:0;border:1px solid rgba(255, 255, 255, 0.12);background:rgba(18, 25, 34, 0.5);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:20px;padding:11px 13px 10px;box-shadow:0 12px 36px rgba(0, 0, 0, 0.35);transition:border-color .15s,background .15s,box-shadow .15s}
+.chat-composer-box:focus-within,.chat-composer-box.dragging{border-color:rgba(148, 237, 187, 0.45);background:rgba(20, 29, 41, 0.7);box-shadow:0 12px 36px rgba(0, 0, 0, 0.5), 0 0 16px rgba(148, 237, 187, 0.12)}
 .composer-attachment-bar{display:flex;align-items:center;justify-content:flex-start;gap:6px;padding-bottom:6px;margin-bottom:4px;flex-wrap:wrap}
-.composer-active-chip{display:inline-flex;align-items:center;gap:6px;min-width:0;padding:3px 9px;border-radius:999px;background:#1c2632;color:#d4e0ec;font-size:11px}
+.composer-active-chip{display:inline-flex;align-items:center;gap:6px;min-width:0;padding:3px 9px;border-radius:999px;background:rgba(28, 38, 50, 0.6);border:1px solid rgba(255, 255, 255, 0.08);color:#d4e0ec;font-size:11px}
 .composer-active-chip strong{white-space:nowrap;font-weight:500}
 .composer-active-chip span{font:9px 'IBM Plex Mono',monospace;color:#8fa3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.composer-active-chip.pin-target-chip{background:#0e2235;border:1px solid #1c4b72;color:#7dd3fc}
+.composer-active-chip.pin-target-chip{background:rgba(14, 34, 53, 0.75);border:1px solid rgba(56, 189, 248, 0.4);color:#7dd3fc}
 .composer-active-chip.pin-target-chip strong{color:#e0f2fe}
 .composer-active-chip.pin-target-chip span{color:#93c5fd}
 .composer-active-chip .pin-remove-btn{border:0;background:transparent;padding:1px 3px;margin-left:2px;color:#7dd3fc;cursor:pointer;display:inline-flex;align-items:center;border-radius:4px}
@@ -260,8 +260,8 @@ button:disabled{cursor:default;opacity:.43}
 .composer-toolbar{display:flex;align-items:center;justify-content:space-between;gap:6px;padding-top:6px;flex-wrap:wrap}
 
 .composer-tools-left{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
-.unified-mission .composer-icon-btn,.unified-mission .composer-catalog-btn{padding:5px 10px;border-radius:999px;font-size:11px;background:#1b2430;border:1px solid #2b3948;color:#c9d7e6;gap:5px}
-.unified-mission .composer-catalog-btn.open{border-color:#687f96;background:#222e3c;color:#eef5fc}
+.unified-mission .composer-icon-btn,.unified-mission .composer-catalog-btn{padding:5px 10px;border-radius:999px;font-size:11px;background:rgba(255, 255, 255, 0.05);border:1px solid rgba(255, 255, 255, 0.1);color:#c9d7e6;gap:5px}
+.unified-mission .composer-catalog-btn.open{border-color:#687f96;background:rgba(255, 255, 255, 0.12);color:#eef5fc}
 .unified-mission .composer-send-btn.primary-plan{width:auto;margin-top:0;min-height:32px;padding:6px 13px;border-radius:999px;font-size:12px;margin-left:auto;background:#e4ecf4;color:#0e141b;border-color:#e4ecf4}
 .unified-mission .composer-send-btn.primary-plan:hover:not(:disabled){background:#ffffff;border-color:#ffffff}
 .upload-notice{display:block;margin-top:6px;font-size:10px;color:#9bb0c4}

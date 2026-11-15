@@ -951,10 +951,25 @@ export default function UnifiedMissionPlanner(){
         {preferences&&(
           <div id="mission-manual-settings" className="chat-manual-modal" role="dialog" aria-label="Ajustes y requisitos manuales" onKeyDown={e=>{if(e.key==='Escape')setPreferences(false)}}>
             <div className="manual-modal-head">
-              <strong>{plan?'Cambiar fecha o requisitos':'Ajustes y Requisitos Manuales'}</strong>
+              <strong>{plan?'Cambiar fecha o requisitos':'Ajustes y Configuración de Misión'}</strong>
               <button type="button" autoFocus onClick={()=>setPreferences(false)} aria-label="Cerrar ajustes"><X size={15}/></button>
             </div>
             <div className="trip-preferences">
+              <div className="launch-context" data-testid="launch-context">
+                <label>Centro de lanzamiento
+                  <select aria-label="Centro de lanzamiento" value={launchSiteId} onChange={e=>changeLaunchContext(e.target.value,'local')}>
+                    {LAUNCH_SITES.map(site=><option key={site.id} value={site.id}>{site.name}</option>)}
+                  </select>
+                </label>
+                <label>Reloj de la misión
+                  <select aria-label="Zona horaria de misión" value={clockMode} onChange={e=>changeLaunchContext(launchSiteId,e.target.value)}>
+                    <option value="local">Hora local del centro espacial</option>
+                    <option value="UTC">UTC · tiempo universal</option>
+                  </select>
+                </label>
+                <small>{launchSite.use} · {TIMEZONE}. Los instantes calculados se conservan al cambiar de reloj. <a href={launchSite.source_url} target="_blank" rel="noreferrer">Fuente NASA</a></small>
+              </div>
+
               {intent&&<label>{intent.date_kind==='landing'?'Fecha de alunizaje':'Fecha de salida'} · {TIMEZONE}<input aria-label="Fecha de viaje" type="datetime-local" value={departureInput} onChange={e=>{clearResult();setDepartureInput(e.target.value)}}/></label>}
               <label>Tiempo en la Luna<select aria-label="Estancia en la Luna" value={stay} onChange={e=>{clearResult();setStay(e.target.value)}}><option value="24">1 día · 24 h</option><option value="48">2 días · 48 h</option><option value="72">3 días · 72 h</option><option value="168">7 días · 168 h</option>{!['24','48','72','168'].includes(stay)&&<option value={stay}>{stay} horas</option>}</select></label>
               <label>Pendiente regional máxima · grados<input aria-label="Pendiente máxima" type="number" min={0} max={45} value={slope} onChange={e=>{clearResult();setSlope(Number(e.target.value))}}/></label>
@@ -966,7 +981,6 @@ export default function UnifiedMissionPlanner(){
           </div>
         )}
 
-        <div className="launch-context" data-testid="launch-context"><label>Centro de lanzamiento<select aria-label="Centro de lanzamiento" value={launchSiteId} onChange={e=>changeLaunchContext(e.target.value,'local')}>{LAUNCH_SITES.map(site=><option key={site.id} value={site.id}>{site.name}</option>)}</select></label><label>Reloj de la misión<select aria-label="Zona horaria de misión" value={clockMode} onChange={e=>changeLaunchContext(launchSiteId,e.target.value)}><option value="local">Hora local del centro espacial</option><option value="UTC">UTC · tiempo universal</option></select></label><small>{launchSite.use} · {TIMEZONE}. Los instantes calculados se conservan al cambiar de reloj. <a href={launchSite.source_url} target="_blank" rel="noreferrer">Fuente NASA</a></small></div>
         {/* Fluid Gemini-style Conversational Thread */}
 
         <div className="mission-chat-thread" aria-live="polite">
