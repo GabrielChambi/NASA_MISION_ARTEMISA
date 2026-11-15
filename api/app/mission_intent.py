@@ -1,4 +1,5 @@
 from .launch_context import ALLOWED_TIMEZONES,local_to_utc
+from .text_normalization import normalize_mission_text
 """Extract mission parameters; the planning engine performs every scientific calculation."""
 from datetime import datetime, timedelta, timezone
 import json
@@ -51,7 +52,7 @@ class IntentError(ValueError):
 
 
 def clean(value):
-    return "".join(c for c in unicodedata.normalize("NFD", value) if unicodedata.category(c) != "Mn").lower().replace("−", "-")
+    return normalize_mission_text(value)
 
 
 def finite(value, minimum, maximum):
@@ -199,6 +200,12 @@ def finish(value, raw, mode="parser", reason=None):
     partial = dict(**params, date_kind=raw.get("date_kind", "departure"), timezone=raw.get("timezone", value["timezone"]),
                    local_datetime=f"{local_date}T{local_time}" if local_date and local_time else None)
     missing = "¿Qué fecha, con día, mes y año, quieres usar para tu viaje?" if not local_date else None
+    normalized=clean(value['message'])
+    if not local_date and re.search(r"\b\d{1,2}\s+(?:de\s+)?(?:"+'|'.join(MONTHS)+r")\b",normalized) and not re.search(r"\b(?:19\d{2}|20\d{2}|2100)\b",normalized):
+        missing="Reconocí el día y el mes. ¿De qué año es la misión?"
+    if not local_date and re.search(r"\b(?:19\d{2}|20\d{2}|2100)\b",normalized):
+        missing="Reconocí el año. Indica el día y el mes de la misión."
+
     base = dict(status="ok", mode=mode, reason=reason, intent=partial, assumptions=assumptions, explicit_fields=explicit)
     if problem or missing:
         return dict(**base, needs_clarification=True, question=problem or missing, display_summary=problem or missing)

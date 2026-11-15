@@ -156,12 +156,12 @@ try{
   const counter=request=>{if(new URL(request.url()).pathname==='/api/automatic-plan')scienceRequests++}
   page.on('request',counter)
   await page.getByLabel('Describe tu misión',{exact:true}).fill(text)
-  const intentWait=apiResponse(page,'/api/mission-intent')
+  const before=await page.locator('.mission-chat-thread').innerText()
   await page.getByRole('button',{name:'Planificar mi misión',exact:true}).click()
-  const response=await intentWait,data=await response.json()
-  await page.getByRole('alert').waitFor()
+  await page.waitForFunction(previous=>document.querySelector('.mission-chat-thread')?.textContent!==previous&&!document.querySelector('.primary-plan').disabled,before,{timeout:60000})
+  const thread=await page.locator('.mission-chat-thread').innerText()
   page.off('request',counter)
-  check(label+' asks for clarification',response.status()===200&&data.needs_clarification===true&&typeof data.question==='string')
+  check(label+' asks only for a missing or invalid field in the conversation',thread!==before&&/fecha|año|día|mes|calendario/i.test(thread)&&await page.locator('.trip-error').count()===0)
   check(label+' does not query science or retain green results',scienceRequests===0&&await page.locator('.best-destination').count()===0&&await page.locator('.mission-marker-label').count()===0)
  }
  await clarification('Quiero viajar el 30 de febrero de 2026 a las 8 am','An impossible calendar date')

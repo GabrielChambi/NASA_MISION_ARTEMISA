@@ -8,6 +8,12 @@ Escribe cuándo quieres viajar y el sistema calcula una **clasificación continu
 
 **Gemini interpreta la solicitud; el motor científico calcula con NASA LOLA y JPL Horizons.** Es un prototipo de planificación regional con hipótesis visibles, no un gemelo digital certificado ni una autorización de vuelo.
 
+## Conversación que ejecuta y conserva el contexto
+
+Reconoce también «QUIERO HACER UN VIAJE EL 1DE DICIEMBREDE 2026 A LAS 10AM»: con Kennedy son las **15:00 UTC**. Después puedes pedir «retrasa 12 horas», «batería de mil Wh», «paneles un 20 % menos» o «corte de comunicaciones de 6 horas desde la hora 12». Se ejecuta el cálculo correspondiente conservando los demás parámetros. Si falta una unidad o el año, pregunta sólo por ese dato y acepta una respuesta breve.
+
+El resumen principal separa evaluación de todo el polo, energía y huella local; las mediciones técnicas se despliegan. La conversación y las decisiones quedan en la evidencia descargable. Consulta [control conversacional, ejemplos y validación](docs/CONVERSATIONAL_MISSION_CONTROL.md).
+
 ## Cómo se usa
 
 1. Escribe fecha y hora y pulsa **Planificar mi misión**, o prueba el ejemplo. El origen predeterminado es **Kennedy LC-39B**, con hora de Florida (`America/New_York`) y horario de verano; también puedes trabajar en UTC.
@@ -114,6 +120,7 @@ node frontend/scripts/test-surface-coverage.mjs
 node frontend/scripts/validate-surface-parity.mjs
 node frontend/scripts/test-automatic-mission.mjs
 node frontend/scripts/test-live-plan.mjs
+node frontend/scripts/test-mission-conversation.mjs
 ~~~
 
 Las pruebas de navegador requieren Google Chrome. Comprueban la superficie completa, selección fuera de los marcadores, coordenadas, clases, áreas, fuentes NASA, cambios temporales, errores y móvil. El respaldo determinista es válido cuando se identifica como tal; para exigir que la interpretación se haya realizado mediante Gemini, usa `LUNAR_ORACLE_REQUIRE_AI=1`.

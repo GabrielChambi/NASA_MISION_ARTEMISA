@@ -1,0 +1,5 @@
+import type {MissionIntent} from '../src/features/mission/automaticTypes'
+export type OperationPatch={energy?:{battery_capacity_wh?:number;essential_load_w?:number;reserve_soc?:number;initial_soc?:number;solar_area_m2?:number;solar_efficiency?:number;science_duration_hours?:number};fault?:{solar_loss_fraction?:number;solar_fault_start_hour?:number;earth_outage_hours?:number;earth_outage_start_hour?:number};landing?:{footprint_radius_m?:number}}
+export type MissionCommand={kind:'plan'|'operations'|'search'|'inspect'|'question'|'clarify'|'apply_proposal'|'cancel'|'unresolved';message?:string;source_message?:string;parsed?:MissionIntent;operations?:OperationPatch;question?:string;changes?:string[];index?:number;context_used?:boolean}
+export function resolveMissionCommand(message:string,context?:{mission?:MissionIntent|null;pending_text?:string|null;pending_command_text?:string|null;timezone?:string;defaults?:Record<string,number>}):MissionCommand
+export function validateOperationPatch(patch:unknown):OperationPatch

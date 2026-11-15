@@ -66,7 +66,7 @@ test('missing absolute dates request just the missing date, while date-only requ
  for(const message of ['¿Dónde debería caer?','Viaje el 25 de diciembre a las 8 am']){
   const parsed=parseMissionIntent(input(message))
   assert.equal(parsed.needs_clarification,true)
-  assert.match(parsed.question,/fecha/)
+  assert.match(parsed.question,/fecha|año/)
   assert.equal(parsed.intent.departure_utc,undefined)
  }
  for(const message of ['Quiero alunizar el 25 de diciembre de 2026','dime donde aterrizarel 9 de agosto el 2027','aterrizar el 9 de agosto del 2027']){

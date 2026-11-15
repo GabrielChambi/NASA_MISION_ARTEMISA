@@ -28,12 +28,15 @@ async function fresh(){
 }
 async function calculate(p,text=REQUEST){
  await p.getByLabel('Describe tu misión',{exact:true}).fill(text)
- const intent=responseFor(p,'/api/mission-intent'),plan=responseFor(p,'/api/automatic-plan')
+ // Contextual edits reuse the validated interpreter in the browser; initial missions also use the server.
+ const initial=await p.getByTestId('recognized-mission').count()===0
+ const intent=initial?responseFor(p,'/api/mission-intent'):Promise.resolve(null),plan=responseFor(p,'/api/automatic-plan')
  await p.getByRole('button',{name:'Planificar mi misión',exact:true}).click()
  const [ir,pr]=await Promise.all([intent,plan])
- assert.ok(ir&&pr,'Both interpretation and scientific calculation must finish')
- assert.equal(ir.status(),200);assert.equal(pr.status(),200)
- return {intent:await ir.json(),plan:await pr.json(),sent:pr.request().postDataJSON()}
+ assert.ok(pr&&(!initial||ir),'The scientific calculation and any required initial interpretation must finish')
+ if(ir)assert.equal(ir.status(),200)
+ assert.equal(pr.status(),200)
+ return {intent:ir?await ir.json():null,plan:await pr.json(),sent:pr.request().postDataJSON()}
 }
 function sameCriteria(actual,expected){
  return ['date_kind','surface_hours','max_slope_deg','min_sun_hours','min_earth_hours','observer_height_m'].every(key=>actual[key]===expected[key])

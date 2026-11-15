@@ -4,11 +4,13 @@ import type {AutomaticPlan,MissionIntent,MissionPoint,VehicleProfile} from './au
 import type {PlanRequest} from './rescueTypes'
 import {formatMissionDate,type LaunchSite} from '../../../worker/timezones.mjs'
 import {DEFAULT_ENERGY,DEFAULT_FAULT,DEFAULT_LANDING,type Budget,type EnergyConfig,type FaultConfig,type LandingSettings,type LocalStudy,type OperationsReport,type OperationsRepair,type OperationsProposal,type Policy} from './operationsTypes'
+import {validateOperationPatch,type OperationPatch} from '../../../worker/mission-command.mjs'
 import './operations.css'
 const n=(v:number|null|undefined,digits=1)=>typeof v==='number'&&Number.isFinite(v)?v.toLocaleString('es',{maximumFractionDigits:digits}):'—'
 type NumericEnergy={ [K in keyof EnergyConfig]:EnergyConfig[K] extends number?K:never }[keyof EnergyConfig]
 type LocalTarget={latitude_deg:number;longitude_deg:number;regional_id:string;name:string}
-type Props={plan:AutomaticPlan|null;selected:MissionPoint|null;intent:MissionIntent|null;vehicle:VehicleProfile;launchSite:LaunchSite;timezone:string;message:string;onApply:(request:PlanRequest,cellId:string,label:string)=>void;onInspect:(lat:number,lon:number)=>string|undefined;onEvidence:(data:unknown)=>void}
+export type OperationsCommand={id:number;expected_utc:string;patch?:OperationPatch;action?:'search'|'apply_proposal'|'inspect'|'cancel';index?:number}
+type Props={command?:OperationsCommand|null;onCommandFeedback?:(message:string,success:boolean)=>void;plan:AutomaticPlan|null;selected:MissionPoint|null;intent:MissionIntent|null;vehicle:VehicleProfile;launchSite:LaunchSite;timezone:string;message:string;onApply:(request:PlanRequest,cellId:string,label:string)=>void;onInspect:(lat:number,lon:number)=>string|undefined;onEvidence:(data:unknown)=>void}
 function Chart({baseline,affected,reserve}:{baseline:Budget;affected:Budget;reserve:number}){
  const w=680,h=175,p=29,last=Math.max(1,affected.states.at(-1)?.hour??1)
  const path=(b:Budget)=>b.states.map((s,i)=>(i?'L':'M')+(p+s.hour/last*(w-2*p)).toFixed(2)+','+(h-p-s.soc*(h-2*p)).toFixed(2)).join(' ')
@@ -32,12 +34,14 @@ function LocalMap({study}:{study:LocalStudy}){
  },[study])
  return <div className="local-native-map"><span className="local-map-north"><b style={{transform:`rotate(${study.center.longitude_deg}deg)`}}>↑</b> N</span><canvas ref={ref} aria-label="Estudio de la elipse de dispersión con píxeles NASA nativos" onPointerMove={e=>{const rect=e.currentTarget.getBoundingClientRect(),g=study.grid;const x=Math.min(g.width-1,Math.max(0,Math.floor((e.clientX-rect.left)/rect.width*g.width))),y=Math.min(g.height-1,Math.max(0,Math.floor((e.clientY-rect.top)/rect.height*g.height))),i=y*g.width+x;setHover('Elevación '+n(g.elevations_m[i],2)+' m · '+(['Sin resolver','Cumple el modelo local','Margen limitado','No cumple'][g.risk[i]])+(g.inside_ellipse[i]?' · dentro de la elipse':' · contexto'))}}/><div className="native-map-caption"><span>Norte real indicado · {study.native_spacing_m} m por píxel nativo</span><span>+ Centro solicitado</span></div><p className="local-map-readout">{hover||'Cada centro dentro de la elipse se evalúa con el área que ocuparía la nave.'}</p></div>
 }
-export default function MissionOperationsPanel({plan,selected,intent,vehicle,launchSite,timezone,message,onApply,onInspect,onEvidence}:Props){
+export default function MissionOperationsPanel({command,onCommandFeedback,plan,selected,intent,vehicle,launchSite,timezone,message,onApply,onInspect,onEvidence}:Props){
  const [energy,setEnergy]=useState<EnergyConfig>(DEFAULT_ENERGY),[fault,setFault]=useState<FaultConfig>(DEFAULT_FAULT),[landing,setLanding]=useState<LandingSettings>(DEFAULT_LANDING),[policy,setPolicy]=useState<Policy>({science_slots:null,optional_enabled:true})
  const [tab,setTab]=useState<'energy'|'local'>('energy'),[configuration,setConfiguration]=useState(false),[target,setTarget]=useState<LocalTarget|null>(null)
  const [report,setReport]=useState<OperationsReport|null>(null),[repair,setRepair]=useState<OperationsRepair|null>(null),[busy,setBusy]=useState(false),[repairBusy,setRepairBusy]=useState(false),[error,setError]=useState(''),[repairError,setRepairError]=useState(''),[elapsed,setElapsed]=useState(0),[attempt,setAttempt]=useState(0),[applied,setApplied]=useState('')
  const [coordinates,setCoordinates]=useState({latitude:'',longitude:''})
  const [sites,setSites]=useState<{id:string;name:string;latitude_deg:number;longitude_deg:number}[]>([])
+ const lastCommand=useRef(0),commandFeedback=useRef(onCommandFeedback)
+ commandFeedback.current=onCommandFeedback
  const adoption=useRef<unknown>(null)
  const request=useRef<AbortController|null>(null),repairRequest=useRef<AbortController|null>(null),evidenceCallback=useRef(onEvidence)
  evidenceCallback.current=onEvidence
@@ -72,6 +76,35 @@ export default function MissionOperationsPanel({plan,selected,intent,vehicle,lau
   repairRequest.current?.abort();const ac=new AbortController();repairRequest.current=ac;setRepairBusy(true);setRepairError('');setRepair(null)
   try{const response=await fetch('/api/operations/replan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:ac.signal});const d=await response.json();if(!response.ok||!['found','none'].includes(d.status)||d.criteria_preserved!==true)throw new Error(d.message??'No se pudo verificar una alternativa.');if(!ac.signal.aborted)setRepair(d)}catch(e){if(!ac.signal.aborted)setRepairError(e instanceof Error?e.message:'Búsqueda no disponible.')}finally{if(!ac.signal.aborted)setRepairBusy(false)}
  }
+ useEffect(()=>{
+  if(!command||lastCommand.current===command.id||!plan||!mission||mission.departure_utc!==command.expected_utc)return
+  if(command.action==='search'&&busy)return
+  lastCommand.current=command.id
+  try{
+   if(command.patch){
+    const patch=validateOperationPatch(command.patch)
+    const nextEnergy={...energy,...patch.energy},nextFault={...fault,...patch.fault}
+    if(nextEnergy.science_duration_hours+nextEnergy.science_start_hour>mission.surface_hours)throw new Error('La ciencia solicitada termina fuera de la estancia. Indica una duración compatible; no reduciré tu objetivo.')
+    if([nextFault.solar_fault_start_hour,nextFault.earth_outage_start_hour,nextFault.earth_outage_hours].some(h=>h>mission.surface_hours))throw new Error('El fallo queda fuera de la estancia. Indica su inicio y duración dentro del intervalo calculado.')
+    request.current?.abort();repairRequest.current?.abort();setReport(null);setRepair(null);setError('');setApplied('');setPolicy({science_slots:null,optional_enabled:true})
+    if(patch.energy)setEnergy(nextEnergy)
+    if(patch.fault)setFault(nextFault)
+    if(patch.landing){setLanding(p=>({...p,...patch.landing}));setTab('local')}else setTab('energy')
+    setAttempt(a=>a+1)
+    commandFeedback.current?.('Cambio aplicado. Recalculo con NASA y conservo los demás parámetros.',true)
+   }
+   if(command.action==='inspect'){setTab('local');document.querySelector('.mission-operations')?.scrollIntoView({behavior:'smooth',block:'start'})}
+   if(command.action==='search'){void findRepairs();commandFeedback.current?.('Comparo las alternativas disponibles con tus requisitos actuales.',true)}
+   if(command.action==='cancel'){request.current?.abort();repairRequest.current?.abort();setBusy(false);setRepairBusy(false);setError('Estudio detenido; no se ha aplicado otra alternativa.')}
+   if(command.action==='apply_proposal'){
+    const chosen=repair?.proposals[command.index??0]
+    if(!chosen)throw new Error('No hay una propuesta operativa calculada con ese número. Primero pide «busca alternativas».')
+    apply(chosen)
+   }
+  }catch(e){commandFeedback.current?.(e instanceof Error?e.message:'No se aplicó el cambio.',false)}
+ // Each explicitly dispatched command executes once against the matching mission.
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ },[command?.id,plan,mission?.departure_utc,busy])
  function apply(proposal:OperationsProposal){
   if(!proposal.criteria_preserved)return
   adoption.current={original_report:report,repair,chosen_proposal:proposal,energy,fault,landing,policy}

@@ -1,0 +1,1 @@
+﻿export function parseMissionIntent(value:unknown):{status:string;needs_clarification:boolean;question?:string;explicit_fields:string[];intent:import('../src/features/mission/automaticTypes').MissionIntent;assumptions:string[]}
