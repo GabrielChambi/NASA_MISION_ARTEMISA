@@ -176,6 +176,53 @@ export default function UnifiedMissionPlanner(){
   const coverageLayer=useMemo(()=>coverageVisible&&plan?{cells:plan.cells,selectedId,opacity:1}:undefined,[coverageVisible,plan,selectedId])
   const series=selected?.time_series??[]
   const current=series[timeline]
+  const currentSunOk=Boolean(current&&current.sun_elevation_deg-current.sun_horizon_deg>0.3)
+  const currentEarthOk=Boolean(current&&current.earth_elevation_deg-current.earth_horizon_deg>0.3)
+  const currentBothOk=currentSunOk&&currentEarthOk
+  const timelinePins=useMemo(()=>{
+    if(!series.length)return []
+    const pins:Array<{hour:number;kind:'ok'|'fail';label:string;detail:string}>=[]
+    const lastIdx=series.length-1
+    const isSun=(s:typeof series[number])=>s.sun_elevation_deg-s.sun_horizon_deg>0.3
+    const isEarth=(s:typeof series[number])=>s.earth_elevation_deg-s.earth_horizon_deg>0.3
+    const s0=isSun(series[0]),e0=isEarth(series[0])
+    pins.push({
+      hour:0,
+      kind:s0&&e0?'ok':'fail',
+      label:`0h · ${s0&&e0?'Inicio OK':'Sin despeje'}`,
+      detail:`Alunizaje (+0h): Sol ${s0?'VERDE':'ROJO'} · Tierra ${e0?'VERDE':'ROJO'}`
+    })
+    for(let i=1;i<series.length;i++){
+      const prevS=isSun(series[i-1]),currS=isSun(series[i])
+      const prevE=isEarth(series[i-1]),currE=isEarth(series[i])
+      if(prevS!==currS){
+        pins.push({
+          hour:i,
+          kind:currS?'ok':'fail',
+          label:`+${i}h · ${currS?'Luz Solar':'Sombra'}`,
+          detail:currS?`En +${i}h los paneles (${vehicle.solar_panel_height}m) recuperan luz solar`:`En +${i}h el relieve bloquea el Sol en los paneles (${vehicle.solar_panel_height}m)`
+        })
+      }
+      if(prevE!==currE){
+        pins.push({
+          hour:i,
+          kind:currE?'ok':'fail',
+          label:`+${i}h · ${currE?'Enlace Tierra':'Sin Tierra'}`,
+          detail:currE?`En +${i}h la antena (${vehicle.antenna_height}m) recupera comunicación con la Tierra`:`En +${i}h se pierde comunicación con la Tierra (${vehicle.antenna_height}m)`
+        })
+      }
+    }
+    if(lastIdx>0){
+      const sEnd=isSun(series[lastIdx]),eEnd=isEarth(series[lastIdx])
+      pins.push({
+        hour:lastIdx,
+        kind:sEnd&&eEnd?'ok':'fail',
+        label:`+${lastIdx}h · Fin`,
+        detail:`Fin de estancia (+${lastIdx}h): Sol ${sEnd?'VERDE':'ROJO'} · Tierra ${eEnd?'VERDE':'ROJO'}`
+      })
+    }
+    return pins
+  },[series,vehicle.solar_panel_height,vehicle.antenna_height])
   const selectedLabel=selected?SURFACE_CLASS_LABELS[selected.risk]:''
   const isRejected=Boolean(selected&&selected.risk!=='green')
   const markers=useMemo<PlanMapMarker[]>(()=>plan?[
@@ -634,11 +681,102 @@ export default function UnifiedMissionPlanner(){
         </div>
         {plan&&<SurfaceCoverageSummary plan={plan} active={coverageVisible} onToggle={()=>setCoverageVisible(v=>!v)} onEvidence={()=>setEvidence(true)}/>}
         {plan&&<div className="mission-conditions">
-          <div className="conditions-heading"><strong><Globe2 size={15}/> Condiciones durante tu estancia ({vehicle.lander_name})</strong><time>{current?localDate(current.t_utc):localDate(plan.mission.arrival_utc)} · Bolivia</time></div>
-          <div className="conditions-slider"><button aria-label={playing?'Pausar condiciones':'Reproducir condiciones'} disabled={!series.length||flying} onClick={()=>{if(timeline===series.length-1)setTimeline(0);setPlaying(v=>!v)}}>{playing?<Pause size={14}/>:<Play size={14}/>}</button><input aria-label="Hora de la estancia" type="range" min={0} max={Math.max(0,series.length-1)} value={timeline} disabled={!series.length||flying} onChange={e=>{setPlaying(false);setTimeline(Number(e.target.value))}}/><span>+{timeline} h</span></div>
+          <div className="conditions-heading">
+            <strong><Globe2 size={14}/> Línea de tiempo de estancia ({vehicle.lander_name})</strong>
+            {current&&<span className={'timeline-now-badge '+(currentBothOk?'ok':'fail')}>
+              {currentBothOk?`● CUMPLE EN +${timeline}h (SOL + TIERRA)`:`▲ NO CUMPLE EN +${timeline}h (${!currentSunOk&&!currentEarthOk?'SIN SOL NI TIERRA':!currentSunOk?'SOMBRA SOLAR':'SIN ENLACE TIERRA'})`}
+            </span>}
+            <time>{current?localDate(current.t_utc):localDate(plan.mission.arrival_utc)} · Bolivia</time>
+          </div>
+
+          {/* Interactive Delimiter Pins showing exact hours where Sun / Earth transitions occur */}
+          {timelinePins.length>0&&<div className="timeline-pins-row" aria-label="Hitos de luz solar y comunicación terrestre">
+            {timelinePins.slice(0,8).map((pin,idx)=>(
+              <button
+                key={`${pin.hour}-${idx}`}
+                type="button"
+                className={'timeline-pin-chip '+pin.kind+(timeline===pin.hour?' active':'')}
+                onClick={()=>{setPlaying(false);setTimeline(pin.hour)}}
+                title={pin.detail}
+              >
+                <MapPin size={10}/>
+                <span>{pin.label}</span>
+              </button>
+            ))}
+          </div>}
+
+          <div className="conditions-slider">
+            <button aria-label={playing?'Pausar condiciones':'Reproducir condiciones'} disabled={!series.length||flying} onClick={()=>{if(timeline===series.length-1)setTimeline(0);setPlaying(v=>!v)}}>{playing?<Pause size={14}/>:<Play size={14}/>}</button>
+            <div className="timeline-track-stack">
+              {/* Pin markers positioned along the timeline axis */}
+              {series.length>1&&<div className="timeline-axis-pins">
+                {timelinePins.map((pin,idx)=>{
+                  const pct=(pin.hour/Math.max(1,series.length-1))*100
+                  return (
+                    <button
+                      key={`axis-${pin.hour}-${idx}`}
+                      type="button"
+                      className={'axis-pin '+pin.kind+(timeline===pin.hour?' current':'')}
+                      style={{left:`${pct}%`}}
+                      onClick={()=>{setPlaying(false);setTimeline(pin.hour)}}
+                      title={pin.detail}
+                    >
+                      <i/>
+                      <small>+{pin.hour}h</small>
+                    </button>
+                  )
+                })}
+              </div>}
+              <input
+                aria-label="Hora de la estancia"
+                className={currentBothOk?'slider-ok':'slider-fail'}
+                type="range"
+                min={0}
+                max={Math.max(0,series.length-1)}
+                value={timeline}
+                disabled={!series.length||flying}
+                onChange={e=>{setPlaying(false);setTimeline(Number(e.target.value))}}
+              />
+              {/* Hour-by-hour Green/Red bars for Solar Light & Earth Communication */}
+              {series.length>0&&<div className="timeline-status-bars">
+                <div className="status-bar-row">
+                  <span className="bar-label"><Sun size={11}/> Sol ({vehicle.solar_panel_height}m)</span>
+                  <div className="bar-segments">
+                    {series.map((s,idx)=>{
+                      const ok=s.sun_elevation_deg-s.sun_horizon_deg>0.3
+                      return <span
+                        key={idx}
+                        className={'seg '+(ok?'ok':'fail')+(idx===timeline?' active':'')}
+                        onClick={()=>{setPlaying(false);setTimeline(idx)}}
+                        title={`+${idx}h · Sol: ${ok?'CUMPLE (Iluminado)':'NO CUMPLE (Sombra)'} (${num(s.sun_elevation_deg-s.sun_horizon_deg,2)}°)`}
+                      />
+                    })}
+                  </div>
+                  <small className="bar-summary"><b>{num(selected?.sun_hours,0)}h</b>/{plan.mission.surface_hours}h</small>
+                </div>
+                <div className="status-bar-row">
+                  <span className="bar-label"><Radio size={11}/> Tierra ({vehicle.antenna_height}m)</span>
+                  <div className="bar-segments">
+                    {series.map((s,idx)=>{
+                      const ok=s.earth_elevation_deg-s.earth_horizon_deg>0.3
+                      return <span
+                        key={idx}
+                        className={'seg '+(ok?'ok':'fail')+(idx===timeline?' active':'')}
+                        onClick={()=>{setPlaying(false);setTimeline(idx)}}
+                        title={`+${idx}h · Tierra: ${ok?'CUMPLE (Enlace directo)':'NO CUMPLE (Sin línea de visión)'} (${num(s.earth_elevation_deg-s.earth_horizon_deg,2)}°)`}
+                      />
+                    })}
+                  </div>
+                  <small className="bar-summary"><b>{num(selected?.earth_hours,0)}h</b>/{plan.mission.surface_hours}h</small>
+                </div>
+              </div>}
+            </div>
+            <span className={'timeline-hour-pill '+(currentBothOk?'ok':'fail')}>+{timeline} h</span>
+          </div>
+
           <div className="conditions-readouts">
-            <span><Sun size={12}/> Paneles ({vehicle.solar_panel_height}m): <b className={current&&current.sun_elevation_deg-current.sun_horizon_deg>0.3?'kpi-ok':'kpi-warn'}>{current?(current.sun_elevation_deg-current.sun_horizon_deg>0.3?(current.base_sun_horizon_deg!==undefined&&current.sun_elevation_deg-current.base_sun_horizon_deg<=0.3?'ENERGÍA NOMINAL (Punta iluminada · Base en sombra)':`ENERGÍA NOMINAL (+${num(current.sun_elevation_deg-current.sun_horizon_deg,2)}°)`):`SOMBRA (${num(current.sun_elevation_deg-current.sun_horizon_deg,2)}°)`):'—'}</b></span>
-            <span><Radio size={12}/> Antena DTE ({vehicle.antenna_height}m): <b className={current&&current.earth_elevation_deg-current.earth_horizon_deg>0.3?'kpi-ok':'kpi-warn'}>{current?(current.earth_elevation_deg-current.earth_horizon_deg>0.3?`ENLACE DIRECTO (+${num(current.earth_elevation_deg-current.earth_horizon_deg,2)}°)`:`BLOQUEO (${num(current.earth_elevation_deg-current.earth_horizon_deg,2)}°)`):'—'}</b></span>
+            <span><Sun size={12}/> Paneles ({vehicle.solar_panel_height}m): <b className={currentSunOk?'kpi-ok':'kpi-warn'}>{current?(currentSunOk?(current.base_sun_horizon_deg!==undefined&&current.sun_elevation_deg-current.base_sun_horizon_deg<=0.3?'VERDE · ENERGÍA NOMINAL (Punta iluminada · Base en sombra)':`VERDE · LUZ SOLAR (+${num(current.sun_elevation_deg-current.sun_horizon_deg,2)}°)`):`ROJO · SOMBRA (${num(current.sun_elevation_deg-current.sun_horizon_deg,2)}°)`):'—'}</b></span>
+            <span><Radio size={12}/> Antena DTE ({vehicle.antenna_height}m): <b className={currentEarthOk?'kpi-ok':'kpi-warn'}>{current?(currentEarthOk?`VERDE · ENLACE TIERRA (+${num(current.earth_elevation_deg-current.earth_horizon_deg,2)}°)`:`ROJO · SIN COMUNICACIÓN (${num(current.earth_elevation_deg-current.earth_horizon_deg,2)}°)`):'—'}</b></span>
             <span>Pendiente vs CG ({vehicle.center_of_gravity_tolerance}°): <b className={(selected?.regional_slope_deg??0)<=vehicle.center_of_gravity_tolerance?'kpi-ok':'kpi-warn'}>{num(selected?.regional_slope_deg,1)}°</b></span>
           </div>
         </div>}

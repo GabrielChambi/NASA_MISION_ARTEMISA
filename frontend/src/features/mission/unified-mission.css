@@ -189,7 +189,7 @@ button:disabled{cursor:default;opacity:.43}
 .upload-notice{display:block;margin-top:6px;font-size:10px;color:var(--green)}
 
 /* Popover for all Lunar South Pole objects and vehicles */
-.lunar-catalog-popover{position:absolute;left:0;right:0;bottom:calc(100% + 8px);z-index:90;max-height:360px;display:flex;flex-direction:column;background:#101823;border:1px solid #486178;border-radius:12px;box-shadow:0 14px 42px #000c;overflow:hidden}
+.lunar-catalog-popover{position:absolute;left:0;right:0;bottom:calc(100% + 8px);z-index:90;max-height:270px;display:flex;flex-direction:column;background:#101823;border:1px solid #486178;border-radius:12px;box-shadow:0 14px 42px #000c;overflow:hidden}
 .catalog-popover-head{display:flex;align-items:center;justify-content:space-between;padding:9px 11px;background:#15202e;border-bottom:1px solid #293849;font:600 9px 'IBM Plex Mono',monospace;color:#b9d4c6;letter-spacing:.8px}
 .catalog-popover-head span{display:flex;align-items:center;gap:6px}
 .unified-mission .catalog-popover-head button{padding:3px;border:0;background:transparent}
@@ -209,22 +209,57 @@ button:disabled{cursor:default;opacity:.43}
 .conditions-readouts b.kpi-warn{color:#ff9b73}
 @media(prefers-reduced-motion:reduce){.spin{animation:none}}
 
-/* Complete regional evaluation: the map stays clear while every area is classified. */
-.coverage-summary-heading{display:flex;align-items:center;justify-content:space-between;gap:15px}
-.surface-coverage-summary{background:#101820;border-top:1px solid #2a3843;padding:14px 20px}
-.coverage-summary-heading strong{display:block;font-size:13px;font-weight:600;color:#e2edf1}
-.coverage-summary-heading span{display:block;color:#a0b1bf;font-size:11px;margin-top:5px}
-.unified-mission .coverage-mode-button{font-size:10px;white-space:nowrap;padding:8px 10px;background:#17252c}
-.coverage-area-bar{display:flex;align-items:stretch;height:5px;margin:14px 0 13px;overflow:hidden;border-radius:3px;background:#35404b}
-.coverage-area-segment.green{background:#68dfa4}.coverage-area-segment.yellow{background:#efd079}.coverage-area-segment.red{background:#dc6d78}.coverage-area-segment.unknown{background:#9daab7}
-.coverage-class-list{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
-.coverage-class{display:flex;gap:7px;align-items:flex-start;min-width:0}
-.coverage-class>i{width:8px;height:8px;margin-top:3px;border:1px solid currentColor;border-radius:2px;flex-shrink:0;background:currentColor}
-.coverage-class.green,.risk-text.green{color:#94eab9}.coverage-class.yellow,.risk-text.yellow{color:#efd079}.coverage-class.red,.risk-text.red{color:#ec949e}.coverage-class.unknown,.risk-text.unknown{color:#a9b7c4}
-.coverage-class strong{display:block;font-size:10px;font-weight:500;line-height:1.4}
-.coverage-class span{display:block;font:9px/1.6 'IBM Plex Mono',monospace;color:#a0b1bf;margin-top:3px}
-.coverage-summary-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:11px;color:#8097a8;font-size:10px}
-.unified-mission .coverage-summary-foot button{font-size:10px;border:0;background:transparent;padding:2px;color:#a7becc}
+/* Complete regional evaluation: compact percentage strip */
+.surface-coverage-summary{background:#0f161f;border-top:1px solid #263440;padding:8px 18px 6px}
+.coverage-compact-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.coverage-compact-title{display:flex;align-items:center;gap:8px;font-size:11px;color:#b9cad6}
+.coverage-compact-title strong{font-weight:600;color:#e4eff5;white-space:nowrap}
+.unified-mission .coverage-how-link{border:0;background:transparent;padding:2px 4px;font:9px 'IBM Plex Mono',monospace;color:#8aa6ba;text-decoration:underline;text-underline-offset:2px}
+.coverage-class-list{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.coverage-class{display:inline-flex;gap:5px;align-items:center;padding:3px 8px;border-radius:999px;background:#131d28;border:1px solid #263646;min-width:0}
+.coverage-class>i{width:7px;height:7px;border-radius:50%;flex-shrink:0;background:currentColor}
+.coverage-class.green,.risk-text.green{color:#62e6a0;border-color:#264c3a}.coverage-class.yellow,.risk-text.yellow{color:#efd079;border-color:#524726}.coverage-class.red,.risk-text.red{color:#ff6b78;border-color:#542830}.coverage-class.unknown,.risk-text.unknown{color:#9eb0c0;border-color:#303d4b}
+.coverage-class strong{font-size:10px;font-weight:500;line-height:1.2;color:#d6e3ec;white-space:nowrap}
+.coverage-class strong b{font:600 10px 'IBM Plex Mono',monospace;color:currentColor;margin-left:2px}
+.unified-mission .coverage-mode-button{font-size:10px;white-space:nowrap;padding:5px 9px;background:#16232b;border-radius:7px}
+.coverage-area-bar{display:flex;align-items:stretch;height:2px;margin:6px 0 0;overflow:hidden;border-radius:2px;background:#26313c;opacity:.75}
+.coverage-area-segment.green{background:#62e6a0}.coverage-area-segment.yellow{background:#efd079}.coverage-area-segment.red{background:#ff6b78}.coverage-area-segment.unknown{background:#8d9aaa}
+
+/* Mission Stay Timeline with Green/Red Solar & Earth Bars + Delimiter Pins */
+.timeline-now-badge{padding:3px 8px;border-radius:999px;font:600 9px 'IBM Plex Mono',monospace;letter-spacing:.4px}
+.timeline-now-badge.ok{background:#133324;border:1px solid #357a56;color:#7ff5b5}
+.timeline-now-badge.fail{background:#38171d;border:1px solid #8a3340;color:#ff9aa3}
+.timeline-pins-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:8px 0 6px}
+.unified-mission .timeline-pin-chip{padding:3px 8px;border-radius:6px;font:500 10px 'IBM Plex Mono',monospace;gap:4px;background:#121b25;border:1px solid #2c3c4d;color:#c3d4e2}
+.unified-mission .timeline-pin-chip.ok{border-color:#2d6a4b;background:#10261d;color:#8ef2bc}
+.unified-mission .timeline-pin-chip.fail{border-color:#7c2f3a;background:#2a1318;color:#ff9ba4}
+.unified-mission .timeline-pin-chip.active{box-shadow:0 0 0 1px currentColor;font-weight:600}
+
+.timeline-track-stack{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;position:relative;padding-top:16px}
+.timeline-axis-pins{position:absolute;top:0;left:6px;right:6px;height:15px;pointer-events:none}
+.unified-mission .axis-pin{position:absolute;top:0;transform:translateX(-50%);padding:0 3px;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:1px;pointer-events:auto;cursor:pointer}
+.axis-pin i{width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 6px currentColor}
+.axis-pin small{font:600 8px 'IBM Plex Mono',monospace;line-height:1;white-space:nowrap}
+.axis-pin.ok{color:#5ce69b}
+.axis-pin.fail{color:#ff6370}
+.axis-pin.current i{transform:scale(1.35)}
+
+.conditions-slider input.slider-ok{accent-color:#4ae392}
+.conditions-slider input.slider-fail{accent-color:#ff5b69}
+.timeline-hour-pill{font:600 10px 'IBM Plex Mono',monospace;padding:4px 7px;border-radius:6px;min-width:44px;text-align:center}
+.timeline-hour-pill.ok{background:#122e21;color:#80f2b3;border:1px solid #2b6347}
+.timeline-hour-pill.fail{background:#31151b;color:#ff98a1;border:1px solid #752d38}
+
+.timeline-status-bars{display:flex;flex-direction:column;gap:4px;margin-top:2px}
+.status-bar-row{display:grid;grid-template-columns:86px 1fr 56px;align-items:center;gap:8px}
+.status-bar-row .bar-label{display:inline-flex;align-items:center;gap:4px;font:500 10px 'IBM Plex Mono',monospace;color:#b2c4d4;white-space:nowrap}
+.bar-segments{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:1px;height:8px;border-radius:4px;overflow:hidden;background:#0a1017;padding:1px;border:1px solid #22303e}
+.bar-segments .seg{height:100%;cursor:pointer;transition:transform .1s,filter .1s}
+.bar-segments .seg.ok{background:#2ed573}
+.bar-segments .seg.fail{background:#ff4d5e}
+.bar-segments .seg.active{filter:brightness(1.35);box-shadow:0 0 0 1px #fff}
+.bar-summary{font:9px 'IBM Plex Mono',monospace;color:#93a8b8;text-align:right;white-space:nowrap}
+.bar-summary b{color:#e6f2ec}
 .surface-inspection-hint{position:absolute;left:18px;right:18px;bottom:15px;z-index:38;background:#101822e8;border:1px solid #394854;border-radius:7px;padding:9px 12px;font-size:11px;color:#b8c7d1;display:flex;align-items:center;gap:8px;pointer-events:none;flex-wrap:wrap}
 .surface-inspection-hint>span{font-size:10px;color:#a5b6c3}.surface-inspection-hint svg{flex-shrink:0}.surface-inspection-hint b{font-weight:500}
 .sampling-sensitivity{background:#0d151d;border:1px solid #31414c;border-radius:7px;padding:12px;margin:15px 0}
@@ -242,6 +277,6 @@ button:disabled{cursor:default;opacity:.43}
 .coordinate-inspector button,.coordinate-inspector p{grid-column:1/-1;font-size:11px}
 .coordinate-inspector p{color:#edb4bc}
 .one-map-heading h2{font-size:26px}
-@media(min-width:1150px){.one-moon-map{min-height:360px}.unified-layout{min-height:740px}.mission-conditions{padding:13px 20px}.one-map-heading{padding-top:20px;min-height:91px}.coverage-summary-foot{font-size:9px}}
-@media(max-width:1149px){.coverage-class-list{grid-template-columns:1fr 1fr;gap:12px}.one-moon-panel{min-height:870px}}
-@media(max-width:700px){.surface-coverage-summary{padding:15px 17px}.coverage-summary-heading{align-items:flex-start}.coverage-summary-heading strong{font-size:12px}.coverage-summary-heading span{font-size:10px;line-height:1.6;max-width:190px}.unified-mission .coverage-mode-button{font-size:9px;padding:8px;max-width:116px;white-space:normal}.coverage-class-list{grid-template-columns:1fr 1fr;gap:12px}.coverage-summary-foot{align-items:flex-start;line-height:1.7}.coverage-summary-foot>span{max-width:220px}.surface-inspection-hint{left:13px;right:13px;bottom:11px;font-size:10px;gap:5px;padding:9px}.one-moon-panel{min-height:730px}.one-map-heading h2{font-size:26px}.one-moon-map{min-height:425px}.one-map-empty{bottom:34px}}
+@media(min-width:1150px){.one-moon-map{min-height:360px}.unified-layout{min-height:740px}.mission-conditions{padding:11px 20px}.one-map-heading{padding-top:18px;min-height:84px}}
+@media(max-width:1149px){.one-moon-panel{min-height:870px}}
+@media(max-width:700px){.surface-coverage-summary{padding:8px 12px}.unified-mission .coverage-mode-button{font-size:9px;padding:6px 8px}.surface-inspection-hint{left:13px;right:13px;bottom:11px;font-size:10px;gap:5px;padding:9px}.one-moon-panel{min-height:730px}.one-map-heading h2{font-size:26px}.one-moon-map{min-height:425px}.one-map-empty{bottom:34px}.status-bar-row{grid-template-columns:72px 1fr 48px}}
