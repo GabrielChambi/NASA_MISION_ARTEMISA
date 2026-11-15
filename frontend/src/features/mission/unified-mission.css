@@ -196,6 +196,11 @@ button:disabled{cursor:default;opacity:.43}
 .copilot-robot-avatar{filter:drop-shadow(0 2px 8px rgba(148, 237, 187, 0.35))}
 .chat-hero-title{font:500 28px/1.1 'Barlow Condensed',sans-serif;letter-spacing:-.4px;color:#f0f6fc;margin:0}
 .chat-hero-title em{font-style:normal;color:#94edbb}
+.chat-hero-examples{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:6px}
+.unified-mission .example-trip{width:auto!important;border:1px solid rgba(255, 255, 255, 0.1)!important;background:rgba(255, 255, 255, 0.04)!important;border-radius:999px!important;font-size:11px!important;color:#a8c5b5!important;padding:6px 13px!important;margin:0!important;display:inline-flex;align-items:center;gap:6px;transition:all .15s ease}
+.unified-mission .example-trip:hover:not(:disabled){background:rgba(148, 237, 187, 0.12)!important;border-color:rgba(148, 237, 187, 0.35)!important;color:#c8eed8!important}
+.unified-mission .example-trip.hint-alt{color:#a1c4d4!important;border-color:rgba(161, 196, 212, 0.2)!important;background:rgba(161, 196, 212, 0.05)!important}
+.unified-mission .example-trip.hint-alt:hover:not(:disabled){background:rgba(161, 196, 212, 0.14)!important;border-color:rgba(161, 196, 212, 0.4)!important;color:#e0f2fe!important}
 .unified-mission .chat-settings-gear-btn{width:28px;height:28px;padding:0;border-radius:6px;background:rgba(255, 255, 255, 0.05);border:1px solid rgba(255, 255, 255, 0.1);color:#a4b6c7}
 .unified-mission .chat-settings-gear-btn:hover{background:rgba(255, 255, 255, 0.1);border-color:#53677b;color:#f0f5fa}
 .unified-mission .chat-settings-gear-btn.active{background:#23352c;border-color:#659a7c;color:#a7f2c6}

@@ -1018,9 +1018,14 @@ export default function UnifiedMissionPlanner(){
             <span className="micro-title">COPILOTO DE MISIÓN</span>
             <h1 className="chat-hero-title">Dime cuándo y <em>encuentro dónde.</em></h1>
             {chatTurns.length===0&&!plan&&!busy&&(
-              <button type="button" className="example-trip" onClick={()=>{setMessage(EXAMPLE);void calculate(EXAMPLE)}} disabled={!atlas||!polar}>
-                {t.exampleBtn} <ArrowRight size={12}/>
-              </button>
+              <div className="chat-hero-examples">
+                <button type="button" className="example-trip" onClick={()=>{setMessage(EXAMPLE);void calculate(EXAMPLE)}} disabled={!atlas||!polar}>
+                  {t.exampleBtn} <ArrowRight size={12}/>
+                </button>
+                <button type="button" className="example-trip hint-alt" onClick={()=>void submitMessage('QUIERO HACER UN VIAJE EL 1DE DICIEMBREDE 2026 A LAS 10AM')} disabled={!atlas||!polar}>
+                  Planificar el 1 dic · 10:00 <ArrowRight size={12}/>
+                </button>
+              </div>
             )}
           </div>
 
@@ -1228,7 +1233,6 @@ export default function UnifiedMissionPlanner(){
           </div>
           {uploadNotice&&<small className="upload-notice">{uploadNotice}</small>}
         </form>
-        {!intent&&!busy&&<div className="mission-prompt-hints"><button type="button" onClick={()=>void submitMessage('QUIERO HACER UN VIAJE EL 1DE DICIEMBREDE 2026 A LAS 10AM')}>Planificar el 1 dic · 10:00</button></div>}
         {intent&&!busy&&<div className="mission-prompt-hints"><button type="button" onClick={()=>void submitMessage('Busca alternativas conservando mis requisitos')}>Buscar alternativas</button><button type="button" onClick={()=>{setMessage('¿Qué pasa si mis paneles producen un 20% menos?');document.querySelector<HTMLTextAreaElement>('#mission-request')?.focus()}}>Probar un fallo solar</button><button type="button" onClick={()=>void submitMessage('Estudia la huella local del destino')}>Estudiar huella</button></div>}
         {intent&&<div className="recognized-mission" data-testid="recognized-mission"><span>ESCENARIO ACTIVO</span><strong>{intent.date_kind==='landing'?'Alunizaje':'Salida'} · {localDate(intent.departure_utc)}</strong><small>{TIMEZONE} · {intent.surface_hours} h en superficie · {launchSite.name}</small>{(pendingText||pendingCommandText)&&<small>La última petición está pendiente de completar; este escenario se conserva.</small>}</div>}
         {adopted&&<div className="adopted-alternative" data-testid="adopted-alternative"><Check size={14}/><div><strong>Alternativa aplicada</strong><span>{adopted.original.date_kind==='landing'?'Alunizaje':'Salida'} original: {localDate(adopted.original.departure_utc)}<br/>Nueva fecha: {localDate(adopted.proposal.proposed_request.departure_utc)}</span><small>La solicitud original queda guardada en la comparación. La estancia y los requisitos no cambian.</small></div></div>}
