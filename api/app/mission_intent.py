@@ -211,7 +211,10 @@ def finish(value, raw, mode="parser", reason=None):
     if not local_date and re.search(r"\b\d{1,2}\s+(?:de\s+)?(?:"+'|'.join(MONTHS)+r")\b",normalized) and not re.search(r"\b(?:19\d{2}|20\d{2}|2100)\b",normalized):
         missing="Reconocí el día y el mes. ¿De qué año es la misión?"
     if not local_date and re.search(r"\b(?:19\d{2}|20\d{2}|2100)\b",normalized):
-        missing="Reconocí el año. Indica el día y el mes de la misión."
+        if re.search(r"\b(?:"+'|'.join(MONTHS)+r")\b",normalized):
+            missing="Reconocí el mes y el año. Indica qué día deseas evaluar (por ejemplo: 1 o 15 de enero de 2027) para calcular las condiciones en la zona."
+        else:
+            missing="Reconocí el año. Indica el día y el mes de la misión."
 
     base = dict(status="ok", mode=mode, reason=reason, intent=partial, assumptions=assumptions, explicit_fields=explicit)
     if problem or missing:

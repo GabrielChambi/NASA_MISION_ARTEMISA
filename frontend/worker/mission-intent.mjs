@@ -115,7 +115,13 @@ function finish(input,raw,mode='parser',reason=null){
  let missing=!local_date?'¿Qué fecha, con día, mes y año, quieres usar para tu viaje?':null
  const normalized=clean(input.message)
  if(!local_date&&new RegExp('\\b\\d{1,2}\\s+(?:de\\s+)?('+Object.keys(MONTHS).join('|')+')\\b').test(normalized)&&! /\b(?:19\d{2}|20\d{2}|2100)\b/.test(normalized))missing='Reconocí el día y el mes. ¿De qué año es la misión?'
- if(!local_date&&/\b(?:19\d{2}|20\d{2}|2100)\b/.test(normalized))missing='Reconocí el año. Indica el día y el mes de la misión.'
+ if(!local_date&&/\b(?:19\d{2}|20\d{2}|2100)\b/.test(normalized)){
+  if(new RegExp('\\b('+Object.keys(MONTHS).join('|')+')\\b').test(normalized)){
+   missing='Reconocí el mes y el año. Indica qué día deseas evaluar (por ejemplo: 1 o 15 de enero de 2027) para calcular las condiciones en la zona.'
+  }else{
+   missing='Reconocí el año. Indica el día y el mes de la misión.'
+  }
+ }
  if(problem||missing)return {status:'ok',mode,reason,intent:partial,assumptions,explicit_fields:explicit,needs_clarification:true,question:problem??missing,display_summary:problem??missing}
  if(!validDate(local_date)||!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(local_time))throw new InputError('Fecha u hora extraída no válida.')
  let requested
