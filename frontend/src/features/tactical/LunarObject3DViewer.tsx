@@ -1,6 +1,6 @@
-import { useState, useRef, useMemo } from 'react'
+import { useState, useRef, useMemo, useEffect } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { OrbitControls, Html, Stars } from '@react-three/drei'
+import { OrbitControls, Stars } from '@react-three/drei'
 import * as THREE from 'three'
 import {
   Pause,
@@ -25,6 +25,25 @@ type Props = {
   activeVehicle: VehicleProfile
   onSelectVehicle: (v: VehicleProfile) => void
   onClose?: () => void
+}
+
+function MetricCallout({position,label,color}:{position:[number,number,number];label:string;color:string}){
+  const {tr}=useI18n()
+  const text=tr(label)
+  const texture=useMemo(()=>{
+    const canvas=document.createElement('canvas');canvas.width=512;canvas.height=96
+    const context=canvas.getContext('2d')
+    if(context){
+      context.fillStyle='#101b29';context.fillRect(0,0,512,96)
+      context.strokeStyle=color;context.lineWidth=4;context.strokeRect(2,2,508,92)
+      context.fillStyle=color;context.font='28px sans-serif';context.textAlign='center';context.textBaseline='middle'
+      context.fillText(text,256,48,480)
+    }
+    const map=new THREE.CanvasTexture(canvas);map.colorSpace=THREE.SRGBColorSpace
+    return map
+  },[text,color])
+  useEffect(()=>()=>texture.dispose(),[texture])
+  return <sprite position={position} scale={[3.2,.6,1]}><spriteMaterial map={texture} transparent depthTest={false}/></sprite>
 }
 
 /** Dynamic Camera Framing: smoothly lerps camera and target to fit each 3D object's scale,
@@ -792,24 +811,11 @@ function RotatingStudio({
         <LanderModel vehicle={vehicle} />
       )}
 
-      {/* Dynamic 3D Physical Metric Callouts */}
-      {showRulers && (
-        <group>
-          <Html position={[2.1, solarLabelY, 0]} center>
-            <div className="studio-ruler-badge solar-badge">
-              <Sun size={11} />
-              <span>Paneles: <b>{vehicle.solar_panel_height} m</b></span>
-            </div>
-          </Html>
-
-          <Html position={[-2.1, antennaLabelY, 0]} center>
-            <div className="studio-ruler-badge antenna-badge">
-              <Globe2 size={11} />
-              <span>Antena: <b>{vehicle.antenna_height} m</b></span>
-            </div>
-          </Html>
-        </group>
-      )}
+      {/* GPU sprites keep callouts inside the canvas lifecycle when rulers or views change. */}
+      {showRulers&&<group>
+        <MetricCallout position={[2.1,solarLabelY,0]} label={'Paneles: '+vehicle.solar_panel_height+' m'} color="#f5cb67"/>
+        <MetricCallout position={[-2.1,antennaLabelY,0]} label={'Antena: '+vehicle.antenna_height+' m'} color="#8ddfe9"/>
+      </group>}
     </group>
   )
 }
