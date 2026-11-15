@@ -85,3 +85,58 @@ test('Concurrent requests retain independent target data without shared request 
   assert.equal(bodies[1].target,'Earth')
   assert.notDeepEqual(bodies[0].samples,bodies[1].samples)
 })
+
+const installCache=(t,value)=>{
+  const descriptor=Object.getOwnPropertyDescriptor(globalThis,'caches')
+  Object.defineProperty(globalThis,'caches',{configurable:true,...value})
+  t.after(()=>{if(descriptor)Object.defineProperty(globalThis,'caches',descriptor);else delete globalThis.caches})
+}
+async function nasaWithoutBundledCache(t,cacheValue,context={waitUntil:()=>{}}){
+  installCache(t,cacheValue)
+  let calls=0
+  t.mock.method(globalThis,'fetch',async input=>{
+    calls++
+    const params=new URL(input).searchParams
+    const record=resources.ephemeris.find(item=>[...params].every(([key,value])=>item.params?.[key]===value))
+    assert.ok(record,'The live-query stub returns an original NASA record for the exact requested parameters')
+    return Response.json(record.response)
+  })
+  const response=await createScienceApi({...resources,ephemeris:[]})(new Request('https://test.local/api/solar'),context)
+  const body=await response.json()
+  assert.equal(response.status,200)
+  assert.equal(body.status,'ok')
+  assert.equal(calls,1,'Failed optional cache must fall through to the JPL request exactly once')
+  assert.equal(body.meta.cache_hit,false)
+  assert.equal(body.meta.source,'JPL Horizons')
+  assert.ok(body.meta.query_url.startsWith('https://ssd.jpl.nasa.gov/api/horizons.api?'))
+  assert.deepEqual(body.samples,(await read('prepared/site04-solar.json')).samples)
+}
+test('Denied default-cache getter cannot block an uncached NASA request',async t=>{
+  await nasaWithoutBundledCache(t,{get:()=>({get default(){throw new Error('This Worker is not permitted to access the default cache.')}})})
+})
+test('Rejected default-cache lookup falls through to the exact JPL query',async t=>{
+  await nasaWithoutBundledCache(t,{value:{default:{match:async()=>{throw new Error('Cache read denied.')}}}})
+})
+test('Rejected and synchronous cache writes preserve successful NASA results',async t=>{
+  for(const mode of ['rejected','synchronous']){
+    await t.test(mode,async child=>{
+      const pending=[]
+      const put=mode==='rejected'?async()=>{throw new Error('Cache quota exceeded.')}:()=>{throw new Error('Cache write denied.')}
+      await nasaWithoutBundledCache(child,{value:{default:{match:async()=>undefined,put}}},{waitUntil:promise=>pending.push(promise)})
+      assert.equal(pending.length,1)
+      await Promise.all(pending)
+    })
+  }
+})
+test('Rejected and synchronous background schedulers cannot corrupt NASA results',async t=>{
+  for(const mode of ['rejected','synchronous']){
+    await t.test(mode,async child=>{
+      const waitUntil=mode==='rejected'?()=>Promise.reject(new Error('Scheduler denied.')):()=>{throw new Error('Scheduler denied.')}
+      await nasaWithoutBundledCache(child,{value:{default:{match:async()=>undefined,put:async()=>{throw new Error('Cache write rejected.')}}}},{waitUntil})
+      await new Promise(resolve=>setImmediate(resolve))
+    })
+  }
+})
+test('Corrupt cached ephemeris falls through to NASA instead of replacing science',async t=>{
+  await nasaWithoutBundledCache(t,{value:{default:{match:async()=>Response.json({params:{},response:{result:'not an ephemeris'}}),put:async()=>{}}}})
+})

@@ -115,9 +115,24 @@ export function createScienceApi(resources) {
       const queryUrl = `${JPL}?${new URLSearchParams(params)}`
       let record = resources.ephemeris.find(item => Object.keys(params).every(key => item.params?.[key] === params[key]))
       let cacheHit = Boolean(record)
-      const cache = globalThis.caches?.default
+      // Cache permissions and storage failures must never make JPL unavailable.
+      // Some hosted Worker runtimes throw while accessing the default getter.
+      let cache = null
+      if (!record) { try { cache = globalThis.caches?.default ?? null } catch { /* Optional cache is denied. */ } }
       const cacheKey = new Request(queryUrl)
-      if (!record && cache) { const cached = await cache.match(cacheKey); if (cached) { record = await cached.json(); cacheHit = true } }
+      if (!record && cache) {
+        try {
+          const cached = await cache.match(cacheKey)
+          if (cached) {
+            const candidate = await cached.json()
+            if (Object.keys(params).every(key => candidate.params?.[key] === params[key])) {
+              parseHorizons(candidate.response?.result, q)
+              record = candidate
+              cacheHit = true
+            }
+          }
+        } catch { /* A cache miss, corrupt record or read failure falls through to JPL. */ }
+      }
       if (!record) {
         try {
           const response = await fetch(queryUrl, { signal: AbortSignal.timeout(45000) })
@@ -126,7 +141,11 @@ export function createScienceApi(resources) {
           if (payload.error) throw new ScienceError('JPL rejected the observer query.', 503)
           parseHorizons(payload.result, q)
           record = { params, query_url: queryUrl, retrieved_at: new Date().toISOString(), response: payload, source: 'JPL Horizons' }
-          if (cache && ctx) ctx.waitUntil(cache.put(cacheKey, Response.json(record, { headers: { 'Cache-Control': 'public, max-age=86400' } })))
+          if (cache && ctx) {
+            // Catch synchronous put errors, rejected writes and a denied waitUntil.
+            const write = Promise.resolve().then(() => cache.put(cacheKey, Response.json(record, { headers: { 'Cache-Control': 'public, max-age=86400' } }))).catch(() => undefined)
+            try { Promise.resolve(ctx.waitUntil(write)).catch(() => undefined) } catch { /* Background caching is optional. */ }
+          }
         } catch (error) { if (error instanceof ScienceError) throw error; throw new ScienceError('Scientific data unavailable: JPL Horizons could not be reached. No fabricated fallback is used.', 503) }
       }
       const rows = parseHorizons(record.response.result, q)

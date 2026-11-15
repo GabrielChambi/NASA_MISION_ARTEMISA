@@ -113,6 +113,16 @@ Con Chrome y Gemini configurado en el servidor, ejecuta en otra terminal:
 node frontend/scripts/test-automatic-mission.mjs
 ~~~
 
+Para comprobar consultas NASA de una fecha no incluida en los ejemplos preparados:
+
+~~~powershell
+$env:LUNAR_ORACLE_TEST_URL='http://127.0.0.1:4173/'
+node frontend/scripts/test-live-plan.mjs
+~~~
+
+La prueba usa el 26 de diciembre de 2026 y exige tres consultas trazables. Para comprobar producción, cambia la URL al sitio publicado. La caché del alojamiento es opcional: permisos denegados o fallos de lectura/escritura no bloquean una consulta nueva a JPL.
+
+
 La URL predeterminada es `http://127.0.0.1:4173/`; usa `LUNAR_ORACLE_TEST_URL` para cambiarla. El test exige Gemini real y comprueba análisis automático posterior, fuentes NASA, 12.892 zonas, círculos renderizados, selección, tiempo y vista móvil.
 
 ~~~powershell
