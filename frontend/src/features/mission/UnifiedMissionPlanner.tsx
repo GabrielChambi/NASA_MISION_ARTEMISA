@@ -316,8 +316,8 @@ export default function UnifiedMissionPlanner(){
   const [slope,setSlope]=useState(10),[sunHours,setSunHours]=useState(12),[earthHours,setEarthHours]=useState(12)
   const [stay,setStay]=useState('72'),[preferences,setPreferences]=useState(false),[evidence,setEvidence]=useState(false),[help,setHelp]=useState(false)
   const [cameraRevision,setCameraRevision]=useState(0)
-  const [focus,setFocus]=useState(false),[detail,setDetail]=useState<AtlasData|null>(null),[visualStatus,setVisualStatus]=useState('')
-  const [shadingStatus,setShadingStatus]=useState('Cargando relieve NASA…'),[timeline,setTimeline]=useState(0),[playing,setPlaying]=useState(false)
+  const [focus,setFocus]=useState(false),[detail,setDetail]=useState<AtlasData|null>(null),[,setVisualStatus]=useState('')
+  const [,setShadingStatus]=useState(''),[timeline,setTimeline]=useState(0),[playing,setPlaying]=useState(false)
   const [flight,setFlight]=useState<DescentRun|null>(null),[flightTime,setFlightTime]=useState(0),[flying,setFlying]=useState(false)
   const [activeMapOverlay,setActiveMapOverlay]=useState<'candidates'|'coordinates'|'rejected'|null>(null)
   const [aiMode,setAiMode]=useState(''),[departureInput,setDepartureInput]=useState('')
@@ -1256,7 +1256,7 @@ export default function UnifiedMissionPlanner(){
         <div className="one-map-heading">
           <div>
             <span className="micro-title">{tr("POLO SUR LUNAR · 80°S — 90°S")}</span>
-            <h2>{tr(plan?'Toda la superficie. Una decisión informada.':'Una Luna. Todos los destinos.')}</h2>
+            <h2>{tr('Una Luna. Todos los destinos.')}</h2>
             {(vehicle.is_rover||vehicle.category==='Rover y Movilidad')&&<span className="rover-range-indicator"><Compass size={12}/>{" "}{tr("Radio geométrico:")}{" "}<b>{vehicle.nominal_range_km??15} km</b>{" "}<small>({tr("no es una ruta validada")})</small></span>}
           </div>
           <div className="one-map-actions">
@@ -1350,14 +1350,14 @@ export default function UnifiedMissionPlanner(){
               pinnedTarget={pinnedTarget}
               traverseRadiusKm={vehicle.is_rover||vehicle.category==='Rover y Movilidad'?(vehicle.nominal_range_km??15):null}
               roverName={vehicle.lander_name} roverSpeed={vehicle.speed_km_h}/>
-            <div className="one-map-source">
-              {intent&&<div className="recognized-mission" data-testid="recognized-mission"><span>{tr("ESCENARIO ACTIVO")}</span><strong>{tr(intent.date_kind==='landing'?'Alunizaje':'Salida')} · {tr(localDate(intent.departure_utc))}</strong><small>{tr(TIMEZONE)} · {intent.surface_hours}{" "}{tr("h en superficie ·")}{" "}{tr(launchSite.name)}</small>{(pendingText||pendingCommandText)&&<small className="recognized-mission-pending">{tr("La última petición está pendiente de completar; este escenario se conserva.")}</small>}</div>}
-              <div className="one-map-source-body">
-                <span>{tr(plan&&coverageVisible&&!flight?'Evaluación de toda la superficie':'NASA LOLA · relieve continuo')}</span>
-                <small>{tr(focus&&detail?'Detalle visual ~396 m · fuente 80 m':shadingStatus.includes('no disponible')?'Sombreado no disponible; relieve conservado':'Vista regional · fuente de 80 m')}{tr(visualStatus.includes('no disponible')?' · '+visualStatus:'')}</small>
-                <small>{tr("Nave y astros en escala ilustrativa.")}</small>
+            {intent&&<div className="one-map-source">
+              <div className="recognized-mission" data-testid="recognized-mission">
+                <span>{tr("ESCENARIO ACTIVO")}</span>
+                <strong>{tr(intent.date_kind==='landing'?'Alunizaje':'Salida')} · {tr(localDate(intent.departure_utc))}</strong>
+                <small>{tr("Señal y salida:")} {tr(launchSite.name)} · {tr(TIMEZONE)}</small>
+                {(pendingText||pendingCommandText)&&<small className="recognized-mission-pending">{tr("La última petición está pendiente de completar; este escenario se conserva.")}</small>}
               </div>
-            </div>
+            </div>}
 
             {/* Map Floating Toolbar (Simular llegada + 3 interactive tools) */}
             {plan&&<div className="map-floating-toolbar">
