@@ -17,7 +17,7 @@ const check=(label,condition)=>{assert.ok(condition,label);checks.push(label)}
 const responseFor=(p,path)=>p.waitForResponse(r=>new URL(r.url()).pathname===path&&r.request().method()==='POST',{timeout:120000}).catch(()=>null)
 const frame=p=>p.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))))
 async function fresh(){
- const p=await browser.newPage({viewport:{width:1600,height:1100},deviceScaleFactor:1,reducedMotion:'reduce'})
+ const p=await browser.newPage({locale:'es-BO',viewport:{width:1600,height:1100},deviceScaleFactor:1,reducedMotion:'reduce'})
  p.on('pageerror',e=>errors.push(e.message))
  p.on('console',message=>{if(message.type()==='error')consoleErrors.push(message.text())})
  p.on('requestfailed',request=>{if(request.failure()?.errorText!=='net::ERR_ABORTED')failedRequests.push({path:new URL(request.url()).pathname,error:request.failure()?.errorText})})
@@ -136,21 +136,22 @@ try{
  await outage.screenshot({path:file('mission-rescue-unavailable.png'),fullPage:true})
  await outage.close()
 
- // Negative boundary: editing the mission aborts and invalidates a pending old search.
+ // Drafting a follow-up preserves the active mission; submitting a new mission invalidates old searches.
  const stale=await fresh(),old=holdSearch(stale,realRescue)
  await stale.route('**/api/mission-rescue',old.handler)
  await calculate(stale);await old.received
  await stale.getByRole('button',{name:'Cancelar búsqueda',exact:true}).waitFor()
  await stale.getByLabel('Describe tu misión',{exact:true}).fill(CHRISTMAS)
- await old.release()
- check('Editing invalidates stale recommendations and a late response cannot reappear',await stale.getByTestId('mission-rescue').count()===0&&await stale.locator('.apply-rescue').count()===0&&await stale.locator('.best-destination').count()===0)
- await stale.unroute('**/api/mission-rescue',old.handler)
+ check('Drafting in the persistent chat preserves the active scientific scenario',await stale.getByTestId('mission-rescue').count()===1&&(await stale.locator('.trip-overview').innerText()).includes('01 dic'))
  const previousRequests=requests.filter(r=>r.page===stale&&r.path==='/api/mission-rescue').length
  const feasible=await calculate(stale,CHRISTMAS)
+ await old.release();await frame(stale)
+ check('Submitting a new scenario rejects a late old recommendation',await stale.getByTestId('mission-rescue').count()===0&&await stale.locator('.apply-rescue').count()===0&&await stale.locator('.best-destination').count()===1)
+ await stale.unroute('**/api/mission-rescue',old.handler)
  await stale.locator('.best-destination').waitFor()
  await frame(stale)
  check('An already feasible date does not automatically launch rescue search',feasible.plan.best?.risk==='green'&&requests.filter(r=>r.page===stale&&r.path==='/api/mission-rescue').length===previousRequests&&await stale.getByTestId('mission-rescue').count()===0)
- check('The new feasible request retains its own December date',feasible.sent.departure_utc==='2026-12-25T12:00:00Z'&&await stale.getByLabel('Describe tu misión',{exact:true}).inputValue()===CHRISTMAS)
+ check('The new feasible request retains its own December date',feasible.sent.departure_utc==='2026-12-25T12:00:00Z'&&(await stale.locator('.mission-chat-thread').innerText()).includes(CHRISTMAS))
  await stale.close()
  check('No uncaught JavaScript errors occurred',errors.length===0)
  check('No application request failed except explicitly cancelled requests',failedRequests.length===0)

@@ -84,6 +84,8 @@ def point_series(q,cell,env):
 def terrain_assessment(cell,q,settings):
  study=native_footprint(cell['latitude_deg'],cell['longitude_deg'],settings)
  center=study['center_footprint']
+ if center['risk']==3:
+  return {'rule':'native-terrain-exclusion','source_resolution_m':study['source_resolution_m'],'passes':False,'center_footprint':center}
  if center['resolved']:
   return {'rule':'native-footprint','source_resolution_m':study['source_resolution_m'],'passes':center['risk'] in (1,2),'center_footprint':center}
  return {'rule':'regional-p95-only','source_resolution_m':study['source_resolution_m'],'passes':planner.finite(cell.get('regional_slope_deg'),0,q['effective_max_slope_deg']),'center_footprint':center,'limitation':'La huella permanece sin resolver; el criterio regional no la certifica.'}

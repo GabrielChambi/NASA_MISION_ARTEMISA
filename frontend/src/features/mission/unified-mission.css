@@ -152,15 +152,33 @@ button:disabled{cursor:default;opacity:.43}
 .selected-color.gray{background:#8d9aaa}
 .sr-only-label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 
-/* Fullscreen mode for the Lunar 3D Map */
+/* Elegant Panel Toggles & Fullscreen mode for the Lunar 3D Map */
 .unified-mission.map-is-fullscreen .trip-panel,.unified-mission.map-is-fullscreen .mission-decisions{display:none!important}
-.unified-mission.map-is-fullscreen .unified-layout{grid-template-columns:1fr!important}
-.unified-mission.map-is-fullscreen .one-moon-panel{min-height:calc(100dvh - 83px)}
+.unified-layout.hide-left:not(.hide-right){grid-template-columns:minmax(420px,1fr) 310px!important}
+.unified-layout.hide-right:not(.hide-left){grid-template-columns:310px minmax(420px,1fr)!important}
+.unified-layout.hide-left.hide-right,.unified-mission.map-is-fullscreen .unified-layout{grid-template-columns:1fr!important}
+.unified-mission.map-is-fullscreen .one-moon-panel,.unified-layout.hide-timeline .one-moon-panel{min-height:calc(100dvh - 83px)}
+.workspace-panel-toggles{display:inline-flex;align-items:center;gap:4px;margin-left:6px;padding-left:8px;border-left:1px solid #263340}
+.unified-mission .workspace-panel-toggles .panel-toggle-btn{width:30px;height:30px;padding:0;border-radius:7px;background:#131b24;border:1px solid #293645;color:#b8c7d6}
+.unified-mission .workspace-panel-toggles .panel-toggle-btn[aria-pressed=true]{background:#22312a;border-color:#6d9b81;color:#d3f5e0}
+
+/* Compact icon-only "Simular llegada a este destino" button inside .one-moon-map */
+.unified-mission .map-simulate-icon-btn{position:absolute;right:18px;top:10px;z-index:39;width:36px;height:36px;padding:0;border-radius:50%;background:#13211bd9;border:1px solid #598c6c;color:#baf4d2;box-shadow:0 4px 16px #0009}
+.unified-mission .map-simulate-icon-btn:hover:not(:disabled){background:#1f382d;border-color:#94edbb;color:#ffffff}
+.unified-mission .map-simulate-icon-btn.active{background:#94edbb;border-color:#e0f8e9;color:#0d2318}
 
 /* Fluid Gemini-style conversational UI (no heavy boxes around assistant responses) */
-.chat-linked-panel{display:flex;flex-direction:column;gap:12px}
+.chat-linked-panel{display:flex;flex-direction:column;gap:12px;position:relative}
+.chat-panel-top-bar{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.unified-mission .chat-settings-gear-btn{width:28px;height:28px;padding:0;border-radius:6px;background:transparent;border:1px solid #2a3746;color:#a4b6c7}
+.unified-mission .chat-settings-gear-btn:hover{background:#18232f;border-color:#53677b;color:#f0f5fa}
+.unified-mission .chat-settings-gear-btn.active{background:#23352c;border-color:#659a7c;color:#a7f2c6}
 .chat-panel-top h1{font:500 31px/1.08 'Barlow Condensed',sans-serif;margin:6px 0 2px}
-.mission-chat-thread{display:flex;flex-direction:column;gap:16px;max-height:440px;overflow-y:auto;padding-right:4px;scrollbar-width:thin;scrollbar-color:#2c3a48 transparent}
+.chat-manual-modal{position:absolute;left:14px;right:14px;top:72px;z-index:95;background:#101822;border:1px solid #35475a;border-radius:12px;box-shadow:0 18px 48px #000c;padding:14px}
+.manual-modal-head{display:flex;align-items:center;justify-content:space-between;padding-bottom:10px;margin-bottom:8px;border-bottom:1px solid #233342}
+.manual-modal-head strong{font:500 13px 'Barlow Condensed',sans-serif;letter-spacing:.5px;color:#d5e4f2;text-transform:uppercase}
+.unified-mission .manual-modal-head button{padding:3px;border:0;background:transparent;color:#91a3b5}
+.mission-chat-thread{display:flex;flex-direction:column;gap:16px;flex:1;min-height:220px;max-height:460px;overflow-y:auto;padding-right:4px;scrollbar-width:thin;scrollbar-color:#2c3a48 transparent}
 .gemini-msg{display:flex;flex-direction:column;gap:6px;font-size:13px;line-height:1.58}
 .gemini-msg.user{align-items:flex-end}
 .user-pill{max-width:88%;padding:10px 14px;border-radius:18px 18px 4px 18px;background:#1c2530;color:#eef4f8}
@@ -172,6 +190,14 @@ button:disabled{cursor:default;opacity:.43}
 .gemini-msg-head small{font:9px 'IBM Plex Mono',monospace;color:#7f91a3;margin-left:auto}
 .gemini-msg-content{padding-left:22px;display:flex;flex-direction:column;gap:8px;color:#d6e1ea}
 .gemini-msg-content p{margin:0}
+.gemini-msg-content strong{color:#f0f6fc;font-weight:600}
+.gemini-msg-content em{color:#a9c5df;font-style:italic}
+.gemini-msg-content code{background:#16222f;padding:1px 5px;border-radius:4px;font:11px 'IBM Plex Mono',monospace;color:#7ee787}
+.chat-md-list{margin:4px 0 6px 18px;padding:0;display:flex;flex-direction:column;gap:5px}
+.chat-md-list li{margin:0;color:#d6e1ea;line-height:1.52}
+.chat-md-h4{font-size:13px;font-weight:700;color:#94edbb;margin:8px 0 2px;letter-spacing:.3px}
+.chat-md-h3{font-size:14px;font-weight:700;color:#67e8f9;margin:10px 0 4px}
+.chat-md-p{margin:0;line-height:1.58}
 .gemini-paragraph-muted{color:#b7c5d3;font-size:12px}
 .gemini-recommendations-list{display:flex;flex-direction:column;gap:6px;font-size:12px;color:#c5d3df;padding-top:2px}
 .gemini-action-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
@@ -231,11 +257,17 @@ button:disabled{cursor:default;opacity:.43}
 .coverage-area-bar{display:flex;align-items:stretch;height:2px;margin:5px 0 0;overflow:hidden;background:#1c252f;opacity:.65}
 .coverage-area-segment.green{background:#62e6a0}.coverage-area-segment.yellow{background:#efd079}.coverage-area-segment.red{background:#ff6b78}.coverage-area-segment.unknown{background:#8d9aaa}
 
-/* Flat, clean Timeline with Yellow Sun bar (#f5cb67) & Sky-Blue Earth bar (#8ddfe9) — no neon/reliefs */
+/* Unified Continuous Timeline Chart with Yellow Sun curve (#f5cb67) & Sky-Blue Earth curve (#8ddfe9) + integrated interval strip */
 .mission-conditions{border-top:1px solid #222c37;padding:10px 20px;background:#0d131a}
+.conditions-legend-inline{display:flex;align-items:center;gap:14px;flex-wrap:wrap;font:400 10px 'IBM Plex Mono',monospace}
+.conditions-legend-inline span{display:inline-flex;align-items:center;gap:4px}
+.conditions-legend-inline b{color:#e7eff6;font-weight:500}
+.conditions-legend-inline .legend-sun{color:#f5cb67}
+.conditions-legend-inline .legend-earth{color:#8ddfe9}
+.conditions-legend-inline .legend-block{color:#91a2b3}
 .conditions-slider{display:flex;align-items:center;gap:12px;margin:8px 0}
 .conditions-slider>button{width:28px;height:28px;padding:4px;border-radius:6px;background:transparent;border:1px solid #2c3846}
-.timeline-track-stack{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;position:relative;padding-top:15px}
+.timeline-track-stack{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;position:relative;padding-top:15px}
 .timeline-axis-pins{position:absolute;top:0;left:4px;right:4px;height:14px;pointer-events:none}
 .unified-mission .axis-pin{position:absolute;top:0;transform:translateX(-50%);padding:0 2px;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:1px;pointer-events:auto;cursor:pointer;color:#8b9bad}
 .axis-pin small{font:400 8px 'IBM Plex Mono',monospace;line-height:1;white-space:nowrap;color:inherit}
@@ -243,15 +275,18 @@ button:disabled{cursor:default;opacity:.43}
 .axis-pin.current{color:#eef4f9}
 .axis-pin.current i{background:#eef4f9;height:5px}
 
+.unified-chart-box{position:relative;height:62px;border:1px solid #202a35;border-radius:6px;background:#090e14;overflow:hidden}
+.unified-timeline-svg{display:block;width:100%;height:100%}
+.chart-range-overlay{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer;z-index:4}
 .conditions-slider input[type=range]{accent-color:#d8e3ee;height:4px}
 .timeline-hour-plain{font:400 10px 'IBM Plex Mono',monospace;color:#b8c7d6;min-width:38px;text-align:right}
 
-.timeline-status-bars{display:flex;flex-direction:column;gap:4px;margin-top:2px}
+.timeline-status-bars{display:flex;flex-direction:column;gap:2px;margin-top:1px}
 .status-bar-row{display:grid;grid-template-columns:86px 1fr 54px;align-items:center;gap:8px}
-.status-bar-row .bar-label{display:inline-flex;align-items:center;gap:5px;font:400 10px 'IBM Plex Mono',monospace;white-space:nowrap}
+.status-bar-row .bar-label{display:inline-flex;align-items:center;gap:5px;font:400 9px 'IBM Plex Mono',monospace;white-space:nowrap}
 .status-bar-row .bar-label.sun-label{color:#f5cb67}
 .status-bar-row .bar-label.earth-label{color:#8ddfe9}
-.bar-segments{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:1px;height:5px;background:#141b23}
+.bar-segments{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:1px;height:4px;background:#141b23}
 .bar-segments .seg{height:100%;cursor:pointer}
 .bar-segments .seg.sun-ok{background:#f5cb67}
 .bar-segments .seg.earth-ok{background:#8ddfe9}
@@ -263,16 +298,18 @@ button:disabled{cursor:default;opacity:.43}
 .conditions-readouts b.readout-earth{color:#8ddfe9}
 .conditions-readouts b.readout-off{color:#7c8d9e}
 
-/* Right panel: Selected Sector on top, Uniform Candidate list (#1, #2, #3, #4) below */
+/* Right panel: Selected Sector on top, Uniform Candidate list (#1, #2, #3, #4) below, Itinerary at bottom */
 .selected-destination.top-selected-destination{border-top:0;margin-top:0;padding-top:0}
 .decision-title.candidates-below-title{border-top:1px solid var(--line);margin-top:22px;padding-top:18px}
 .unified-mission .unified-candidates-list{margin-top:10px}
 .unified-mission .unified-candidates-list button,.unified-mission .unified-candidates-list button.best-destination{width:100%;display:inline-flex;align-items:center;justify-content:flex-start;text-align:left;gap:10px;font-size:12px;margin:6px 0;padding:12px 9px;background:#151d27;border:1px solid var(--line);border-radius:9px;box-shadow:none}
 .unified-mission .unified-candidates-list button.selected,.unified-mission .unified-candidates-list button.best-destination.selected{border-color:#8dbf9f;background:#1e3127;box-shadow:none}
+.trip-overview.right-bottom-itinerary{border-top:1px solid var(--line);margin-top:22px;padding-top:18px}
 
 
 @media(prefers-reduced-motion:reduce){.spin{animation:none}}
-.surface-inspection-hint{position:absolute;left:18px;right:18px;bottom:15px;z-index:38;background:#101822e8;border:1px solid #394854;border-radius:7px;padding:9px 12px;font-size:11px;color:#b8c7d1;display:flex;align-items:center;gap:8px;pointer-events:none;flex-wrap:wrap}
+/* Compact map inspection hint pill (not full-width) */
+.surface-inspection-hint{position:absolute;left:18px;right:auto;width:fit-content;max-width:calc(100% - 36px);bottom:12px;z-index:38;background:#101822d9;border:1px solid #303e4b;border-radius:6px;padding:5px 10px;font-size:10px;color:#b8c7d1;display:inline-flex;align-items:center;gap:6px;pointer-events:none;flex-wrap:wrap}
 .surface-inspection-hint>span{font-size:10px;color:#a5b6c3}.surface-inspection-hint svg{flex-shrink:0}.surface-inspection-hint b{font-weight:500}
 .sampling-sensitivity{background:#0d151d;border:1px solid #31414c;border-radius:7px;padding:12px;margin:15px 0}
 .sampling-sensitivity strong{display:block;font-weight:500;font-size:11px;color:#c9d9e4}
@@ -291,7 +328,7 @@ button:disabled{cursor:default;opacity:.43}
 .one-map-heading h2{font-size:26px}
 @media(min-width:1150px){.one-moon-map{min-height:360px}.unified-layout{min-height:740px}.mission-conditions{padding:10px 20px}.one-map-heading{padding-top:18px;min-height:84px}}
 @media(max-width:1149px){.one-moon-panel{min-height:870px}}
-@media(max-width:700px){.surface-coverage-summary{padding:8px 12px}.unified-mission .coverage-mode-button{font-size:9px;padding:6px 8px}.surface-inspection-hint{left:13px;right:13px;bottom:11px;font-size:10px;gap:5px;padding:9px}.one-moon-panel{min-height:730px}.one-map-heading h2{font-size:26px}.one-moon-map{min-height:425px}.one-map-empty{bottom:34px}.status-bar-row{grid-template-columns:72px 1fr 48px}}
+@media(max-width:700px){.surface-coverage-summary{padding:8px 12px}.unified-mission .coverage-mode-button{font-size:9px;padding:6px 8px}.surface-inspection-hint{left:13px;right:auto;max-width:calc(100% - 26px);bottom:11px;font-size:9px;gap:5px;padding:5px 8px}.one-moon-panel{min-height:730px}.one-map-heading h2{font-size:26px}.one-moon-map{min-height:425px}.one-map-empty{bottom:34px}.status-bar-row{grid-template-columns:72px 1fr 48px}}
 
 
 .mission-rescue{margin-top:18px;padding:17px 14px;border:1px solid #516153;border-radius:12px;background:linear-gradient(145deg,#18251f,#101a21)}

@@ -94,3 +94,10 @@ def test_bundled_nasa_operations_example_reproduces_without_network(monkeypatch,
  assert summary['minimum_soc']==pytest.approx(example['expected']['minimum_soc'],abs=1e-8)
  assert abs(summary['energy_balance_residual_wh'])<example['expected']['energy_balance_residual_tolerance_wh']
  assert result['local_study']['footprint_resolved'] is False
+
+
+def test_a_known_native_slope_failure_never_becomes_a_regional_pass(monkeypatch):
+ from api.app import operations
+ monkeypatch.setattr(operations,'native_footprint',lambda *args:{'source_resolution_m':80,'center_footprint':{'risk':3,'max_slope_deg':30,'resolved':False}})
+ result=operations.terrain_assessment({'latitude_deg':-85,'longitude_deg':0,'regional_slope_deg':3},{'effective_max_slope_deg':10},{})
+ assert result['passes'] is False and result['rule']=='native-terrain-exclusion'

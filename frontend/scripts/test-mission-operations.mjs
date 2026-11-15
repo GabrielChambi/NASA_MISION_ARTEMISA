@@ -10,7 +10,7 @@ const browser=await chromium.launch({channel:'chrome',headless:true})
 let page
 const response=path=>page.waitForResponse(r=>r.request().method()==='POST'&&new URL(r.url()).pathname===path,{timeout:180000})
 try{
- page=await browser.newPage({viewport:{width:1600,height:1100},reducedMotion:'reduce'})
+ page=await browser.newPage({locale:'es-BO',viewport:{width:1600,height:1100},reducedMotion:'reduce'})
  page.on('pageerror',e=>errors.push(e.message));page.on('requestfailed',r=>{if(r.failure()?.errorText!=='net::ERR_ABORTED')failures.push({path:new URL(r.url()).pathname,error:r.failure()?.errorText})});page.on('request',r=>{if(r.method()==='POST'&&new URL(r.url()).pathname.startsWith('/api/'))requests.push({path:new URL(r.url()).pathname,body:r.postDataJSON()})})
  await page.goto(base,{waitUntil:'domcontentloaded'})
  await page.waitForFunction(()=>document.querySelector('.primary-plan')&&!document.querySelector('.primary-plan').disabled,null,{timeout:60000})
@@ -31,6 +31,12 @@ try{
  await page.getByRole('button',{name:'Estudio de misión',exact:true}).click()
  await page.getByTestId('energy-verdict').waitFor()
  await page.screenshot({path:new URL('operations-energy-desktop.png',root).pathname.replace(/^\/([A-Za-z]:)/,'$1'),fullPage:true})
+ const beforeQa=requests.filter(r=>r.path==='/api/automatic-plan').length,qaResponse=response('/api/copilot/chat')
+ await page.getByLabel('Describe tu misión',{exact:true}).fill('¿Cómo está la batería de esta misión?')
+ await page.getByRole('button',{name:'Planificar mi misión',exact:true}).click()
+ const answered=await qaResponse,answer=await answered.json()
+ check('Conversational questions receive the actual computed energy budget',answered.status()===200&&answer.status==='ok'&&answer.evidence.operations.summary.minimum_soc===study.affected.budget.summary.minimum_soc)
+ check('Follow-up questions preserve the active scientific mission',requests.filter(r=>r.path==='/api/automatic-plan').length===beforeQa)
  const before=plan.mission.requested_utc,requestsBefore=requests.filter(r=>r.path==='/api/automatic-plan').length
  await page.getByLabel('Zona horaria de misión',{exact:true}).selectOption('UTC')
  await page.getByRole('button',{name:'Planificar mi misión',exact:true}).scrollIntoViewIfNeeded()

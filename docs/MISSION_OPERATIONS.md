@@ -42,6 +42,8 @@ La memoria utiliza GB decimales y tasas configuradas en Mbit/s. Los datos se acu
 
 Cada muestra representa el intervalo hasta la siguiente. La muestra final no añade duración. Los huecos geométricos no se sustituyen por generación cero y una batería ficticia: el presupuesto pasa a estado desconocido. La cadencia de 15 minutos puede omitir eventos más breves.
 
+![Presupuesto eléctrico local](images/mission-operations-energy.png)
+
 ## Replanificación ante fallos
 
 Se pueden introducir retraso de la fecha solicitada, pérdida de producción solar desde una hora y corte de comunicaciones con inicio/duración. Son escenarios del usuario, no fallos observados de una misión real. El retraso mueve salida o llegada según el significado de la petición y genera consultas NASA para las nuevas fechas.
@@ -75,6 +77,8 @@ Una huella de diámetro 30 m no se declara resuelta con datos de 80 m. Tampoco u
 
 El estudio recalcula perfiles esféricos propios a cada altura: 1° de azimut, muestras radiales de 5 m hasta 2 km, 80 m hasta 20 km y 250 m hasta 250 km, siempre conservando la resolución real del raster utilizado. Se requiere cobertura cercana completa y alcance mínimo de 20 km por dirección. La cobertura distante es parcial y se informa; no se rellena terreno ausente con una esfera ni con horizonte plano.
 
+![Elipse y huella sobre datos NASA5m](images/mission-operations-native.png)
+
 ## Ejecutar y reproducir
 
 ~~~powershell
@@ -99,4 +103,9 @@ node frontend/scripts/test-mission-operations.mjs
 api/.venv/Scripts/python.exe api/scripts/validate_operations_observer.py
 ~~~
 
-El [contraste guardado con observadores JPL directos](validation/operations-observer-validation.json) comprueba cinco horas por astro en un punto, con panel a 50 m y antena a 38 m. Son cinco épocas separadas por 15 minutos para cada astro, no cinco horas de duración. El máximo error angular observado fue aproximadamente 0,000002074°. La tolerancia previa fue 0,001°. Esa muestra verifica la traslación del observador frente a consultas JPL del propio punto; no es validación completa independiente de marcos con SPICE, del terreno o de una nave.
+El [contraste guardado con observadores JPL directos](validation/operations-observer-validation.json) comprueba cinco épocas separadas por15 minutos para cada astro en un punto, con panel a50m y antena a38m. El máximo error angular observado fue aproximadamente 0,000002074°. La tolerancia previa fue 0,001°. Esa muestra verifica la traslación del observador frente a consultas JPL del propio punto; no es validación completa independiente de marcos con SPICE, del terreno o de una nave.
+
+
+## Preguntas del copiloto
+
+El chat conserva el historial y recibe un resumen separado del mapa regional y del presupuesto operativo actual. La respuesta numérica se contrasta con los hechos recibidos y sus redondeos; cifras nuevas o conclusiones no respaldadas activan una guía determinista identificada como tal. Un contexto ausente no se sustituye por24 sectores verdes o4 candidatos. El cuerpo y el historial están limitados. La explicación no ejecuta cambios del plan. La validación de texto reduce errores, pero no es validación física independiente ni prueba formal de toda la semántica de una respuesta generada.

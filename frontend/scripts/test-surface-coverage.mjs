@@ -67,7 +67,7 @@ function rasterDifference(evaluation,relief){
  return {moon,changed,changedFraction:changed/Math.max(moon,1),tiles,changedTiles:tiles.filter(t=>t.moon>300&&t.changed/t.moon>.25).length}
 }
 try{
- page=await browser.newPage({viewport:{width:1600,height:1100},deviceScaleFactor:1,reducedMotion:'reduce'})
+ page=await browser.newPage({locale:'es-BO',viewport:{width:1600,height:1100},deviceScaleFactor:1,reducedMotion:'reduce'})
  page.on('pageerror',error=>errors.push(error.message))
  page.on('console',message=>{if(message.type()==='error')consoleErrors.push(message.text())})
  page.on('requestfailed',r=>{if(r.failure()?.errorText!=='net::ERR_ABORTED')requestsFailed.push({path:new URL(r.url()).pathname,error:r.failure()?.errorText})})

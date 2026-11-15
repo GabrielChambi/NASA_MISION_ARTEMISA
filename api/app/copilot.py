@@ -509,3 +509,30 @@ async def lander_review(request:Request):
         return respond({'status':'ok','mode':'guide','model':None,'reason':'model_not_configured',**baseline,**common})
     except CopilotError as exc:
         return respond({'status':'unavailable','message':str(exc)},exc.status)
+
+
+# Conversational questions use a separate, bounded evidence contract.
+@router.post('/chat')
+async def copilot_chat(request:Request):
+    from .chat_science import SYSTEM,validate_chat,baseline_chat,validate_chat_reply
+    try:
+        if 'application/json' not in request.headers.get('content-type',''):raise CopilotError('Usa application/json.',415)
+        body=b''
+        async for chunk in request.stream():
+            body+=chunk
+            if len(body)>32768:raise CopilotError('La pregunta y su contexto superan el tamaño permitido.',413)
+        try:value=validate_chat(json.loads(body))
+        except (ValueError,TypeError):raise CopilotError('Revisa la pregunta y el contexto científico.')
+        baseline=baseline_chat(value);config=configuration()
+        if config and config['provider']=='gemini':
+            try:
+                url=config['base']+'/models/'+quote(config['model'],safe='')+':generateContent'
+                content={'QUESTION':value['question'],'KNOWN_FACTS':value['facts'],'HISTORY':value['history']}
+                payload=await provider_json(url,config,{'systemInstruction':{'parts':[{'text':SYSTEM}]},'contents':[{'role':'user','parts':[{'text':json.dumps(content,ensure_ascii=False)}]}],'generationConfig':{'temperature':0.1,'maxOutputTokens':650}},timeout=20)
+                parts=payload.get('candidates',[{}])[0].get('content',{}).get('parts',[])
+                reply=''.join(p.get('text','') for p in parts if isinstance(p,dict))
+                return respond({'status':'ok','mode':'ai','model':config['model'],'explanation':validate_chat_reply(reply,value['facts']),'evidence':value['facts']})
+            except Exception as exc:
+                return respond({'status':'ok','mode':'guide','reason':provider_reason(exc),'explanation':baseline,'evidence':value['facts']})
+        return respond({'status':'ok','mode':'guide','reason':'model_not_configured','explanation':baseline,'evidence':value['facts']})
+    except CopilotError as exc:return respond({'status':'unavailable','message':str(exc)},exc.status)

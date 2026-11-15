@@ -58,7 +58,7 @@ function colors(png,excludeBottom=100){
  return {red,green,neutral,tealWash,width,height}
 }
 try{
- page=await browser.newPage({viewport:{width:1600,height:1100},deviceScaleFactor:1,reducedMotion:'reduce'});watch(page)
+ page=await browser.newPage({locale:'es-BO',viewport:{width:1600,height:1100},deviceScaleFactor:1,reducedMotion:'reduce'});watch(page)
  await page.goto(base,{waitUntil:'domcontentloaded'});await waitReady(page)
  check('Home opens directly without login',await page.getByLabel('Describe tu misión',{exact:true}).isVisible())
  check('The workflow has one visible application page',await page.getByTestId('unified-mission').count()===1&&await page.locator('a[href*="cockpit"],a[href*="planner"],a[href*="chatgpt"]').count()===0)

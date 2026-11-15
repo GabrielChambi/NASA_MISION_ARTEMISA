@@ -204,6 +204,10 @@ El destino local permite introducir coordenadas exactas, estudiar una elipse de 
 
 El centro de lanzamiento y el reloj se incluyen en la exportación, junto con los presupuestos, configuración, fuentes y propuesta aplicada. La elección de Kennedy no convierte la estimación orbital en un ascenso o una ventana de lanzamiento real.
 
+![Presupuesto de batería con datos orbitales NASA y configuración declarada](docs/images/mission-operations-energy.png)
+
+[Ver el estudio de la elipse sobre terreno nativo de5m](docs/images/mission-operations-native.png).
+
 Consulta [metodología, fuentes, instalación de rasters y reproducción](docs/MISSION_OPERATIONS.md). Esta extensión nativa se ejecuta con la API Python local; el Worker conserva sus servicios anteriores y no ejecuta este cálculo de rasters.
 
 ~~~powershell

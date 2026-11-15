@@ -122,7 +122,7 @@ def simulate_energy(samples,config=None,fault=None,science_slots=None,optional_e
    possible=min(buffer+new_data,q['downlink_mbps']*.45*dt) if earth_clear else 0.
    radio_duty=possible/(q['downlink_mbps']*.45*dt) if q['downlink_mbps']>0 else 0.
    radio=q['radio_load_w']*radio_duty
-   if available+1e-9<radio:possible=0.;radio=0.
+   if possible>0 and available+1e-9<q['radio_load_w']:possible=0.;radio=0.
    available-=radio
    optional=min(q['optional_load_w'],max(0.,available)) if optional_enabled else 0.
    demand=essential+science+radio+optional

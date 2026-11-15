@@ -84,3 +84,12 @@ def test_launch_timezones_observe_seasonal_offsets(tz,local,expected):assert loc
 @pytest.mark.parametrize('local',['2026-03-08T02:30','2026-11-01T01:30'])
 def test_ambiguous_and_nonexistent_launch_times_require_clarification(local):
  with pytest.raises(ValueError):local_to_utc(local,'America/New_York')
+
+
+def test_radio_duty_cycle_cannot_hide_an_impossible_peak_power():
+ q=config(battery_capacity_wh=100,initial_soc=1,reserve_soc=0,max_discharge_w=10,essential_load_w=0,science_load_w=0,science_duration_hours=1,radio_load_w=100,science_data_mbps=.1,downlink_mbps=1)
+ r=simulate_energy(samples(1),q)
+ assert r['summary']['data_generated_gb']==pytest.approx(.045)
+ assert r['summary']['data_sent_gb']==0
+ assert r['summary']['buffer_final_gb']==pytest.approx(.045)
+ assert not r['feasible']

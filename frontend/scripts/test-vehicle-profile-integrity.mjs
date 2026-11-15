@@ -46,7 +46,7 @@ function unchangedUserCriteria(sent){
  return (!referenceRequest||(sent.departure_utc===referenceRequest.departure_utc&&sent.date_kind===referenceRequest.date_kind))&&sent.max_slope_deg===10&&sent.surface_hours===72&&sent.min_sun_hours===12&&sent.min_earth_hours===12&&sent.observer_height_m===2
 }
 try{
- page=await browser.newPage({viewport:{width:1600,height:1100},deviceScaleFactor:1,reducedMotion:'reduce'})
+ page=await browser.newPage({locale:'es-BO',viewport:{width:1600,height:1100},deviceScaleFactor:1,reducedMotion:'reduce'})
  page.on('pageerror',e=>errors.push(e.message))
  page.on('console',m=>{if(m.type()==='error')consoleErrors.push(m.text())})
  page.on('requestfailed',r=>{if(r.failure()?.errorText!=='net::ERR_ABORTED')failedRequests.push({path:new URL(r.url()).pathname,error:r.failure()?.errorText})})
