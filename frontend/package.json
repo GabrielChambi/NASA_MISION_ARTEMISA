@@ -7,7 +7,7 @@
     "dev": "vite --host 127.0.0.1",
     "build": "tsc -b && vite build",
     "build:hosted": "npm run build && node scripts/build-hosted.mjs",
-    "test:science": "node --test worker/science.test.mjs worker/mission.test.mjs worker/mission-model.test.mjs worker/landing.test.mjs worker/polar.test.mjs worker/copilot.test.mjs worker/window-planner.test.mjs worker/lunar-detail.test.mjs",
+    "test:science": "node --test worker/science.test.mjs worker/mission.test.mjs worker/mission-model.test.mjs worker/landing.test.mjs worker/polar.test.mjs worker/copilot.test.mjs worker/window-planner.test.mjs worker/lunar-detail.test.mjs worker/automatic-plan.test.mjs worker/mission-intent.test.mjs",
     "preview": "vite preview --host 127.0.0.1",
     "preview:hosted": "node scripts/serve-hosted.mjs"
   },

@@ -11,7 +11,10 @@ import type { CellAssessment, Risk } from './landingScience'
 import { loadLunarShading } from '../sites/lunarDetail'
 import { findPolarCell,type PolarSurface,type PolarAssessment,type PolarCell } from './polarScience'
 
+export type PlanMapMarker={id:string;latitude_deg:number;longitude_deg:number;kind:'best'|'alternative'|'rejected'|'unknown';label?:string}
 export interface Tactical3DSceneProps {
+  missionMarkers?:PlanMapMarker[];onMarkerSelect?:(id:string)=>void
+  showSurfaceVehicle?:boolean
   latDeg:number;lonDeg:number;observerHeightM:number
   sunAzimuthDeg:number;sunElevationDeg:number;earthAzimuthDeg:number;earthElevationDeg:number
   minSolarElevation:number;maxSlopeDeg:number;currentSlopeDeg:number
@@ -32,7 +35,7 @@ function inside(data:AtlasData,x:number,y:number){
 }
 function surfacePoint(data:AtlasData,lat:number,lon:number){
   const [x,y]=latLonToStereoM(lat,lon,data.manifest.radius_m)
-  return sampleExactStereoMeshPoint(x,y,data.heights,data.manifest,EXAGGERATION,data.manifest.source_resolution_m===5?1:2)
+  return sampleExactStereoMeshPoint(x,y,data.heights,data.manifest,EXAGGERATION,1)
 }
 function cellPosition(data:AtlasData,x:number,y:number,offset=0.0008){
   const sample=sampleExactStereoMeshPoint(x,y,data.heights,data.manifest,EXAGGERATION,1)
@@ -58,7 +61,7 @@ export function Tactical3DScene(props:Tactical3DSceneProps){
       <ambientLight intensity={0.45}/>
       <Stars radius={1100} depth={200} count={2000} factor={2} fade/>
       {props.atlasData&&<Terrain {...props} dragging={dragging} onHover={setHover}/>}
-      {props.atlasData&&!props.overview&&<Spacecraft {...props} onDrag={()=>setDragging(true)}/>}
+      {props.atlasData&&(!props.overview||props.showSurfaceVehicle)&&<Spacecraft {...props} onDrag={()=>setDragging(true)}/>}
       {props.scienceReady&&props.detailAtlasData&&props.assessments?.length&&<LandingContours data={props.detailAtlasData} assessments={props.assessments}/>}
       {props.cameraView==='polar'&&props.atlasData&&<group>
         {props.atlasData.manifest.features.map(f=><Html key={f.name} position={projectedToWorld(f.x_m,f.y_m,f.elevation_m,1,props.atlasData!.manifest.radius_m)} center zIndexRange={[8,0]} style={{pointerEvents:'none'}}>
@@ -66,6 +69,7 @@ export function Tactical3DScene(props:Tactical3DSceneProps){
         </Html>)}
       </group>}
       {props.overview&&props.polarSelection&&props.atlasData&&<PolarSelection data={props.atlasData} cell={props.polarSelection}/>}
+      {props.atlasData&&props.missionMarkers&&<MissionMarkers data={props.atlasData} markers={props.missionMarkers} onSelect={props.onMarkerSelect}/>}
       <Camera {...props} dragging={dragging}/>
     </Canvas>
     {props.atlasData&&!props.overview&&<div className="surface-destination" style={{borderColor:COLORS[props.assessmentRisk??'unknown']}}>
@@ -235,7 +239,7 @@ function LandingContours({data,assessments}:{data:AtlasData;assessments:CellAsse
   </group>
 }
 function Spacecraft(props:Tactical3DSceneProps&{onDrag:()=>void}){
-  const data=props.detailAtlasData??props.atlasData!
+  const data=props.detailAtlasData??props.focusTerrainData??props.atlasData!
   const base=useMemo(()=>surfacePoint(data,props.latDeg,props.lonDeg),[data,props.latDeg,props.lonDeg])
   if(!Number.isFinite(base.position.y))return null
   const site={latitude_deg:props.latDeg,longitude_deg:props.lonDeg} as never
@@ -268,10 +272,11 @@ function Spacecraft(props:Tactical3DSceneProps&{onDrag:()=>void}){
 }
 function Camera(props:Tactical3DSceneProps&{dragging:boolean}){
   const {camera,size}=useThree(),controls=useRef<Controls>(null)
-  const data=props.detailAtlasData??props.atlasData
+  const data=props.detailAtlasData??(props.showSurfaceVehicle?props.focusTerrainData:null)??props.atlasData
   const target=useMemo(()=>data?surfacePoint(data,props.latDeg,props.lonDeg).position:new THREE.Vector3(),[data,props.latDeg,props.lonDeg])
   useEffect(()=>{
     if(!data||!controls.current||!Number.isFinite(target.y))return
+    camera.near=props.showSurfaceVehicle?.001:props.overview?.1:.001;camera.updateProjectionMatrix()
     if(props.cameraView==='polar'&&props.focusZone){camera.position.copy(target).add(new THREE.Vector3(16,20,26));controls.current.target.copy(target)}
     else if(props.cameraView==='polar'){const fit=props.overview?Math.max(850,760/(size.width/Math.max(size.height,1))):400;camera.position.copy(new THREE.Vector3(.6,.7,.65).normalize().multiplyScalar(fit));controls.current.target.set(0,-8,0)}
     else if(props.cameraView==='top'){const height=Math.max(1.7,1.4/(2*Math.tan(Math.PI/8)*(size.width/Math.max(size.height,1))));camera.position.copy(target).add(new THREE.Vector3(.05,height,.01));controls.current.target.copy(target)}
@@ -282,17 +287,23 @@ function Camera(props:Tactical3DSceneProps&{dragging:boolean}){
     controls.current.update()
     // Keep the user's orbit when placing a different cell manually.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[props.cameraView,props.cameraResetKey,Boolean(data),data?.manifest.sample_extent_m.xmin,Boolean((props.altitudeM??0)>0),props.overview,props.focusZone,props.focusZone?props.latDeg:0,props.focusZone?props.lonDeg:0,size.width,size.height])
+  },[props.cameraView,props.cameraResetKey,Boolean(data),data?.manifest.sample_extent_m.xmin,Boolean((props.altitudeM??0)>0),props.overview,props.showSurfaceVehicle,props.focusZone,props.focusZone?props.latDeg:0,props.focusZone?props.lonDeg:0,size.width,size.height])
   useFrame(()=>{
     const region=props.atlasData
     if(!region)return
+    if(props.overview&&props.showSurfaceVehicle&&controls.current){
+      const up=bodyDirection({latitude_deg:props.latDeg,longitude_deg:props.lonDeg} as never,0,90)
+      const vehicle=target.clone().addScaledVector(up,(props.altitudeM??0)/1000)
+      const offset=new THREE.Vector3(.14,.10,.18)
+      camera.position.copy(vehicle).add(offset);controls.current.target.copy(vehicle);controls.current.update()
+    }
     const radial=camera.position.clone().add(new THREE.Vector3(0,region.manifest.radius_m/1000,0)).normalize()
     const lat=-Math.asin(THREE.MathUtils.clamp(radial.y,-1,1))*180/Math.PI,lon=Math.atan2(-radial.x,radial.z)*180/Math.PI
     const [x,y]=latLonToStereoM(lat,lon), terrain=props.detailAtlasData&&inside(props.detailAtlasData,x,y)?props.detailAtlasData:props.contextAtlasData&&inside(props.contextAtlasData,x,y)?props.contextAtlasData:region
     const h=surfacePoint(terrain,lat,lon).position.y
     if(Number.isFinite(h)&&camera.position.y<h+.003)camera.position.y=h+.003
   })
-  return <OrbitControls ref={controls} enabled={!props.dragging} enableRotate={props.overview||!props.placementMode} enableDamping dampingFactor={.08} minDistance={.025} maxDistance={props.overview?1800:800} maxPolarAngle={Math.PI*.51}/>
+  return <OrbitControls ref={controls} enabled={!props.dragging&&!props.showSurfaceVehicle} enableRotate={props.overview||!props.placementMode} enableDamping dampingFactor={.08} minDistance={.025} maxDistance={props.overview?1800:800} maxPolarAngle={Math.PI*.51}/>
 }
 
 function PolarSelection({data,cell}:{data:AtlasData;cell:PolarCell}){
@@ -302,5 +313,23 @@ function PolarSelection({data,cell}:{data:AtlasData;cell:PolarCell}){
   return <group position={position}>
     <mesh rotation={[-Math.PI/2,0,0]} raycast={()=>null}><ringGeometry args={[2.3,2.8,48]}/><meshBasicMaterial color="#ffffff" depthTest={false}/></mesh>
     <mesh position={[0,3,0]} raycast={()=>null}><cylinderGeometry args={[.12,.12,6,8]}/><meshBasicMaterial color="#ffffff" depthTest={false}/></mesh>
+  </group>
+}
+
+function MissionMarkers({data,markers,onSelect}:{data:AtlasData;markers:PlanMapMarker[];onSelect?:(id:string)=>void}){
+  return <group name="calculated-mission-destinations">
+    {markers.map((m,index)=>{
+      const surface=surfacePoint(data,m.latitude_deg,m.longitude_deg)
+      if(!Number.isFinite(surface.position.y))return null
+      const color=m.kind==='rejected'?'#ff666f':m.kind==='unknown'?'#9aa6b0':'#73f2b3'
+      const radius=m.kind==='best'?8:m.kind==='alternative'?5:3.5
+      const up=bodyDirection({latitude_deg:m.latitude_deg,longitude_deg:m.longitude_deg} as never,0,90)
+      const rotation=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1),up)
+      return <group key={m.id} position={surface.position.clone().addScaledVector(up,.3)} quaternion={rotation} onClick={e=>{e.stopPropagation();onSelect?.(m.id)}}>
+        <mesh renderOrder={30}><ringGeometry args={[radius*.76,radius,64]}/><meshBasicMaterial color={color} transparent opacity={.95} side={THREE.DoubleSide} depthTest={false} depthWrite={false}/></mesh>
+        <mesh renderOrder={29}><circleGeometry args={[radius*.76,48]}/><meshBasicMaterial color={color} transparent opacity={.13} side={THREE.DoubleSide} depthTest={false} depthWrite={false}/></mesh>
+        <Html center zIndexRange={[35,25]}><button type="button" aria-label={m.kind==='best'?'Elegir mejor candidato':m.kind==='rejected'?'Ver zona descartada':'Elegir alternativa '+(m.label??String(index+1))} onClick={e=>{e.stopPropagation();onSelect?.(m.id)}} className={'mission-marker-label '+m.kind}>{m.kind==='best'?'★':m.kind==='rejected'?'×':m.label??String(index+1)}{m.kind==='best'&&<span>Mejor candidato</span>}</button></Html>
+      </group>
+    })}
   </group>
 }

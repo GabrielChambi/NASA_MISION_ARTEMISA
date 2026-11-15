@@ -1,0 +1,455 @@
+{
+  "validation_scope": "Three selected real NASA DEM cells; three hourly epochs per cell and target; one departure date. This does not validate every location, epoch, lunar reference-frame realization, terrain horizon, or mission scenario.",
+  "reproduce": "api/.venv/Scripts/python.exe api/scripts/validate_global_reference.py",
+  "reference_observer": {
+    "latitude_deg": -90,
+    "longitude_deg": 0,
+    "elevation_m": 0,
+    "height_above_surface_m": 2
+  },
+  "method": "Compare topocentric apparent airless JPL observer angles at each cell against spherical ENU translation of the polar JPL apparent vector and range. Exact JPL calls use the same UTC epochs and lunar MEAN_ME frame.",
+  "request": {
+    "departure_utc": "2026-12-25T12:00:00Z",
+    "surface_hours": 72
+  },
+  "mission": {
+    "date_kind": "departure",
+    "requested_utc": "2026-12-25T12:00:00Z",
+    "departure_utc": "2026-12-25T12:00:00Z",
+    "arrival_utc": "2026-12-30T00:00:00Z",
+    "surface_end_utc": "2027-01-02T00:00:00Z",
+    "return_utc": "2027-01-06T11:33:53Z",
+    "outbound_hours": 108.0,
+    "surface_hours": 72,
+    "return_hours": 107.56487366232426,
+    "total_hours": 287.5648736622222,
+    "arrival_rounding_minutes": 26.107580266666666,
+    "transfer_model": {
+      "method": "TWO_BODY_ESTIMATE",
+      "earth_moon_distance_km": 357972.6041023617,
+      "parking_orbit_altitude_km": 200,
+      "earth_gm_km3_s2": 398600.435507,
+      "transfer_hours": 107.56487366232426,
+      "source_url": "https://ssd.jpl.nasa.gov/astro_par.html",
+      "assumptions": [
+        "Transferencia elíptica ideal de dos cuerpos.",
+        "No es una trayectoria Artemis ni una ventana de lanzamiento.",
+        "Regreso simétrico sólo para estimar la duración total."
+      ]
+    },
+    "assumptions": [
+      "Transferencia elíptica ideal de dos cuerpos.",
+      "No es una trayectoria Artemis ni una ventana de lanzamiento.",
+      "Regreso simétrico sólo para estimar la duración total."
+    ]
+  },
+  "counts": {
+    "green": 11,
+    "red": 12786,
+    "unknown": 95
+  },
+  "selected": [
+    {
+      "id": "polar:5:56",
+      "latitude_deg": -80.78120657,
+      "longitude_deg": -7.30575953,
+      "elevation_m": 3176.865,
+      "regional_slope_deg": 9.4889
+    },
+    {
+      "id": "polar:5:49",
+      "latitude_deg": -80.58024797,
+      "longitude_deg": -13.92096036,
+      "elevation_m": 125.757,
+      "regional_slope_deg": 8.4748
+    },
+    {
+      "id": "polar:15:32",
+      "latitude_deg": -80.9597648,
+      "longitude_deg": -33.00310069,
+      "elevation_m": -1026.742,
+      "regional_slope_deg": 9.7185
+    }
+  ],
+  "comparisons": [
+    {
+      "cell_id": "polar:5:56",
+      "latitude_deg": -80.78120657,
+      "longitude_deg": -7.30575953,
+      "target": "Sun",
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-7.30575953%2C-80.78120657%2C3.178865000%27&START_TIME=%272026-12-30+00%3A00%3A00%27&STOP_TIME=%272026-12-30+02%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "retrieved_at": "2026-11-15T11:34:53.735358+00:00",
+      "cache_hit": true,
+      "samples": [
+        {
+          "t_utc": "2026-12-30T00:00:00Z",
+          "delta_azimuth_deg": -6.748970236003515e-07,
+          "delta_elevation_deg": 2.825151401708581e-08,
+          "angular_separation_deg": 8.537736462515939e-07,
+          "exact": {
+            "t_utc": "2026-12-30T00:00:00Z",
+            "azimuth_deg": 294.299617,
+            "elevation_deg": 4.882048,
+            "range_km": 147174359.49551255,
+            "range_rate_km_s": -0.9548306
+          },
+          "translated": {
+            "azimuth_deg": 294.299616325103,
+            "elevation_deg": 4.882048028251514
+          }
+        },
+        {
+          "t_utc": "2026-12-30T01:00:00Z",
+          "delta_azimuth_deg": -4.2460283111722674e-07,
+          "delta_elevation_deg": -7.432142563601474e-07,
+          "angular_separation_deg": 8.537736462515939e-07,
+          "exact": {
+            "t_utc": "2026-12-30T01:00:00Z",
+            "azimuth_deg": 293.797219,
+            "elevation_deg": 4.807182,
+            "range_km": 147170920.4324112,
+            "range_rate_km_s": -0.9557474
+          },
+          "translated": {
+            "azimuth_deg": 293.79721857539715,
+            "elevation_deg": 4.807181256785744
+          }
+        },
+        {
+          "t_utc": "2026-12-30T02:00:00Z",
+          "delta_azimuth_deg": -3.54427697857318e-07,
+          "delta_elevation_deg": 8.195993341786334e-07,
+          "angular_separation_deg": 8.537736462515939e-07,
+          "exact": {
+            "t_utc": "2026-12-30T02:00:00Z",
+            "azimuth_deg": 293.294907,
+            "elevation_deg": 4.732029,
+            "range_km": 147167478.20476735,
+            "range_rate_km_s": -0.9565887
+          },
+          "translated": {
+            "azimuth_deg": 293.2949066455723,
+            "elevation_deg": 4.732029819599334
+          }
+        }
+      ]
+    },
+    {
+      "cell_id": "polar:5:56",
+      "latitude_deg": -80.78120657,
+      "longitude_deg": -7.30575953,
+      "target": "Earth",
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-7.30575953%2C-80.78120657%2C3.178865000%27&START_TIME=%272026-12-30+00%3A00%3A00%27&STOP_TIME=%272026-12-30+02%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "retrieved_at": "2026-11-15T11:34:54.456735+00:00",
+      "cache_hit": true,
+      "samples": [
+        {
+          "t_utc": "2026-12-30T00:00:00Z",
+          "delta_azimuth_deg": -1.256814442740506e-06,
+          "delta_elevation_deg": 5.700994503143875e-07,
+          "angular_separation_deg": 1.2074182697257333e-06,
+          "exact": {
+            "t_utc": "2026-12-30T00:00:00Z",
+            "azimuth_deg": 14.878283,
+            "elevation_deg": 4.60213,
+            "range_km": 380190.1317934441,
+            "range_rate_km_s": 0.0703103
+          },
+          "translated": {
+            "azimuth_deg": 14.878281743185559,
+            "elevation_deg": 4.60213057009945
+          }
+        },
+        {
+          "t_utc": "2026-12-30T01:00:00Z",
+          "delta_azimuth_deg": -1.430944735147932e-06,
+          "delta_elevation_deg": 4.783591123214137e-08,
+          "angular_separation_deg": 1.2074182697257333e-06,
+          "exact": {
+            "t_utc": "2026-12-30T01:00:00Z",
+            "azimuth_deg": 14.882915,
+            "elevation_deg": 4.550001,
+            "range_km": 380443.0712314488,
+            "range_rate_km_s": 0.0701964
+          },
+          "translated": {
+            "azimuth_deg": 14.882913569055274,
+            "elevation_deg": 4.550001047835911
+          }
+        },
+        {
+          "t_utc": "2026-12-30T02:00:00Z",
+          "delta_azimuth_deg": -1.4890202351125481e-06,
+          "delta_elevation_deg": -6.658646469759333e-07,
+          "angular_separation_deg": 1.7075472925031877e-06,
+          "exact": {
+            "t_utc": "2026-12-30T02:00:00Z",
+            "azimuth_deg": 14.886887,
+            "elevation_deg": 4.498351,
+            "range_km": 380695.5871518977,
+            "range_rate_km_s": 0.070075
+          },
+          "translated": {
+            "azimuth_deg": 14.886885510979765,
+            "elevation_deg": 4.4983503341353535
+          }
+        }
+      ]
+    },
+    {
+      "cell_id": "polar:5:49",
+      "latitude_deg": -80.58024797,
+      "longitude_deg": -13.92096036,
+      "target": "Sun",
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-13.92096036%2C-80.58024797%2C0.127757000%27&START_TIME=%272026-12-30+00%3A00%3A00%27&STOP_TIME=%272026-12-30+02%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "retrieved_at": "2026-11-15T11:34:55.216969+00:00",
+      "cache_hit": true,
+      "samples": [
+        {
+          "t_utc": "2026-12-30T00:00:00Z",
+          "delta_azimuth_deg": -8.610771828898578e-07,
+          "delta_elevation_deg": -3.9675308372011386e-07,
+          "angular_separation_deg": 8.537736462515939e-07,
+          "exact": {
+            "t_utc": "2026-12-30T00:00:00Z",
+            "azimuth_deg": 300.857773,
+            "elevation_deg": 5.923943,
+            "range_km": 147174328.30105188,
+            "range_rate_km_s": -0.9548561
+          },
+          "translated": {
+            "azimuth_deg": 300.8577721389228,
+            "elevation_deg": 5.923942603246917
+          }
+        },
+        {
+          "t_utc": "2026-12-30T01:00:00Z",
+          "delta_azimuth_deg": -5.038799599788035e-07,
+          "delta_elevation_deg": -9.553445510235292e-07,
+          "angular_separation_deg": 1.2074182697257333e-06,
+          "exact": {
+            "t_utc": "2026-12-30T01:00:00Z",
+            "azimuth_deg": 300.354109,
+            "elevation_deg": 5.851827,
+            "range_km": 147170889.14712068,
+            "range_rate_km_s": -0.9557723
+          },
+          "translated": {
+            "azimuth_deg": 300.35410849612003,
+            "elevation_deg": 5.851826044655449
+          }
+        },
+        {
+          "t_utc": "2026-12-30T02:00:00Z",
+          "delta_azimuth_deg": -2.7111912004329497e-07,
+          "delta_elevation_deg": 8.016472490268711e-07,
+          "angular_separation_deg": 8.537736462515939e-07,
+          "exact": {
+            "t_utc": "2026-12-30T02:00:00Z",
+            "azimuth_deg": 299.850551,
+            "elevation_deg": 5.779343,
+            "range_km": 147167446.8310944,
+            "range_rate_km_s": -0.9566129
+          },
+          "translated": {
+            "azimuth_deg": 299.8505507288809,
+            "elevation_deg": 5.779343801647249
+          }
+        }
+      ]
+    },
+    {
+      "cell_id": "polar:5:49",
+      "latitude_deg": -80.58024797,
+      "longitude_deg": -13.92096036,
+      "target": "Earth",
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-13.92096036%2C-80.58024797%2C0.127757000%27&START_TIME=%272026-12-30+00%3A00%3A00%27&STOP_TIME=%272026-12-30+02%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "retrieved_at": "2026-11-15T11:34:55.935475+00:00",
+      "cache_hit": true,
+      "samples": [
+        {
+          "t_utc": "2026-12-30T00:00:00Z",
+          "delta_azimuth_deg": -1.6127145840982848e-06,
+          "delta_elevation_deg": 4.1035441622483404e-07,
+          "angular_separation_deg": 1.7075472925031877e-06,
+          "exact": {
+            "t_utc": "2026-12-30T00:00:00Z",
+            "azimuth_deg": 21.49689,
+            "elevation_deg": 4.458952,
+            "range_km": 380194.71844471205,
+            "range_rate_km_s": 0.0703103
+          },
+          "translated": {
+            "azimuth_deg": 21.49688838728541,
+            "elevation_deg": 4.458952410354416
+          }
+        },
+        {
+          "t_utc": "2026-12-30T01:00:00Z",
+          "delta_azimuth_deg": -1.5857487198900344e-06,
+          "delta_elevation_deg": 2.913790826397644e-07,
+          "angular_separation_deg": 1.4787793334710982e-06,
+          "exact": {
+            "t_utc": "2026-12-30T01:00:00Z",
+            "azimuth_deg": 21.500528,
+            "elevation_deg": 4.406745,
+            "range_km": 380447.6577510706,
+            "range_rate_km_s": 0.0701963
+          },
+          "translated": {
+            "azimuth_deg": 21.500526414251286,
+            "elevation_deg": 4.4067452913790826
+          }
+        },
+        {
+          "t_utc": "2026-12-30T02:00:00Z",
+          "delta_azimuth_deg": -1.935743000558432e-06,
+          "delta_elevation_deg": -6.728251298326882e-07,
+          "angular_separation_deg": 1.9090959104164224e-06,
+          "exact": {
+            "t_utc": "2026-12-30T02:00:00Z",
+            "azimuth_deg": 21.503516,
+            "elevation_deg": 4.35503,
+            "range_km": 380700.1731898143,
+            "range_rate_km_s": 0.0700748
+          },
+          "translated": {
+            "azimuth_deg": 21.503514064256986,
+            "elevation_deg": 4.35502932717487
+          }
+        }
+      ]
+    },
+    {
+      "cell_id": "polar:15:32",
+      "latitude_deg": -80.9597648,
+      "longitude_deg": -33.00310069,
+      "target": "Sun",
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-33.00310069%2C-80.9597648%2C-1.024742000%27&START_TIME=%272026-12-30+00%3A00%3A00%27&STOP_TIME=%272026-12-30+02%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "retrieved_at": "2026-11-15T11:34:56.649375+00:00",
+      "cache_hit": true,
+      "samples": [
+        {
+          "t_utc": "2026-12-30T00:00:00Z",
+          "delta_azimuth_deg": -5.780347009931575e-07,
+          "delta_elevation_deg": -2.6454370960493634e-07,
+          "angular_separation_deg": 0.0,
+          "exact": {
+            "t_utc": "2026-12-30T00:00:00Z",
+            "azimuth_deg": 319.973547,
+            "elevation_deg": 8.001393,
+            "range_km": 147174265.9367529,
+            "range_rate_km_s": -0.9550256
+          },
+          "translated": {
+            "azimuth_deg": 319.9735464219653,
+            "elevation_deg": 8.00139273545629
+          }
+        },
+        {
+          "t_utc": "2026-12-30T01:00:00Z",
+          "delta_azimuth_deg": -6.201925657478569e-07,
+          "delta_elevation_deg": -4.831885416223258e-07,
+          "angular_separation_deg": 8.537736462515939e-07,
+          "exact": {
+            "t_utc": "2026-12-30T01:00:00Z",
+            "azimuth_deg": 319.465162,
+            "elevation_deg": 7.949157,
+            "range_km": 147170826.1750549,
+            "range_rate_km_s": -0.9559404
+          },
+          "translated": {
+            "azimuth_deg": 319.46516137980745,
+            "elevation_deg": 7.949156516811458
+          }
+        },
+        {
+          "t_utc": "2026-12-30T02:00:00Z",
+          "delta_azimuth_deg": 2.597130901449418e-07,
+          "delta_elevation_deg": 7.651441515932333e-07,
+          "angular_separation_deg": 8.537736462515939e-07,
+          "exact": {
+            "t_utc": "2026-12-30T02:00:00Z",
+            "azimuth_deg": 318.956885,
+            "elevation_deg": 7.896386,
+            "range_km": 147167383.2561642,
+            "range_rate_km_s": -0.9567797
+          },
+          "translated": {
+            "azimuth_deg": 318.9568852597131,
+            "elevation_deg": 7.896386765144151
+          }
+        }
+      ]
+    },
+    {
+      "cell_id": "polar:15:32",
+      "latitude_deg": -80.9597648,
+      "longitude_deg": -33.00310069,
+      "target": "Earth",
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-33.00310069%2C-80.9597648%2C-1.024742000%27&START_TIME=%272026-12-30+00%3A00%3A00%27&STOP_TIME=%272026-12-30+02%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "retrieved_at": "2026-11-15T11:34:57.353823+00:00",
+      "cache_hit": true,
+      "samples": [
+        {
+          "t_utc": "2026-12-30T00:00:00Z",
+          "delta_azimuth_deg": -2.4032301837451087e-06,
+          "delta_elevation_deg": 7.406617452687669e-07,
+          "angular_separation_deg": 2.561320938754782e-06,
+          "exact": {
+            "t_utc": "2026-12-30T00:00:00Z",
+            "azimuth_deg": 40.496166,
+            "elevation_deg": 2.568305,
+            "range_km": 380251.99111884995,
+            "range_rate_km_s": 0.0703119
+          },
+          "translated": {
+            "azimuth_deg": 40.49616359676982,
+            "elevation_deg": 2.5683057406617453
+          }
+        },
+        {
+          "t_utc": "2026-12-30T01:00:00Z",
+          "delta_azimuth_deg": -2.8224688719546975e-06,
+          "delta_elevation_deg": 1.9221882219255804e-07,
+          "angular_separation_deg": 2.831646840510158e-06,
+          "exact": {
+            "t_utc": "2026-12-30T01:00:00Z",
+            "azimuth_deg": 40.497576,
+            "elevation_deg": 2.516,
+            "range_km": 380504.9357239651,
+            "range_rate_km_s": 0.0701977
+          },
+          "translated": {
+            "azimuth_deg": 40.49757317753114,
+            "elevation_deg": 2.516000192218822
+          }
+        },
+        {
+          "t_utc": "2026-12-30T02:00:00Z",
+          "delta_azimuth_deg": -3.447181711635494e-06,
+          "delta_elevation_deg": -3.096035250393925e-07,
+          "angular_separation_deg": 3.52019892386405e-06,
+          "exact": {
+            "t_utc": "2026-12-30T02:00:00Z",
+            "azimuth_deg": 40.498359,
+            "elevation_deg": 2.464213,
+            "range_km": 380757.45557584596,
+            "range_rate_km_s": 0.0700759
+          },
+          "translated": {
+            "azimuth_deg": 40.498355552818296,
+            "elevation_deg": 2.464212690396475
+          }
+        }
+      ]
+    }
+  ],
+  "max_angular_separation_deg": 3.52019892386405e-06,
+  "max_absolute_elevation_error_deg": 9.553445510235292e-07,
+  "limitations": [
+    "This comparison tests observer translation, not launch feasibility or landing safety.",
+    "The finite 80 m DEM horizon and its 5 degree azimuth sampling remain an approximate regional model.",
+    "Agreement within this small sample does not replace independent SPICE frame validation."
+  ]
+}

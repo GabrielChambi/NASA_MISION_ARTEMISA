@@ -77,7 +77,7 @@ export function LunarRocketLanderModel({ isSafe, scale, statusColor }: { isSafe:
         <sphereGeometry args={[0.2, 14, 14]} />
         <meshBasicMaterial color={statusColor ?? (isSafe ? '#2ed573' : '#ff4757')} />
       </mesh>
-      <pointLight position={[0, 3.4, 0]} color={statusColor ?? (isSafe ? '#2ed573' : '#ff4757')} intensity={1.8} distance={6} />
+
     </group>
   )
 }
