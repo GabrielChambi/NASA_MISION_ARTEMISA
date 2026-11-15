@@ -3,7 +3,7 @@
 import {chromium} from 'playwright'
 import {writeFile} from 'node:fs/promises'
 import assert from 'node:assert/strict'
-const base=process.env.LUNAR_ORACLE_TEST_URL||'https://lunar-oracle-mission-control.gptcompartir.chatgpt.site/'
+const base=process.env.LUNAR_ORACLE_TEST_URL||'http://127.0.0.1:4173/'
 const browser=await chromium.launch({channel:'chrome',headless:true})
 try{
  const page=await browser.newPage()
@@ -14,7 +14,7 @@ try{
   const data=await response.json()
   return {http:response.status,status:data.status,seconds:Math.round((performance.now()-start)/100)/10,request,arrival:data.mission?.arrival_utc,counts:data.counts,best:data.best?.id,best_sun_hours:data.best?.sun_hours,message:data.message,sources:data.meta?.sources?.map(s=>s?{cache_hit:s.cache_hit,source:s.source,query_url:s.query_url}:null)}
  })
- await writeFile(new URL('../../artifacts/automatic-public-new-date.json',import.meta.url),JSON.stringify({base,...result},null,2))
+ await writeFile(new URL('../../artifacts/live-plan-validation.json',import.meta.url),JSON.stringify({base,...result},null,2))
  console.log(JSON.stringify(result))
  assert.equal(result.http,200,'The deployed application must query NASA for an unprepared date')
  assert.equal(result.status,'ok')
