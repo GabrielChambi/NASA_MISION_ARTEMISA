@@ -1014,9 +1014,14 @@ export default function UnifiedMissionPlanner(){
             <span className="micro-title">{tr("COPILOTO DE MISIÓN")}</span>
             <h1 className="chat-hero-title">{tr("Dime cuándo y")}{" "}<em>{tr("encuentro dónde.")}</em></h1>
             {chatTurns.length===0&&!plan&&!busy&&(
-              <button type="button" className="example-trip" onClick={()=>{setMessage(tr(EXAMPLE));void calculate(tr(EXAMPLE))}} disabled={!atlas||!polar}>
-                {tr(t.exampleBtn)} <ArrowRight size={12}/>
-              </button>
+              <div className="chat-hero-examples">
+                <button type="button" className="example-trip" onClick={()=>{setMessage(tr(EXAMPLE));void calculate(tr(EXAMPLE))}} disabled={!atlas||!polar}>
+                  {tr(t.exampleBtn)} <ArrowRight size={12}/>
+                </button>
+                <button type="button" className="example-trip hint-alt" onClick={()=>void submitMessage(tr('QUIERO HACER UN VIAJE EL 1DE DICIEMBREDE 2026 A LAS 10AM'))} disabled={!atlas||!polar}>
+                  {tr('Planificar el 1 dic · 10:00')} <ArrowRight size={12}/>
+                </button>
+              </div>
             )}
           </div>
 
@@ -1224,8 +1229,7 @@ export default function UnifiedMissionPlanner(){
           </div>
           {uploadNotice&&<small className="upload-notice">{tr(uploadNotice)}</small>}
         </form>
-        {!intent&&!busy&&<div className="mission-prompt-hints"><button type="button" onClick={()=>void submitMessage('QUIERO HACER UN VIAJE EL 1DE DICIEMBREDE 2026 A LAS 10AM')}>{tr("Planificar el 1 dic · 10:00")}</button></div>}
-        {intent&&!busy&&<div className="mission-prompt-hints"><button type="button" onClick={()=>void submitMessage('Busca alternativas conservando mis requisitos')}>{tr("Buscar alternativas")}</button><button type="button" onClick={()=>{setMessage('¿Qué pasa si mis paneles producen un 20% menos?');document.querySelector<HTMLTextAreaElement>('#mission-request')?.focus()}}>{tr("Probar un fallo solar")}</button><button type="button" onClick={()=>void submitMessage('Estudia la huella local del destino')}>{tr("Estudiar huella")}</button></div>}
+        {intent&&!busy&&<div className="mission-prompt-hints"><button type="button" onClick={()=>void submitMessage(tr('Busca alternativas conservando mis requisitos'))}>{tr("Buscar alternativas")}</button><button type="button" onClick={()=>{setMessage(tr('¿Qué pasa si mis paneles producen un 20% menos?'));document.querySelector<HTMLTextAreaElement>('#mission-request')?.focus()}}>{tr("Probar un fallo solar")}</button><button type="button" onClick={()=>void submitMessage(tr('Estudia la huella local del destino'))}>{tr("Estudiar huella")}</button></div>}
         {intent&&<div className="recognized-mission" data-testid="recognized-mission"><span>{tr("ESCENARIO ACTIVO")}</span><strong>{tr(intent.date_kind==='landing'?'Alunizaje':'Salida')} · {tr(localDate(intent.departure_utc))}</strong><small>{tr(TIMEZONE)} · {intent.surface_hours}{" "}{tr("h en superficie ·")}{" "}{tr(launchSite.name)}</small>{(pendingText||pendingCommandText)&&<small>{tr("La última petición está pendiente de completar; este escenario se conserva.")}</small>}</div>}
         {adopted&&<div className="adopted-alternative" data-testid="adopted-alternative"><Check size={14}/><div><strong>{tr("Alternativa aplicada")}</strong><span>{tr(adopted.original.date_kind==='landing'?'Alunizaje':'Salida')}{" "}{tr("original:")}{" "}{tr(localDate(adopted.original.departure_utc))}<br/>{tr("Nueva fecha:")}{" "}{tr(localDate(adopted.proposal.proposed_request.departure_utc))}</span><small>{tr("La solicitud original queda guardada en la comparación. La estancia y los requisitos no cambian.")}</small></div></div>}
       </aside>}

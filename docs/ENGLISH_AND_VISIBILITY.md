@@ -42,6 +42,8 @@ The camera mesh is coarser than the source terrain, and the terrain setting the 
 
 NASA illustrates the importance of distant terrain and changing illumination in [Shadows near the Moon’s South Pole](https://svs.gsfc.nasa.gov/4893/). Observer quantities and geometry conventions are documented in the [JPL Horizons manual](https://ssd.jpl.nasa.gov/horizons/manual.html).
 
+![Earth visibility with the actual angular values](images/earth-visibility-english.png)
+
 ## Reproduce locally
 
 ~~~powershell
