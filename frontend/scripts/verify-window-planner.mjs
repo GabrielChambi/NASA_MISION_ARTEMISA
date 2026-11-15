@@ -1,0 +1,72 @@
+import {chromium} from 'playwright'
+import {mkdir,readFile,writeFile} from 'node:fs/promises'
+import {fileURLToPath} from 'node:url'
+import assert from 'node:assert/strict'
+import {openLocalCockpit} from './browser-helpers.mjs'
+const base=process.env.LUNAR_ORACLE_TEST_URL||'http://127.0.0.1:5173/'
+const out=new URL('../../artifacts/',import.meta.url)
+await mkdir(out,{recursive:true})
+const browser=await chromium.launch({channel:'chrome',headless:true})
+const page=await browser.newPage({viewport:{width:1500,height:1050}})
+page.setDefaultTimeout(60000)
+const errors=[],ephemeris=[]
+page.on('pageerror',e=>errors.push(e.message))
+page.on('request',r=>{if(r.url().includes('/api/landing/ephemeris?'))ephemeris.push(r.url())})
+const ready=()=>page.waitForFunction(()=>document.querySelector('[data-testid=assessment-status]')?.textContent?.includes('Criterios geométricos'),null,{timeout:60000})
+try{
+  await page.goto(base,{waitUntil:'networkidle'})
+  await openLocalCockpit(page)
+  await page.locator('.coordinate-details summary').click()
+  await page.getByLabel('Latitud',{exact:true}).fill('-89.44228359269788')
+  await page.getByLabel('Longitud este',{exact:true}).fill('-137.16853217174196')
+  await page.getByRole('button',{name:'Localizar en rejilla NASA',exact:true}).click()
+  await page.getByRole('button',{name:'ANALIZAR SOL Y TIERRA',exact:true}).click()
+  await ready()
+  const panel=page.getByRole('region',{name:'Buscador de fechas con NASA'})
+  const before=ephemeris.length
+  await panel.getByRole('button',{name:'Buscar alternativas con NASA',exact:true}).click()
+  const results=panel.getByTestId('window-search-results')
+  await results.waitFor()
+  await panel.getByText('El primer inicio ya cumple en los cinco cambios de hora ensayados; no hace falta retrasarlo dentro de esta rejilla.',{exact:true}).waitFor()
+  assert.equal(ephemeris.length-before,2,'Only one extended query per body')
+  const expanded=ephemeris.slice(before).map(u=>new URL(u))
+  assert.equal(expanded[0].searchParams.get('cell_id'),'site01:2:0')
+  assert.ok(expanded.every(u=>u.searchParams.get('start_utc')==='2026-12-13T22:00:00Z'&&u.searchParams.get('end_utc')==='2026-12-17T14:00:00Z'))
+  await panel.getByText('Ver los trece inicios y sus márgenes',{exact:true}).click()
+  assert.equal(await panel.locator('tbody tr').count(),13)
+  assert.equal(await panel.locator('tbody tr').filter({hasText:'72 h'}).count(),13)
+  const event=page.waitForEvent('download')
+  await panel.getByRole('button',{name:'Descargar búsqueda y evidencia',exact:true}).click()
+  const download=await event,path=fileURLToPath(new URL('window-search-browser-evidence.json',out))
+  await download.saveAs(path)
+  const evidence=JSON.parse(await readFile(path,'utf8'))
+  assert.equal(evidence.originId,'site01:2:0')
+  assert.equal(evidence.firstPassing.shiftHours,0)
+  assert.equal(evidence.firstRobust.shiftHours,0)
+  assert.ok(evidence.candidates.every(c=>c.robustCases.length===5&&c.sunHours===72&&c.earthHours===72))
+  assert.equal(evidence.sources.length,2)
+  assert.ok(evidence.sources.every(s=>s.queryUrl.startsWith('https://ssd.jpl.nasa.gov/api/horizons.api?')&&s.startUtc==='2026-12-13T22:00:00Z'&&s.endUtc==='2026-12-17T14:00:00Z'))
+  await panel.screenshot({path:fileURLToPath(new URL('window-search-panel.png',out))})
+  await panel.getByRole('button',{name:'Aplicar fecha al formulario',exact:true}).nth(1).click()
+  assert.equal(await page.getByLabel('Inicio UTC',{exact:true}).inputValue(),'2026-12-14T01:00')
+  assert.match(await page.getByTestId('assessment-status').innerText(),/Cambios sin simular/)
+  assert.equal(await panel.getByTestId('window-search-results').count(),0)
+  assert.equal(await page.getByRole('button',{name:'Descargar evidencia JSON',exact:true}).isDisabled(),true)
+
+  // A delayed date cannot cure the original point's excessive footprint slope.
+  await page.getByLabel('Latitud',{exact:true}).fill('-89.46315776')
+  await page.getByLabel('Longitud este',{exact:true}).fill('-137.50198491')
+  await page.getByRole('button',{name:'Localizar en rejilla NASA',exact:true}).click()
+  await page.getByLabel('Inicio UTC',{exact:true}).fill('2026-12-14T00:00')
+  await page.getByRole('button',{name:'ANALIZAR SOL Y TIERRA',exact:true}).click()
+  await ready()
+  await panel.getByText(/Cambiar la fecha no corrige la pendiente/).waitFor()
+  const blockedBefore=ephemeris.length
+  await panel.getByRole('button',{name:'Buscar alternativas con NASA',exact:true}).click()
+  await panel.getByTestId('window-search-results').waitFor()
+  assert.equal(ephemeris.length,blockedBefore)
+  assert.equal(await panel.locator('tbody tr').count(),0)
+  assert.deepEqual(errors,[])
+  await writeFile(new URL('window-search-browser-verification.json',out),JSON.stringify({base,cell:'site01:2:0',checks:['Exact observer and nominal NASA query','Two sequential extended NASA queries','13 candidate starts and five perturbations each','Original queries/ranges retained in JSON','Applying +1h invalidates old mission case','Static slope failure makes no NASA search calls'],errors},null,2))
+  console.log('PASS window planner: exact NASA observer, 13 starts, five perturbations, two extended queries, reproducible export, explicit draft application and slope gate; no page errors.')
+}finally{await browser.close()}

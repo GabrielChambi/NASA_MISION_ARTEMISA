@@ -2,6 +2,7 @@
 import copy
 import json
 import pytest
+import httpx
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from api.app import copilot as module
@@ -69,7 +70,7 @@ def test_invalid_model_output_falls_back_to_labelled_guide(monkeypatch,patch):
     monkeypatch.setattr(module,'provider_json',fake)
     result=client.post('/api/copilot',json=INPUT).json()
     assert result['mode']=='guide'
-    assert result['reason']=='provider_unavailable'
+    assert result['reason']=='invalid_model_reply'
     assert result['action']=={'type':'polar_view'}
 
 def test_status_metadata_probe_and_failures_are_honest(monkeypatch):
@@ -112,3 +113,40 @@ def test_config_does_not_allow_remote_plaintext_or_credential_urls():
     assert module.configuration({'AI_PROVIDER':'gemini','GEMINI_API_KEY':'key','AI_BASE_URL':'https://user:pass@remote.test/v1beta'}) is None
     assert module.configuration({'AI_PROVIDER':'gemini','GEMINI_API_KEY':'key','AI_MODEL':'../other/path'}) is None
     assert module.configuration({'AI_PROVIDER':'gemini','GEMINI_API_KEY':'key'})['model']=='gemini-3.5-flash-lite'
+
+
+@pytest.mark.parametrize('status_code,reason',[
+    (401,'invalid_api_key'),(403,'permission_denied'),(404,'model_not_available'),
+    (429,'quota_exceeded'),(500,'provider_unavailable'),(502,'provider_unavailable'),
+])
+def test_provider_status_diagnostics_are_bounded_and_never_expose_keys(monkeypatch,status_code,reason):
+    gemini(monkeypatch)
+    async def failure(*args,**kwargs):
+        request=httpx.Request('POST','https://generativelanguage.googleapis.com/v1beta/models/test:generateContent')
+        response=httpx.Response(status_code,request=request,json={'error':{'message':'test-only-secret private diagnostic'}})
+        raise httpx.HTTPStatusError('test-only-secret private diagnostic',request=request,response=response)
+    monkeypatch.setattr(module,'provider_json',failure)
+    for result in (client.get('/api/copilot/status').json(),client.post('/api/copilot',json=INPUT).json()):
+        assert result['mode']=='guide'
+        assert result['reason']==reason
+        assert 'test-only-secret' not in json.dumps(result)
+        assert 'private diagnostic' not in json.dumps(result)
+
+
+@pytest.mark.parametrize('payload,reason',[
+    ({'error':{'details':[{'reason':'API_KEY_INVALID','metadata':{'key':'test-only-secret'}}]}},'invalid_api_key'),
+    ({'error':{'details':[{'reason':'API_KEY_EXPIRED'}]}},'invalid_api_key'),
+    ({'error':{'details':[{'reason':'INVALID_ARGUMENT'}],'message':'test-only-secret'}},'provider_unavailable'),
+    ({'error':{'details':'API_KEY_INVALID'}},'provider_unavailable'),
+    ({'error':['API_KEY_INVALID']},'provider_unavailable'),
+])
+def test_gemini_400_known_error_info_is_classified_without_leaking_payload(monkeypatch,payload,reason):
+    gemini(monkeypatch)
+    original=httpx.AsyncClient
+    transport=httpx.MockTransport(lambda request:httpx.Response(400,json=payload))
+    monkeypatch.setattr(module.httpx,'AsyncClient',lambda **kwargs:original(transport=transport,**kwargs))
+    for result in (client.get('/api/copilot/status').json(),client.post('/api/copilot',json=INPUT).json()):
+        assert result['mode']=='guide'
+        assert result['reason']==reason
+        assert 'test-only-secret' not in json.dumps(result)
+        assert 'API_KEY_INVALID' not in json.dumps(result)

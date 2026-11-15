@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowRight, Check, ChevronRight, Database, Layers, MapPin, Orbit, Search, SlidersHorizontal, Sparkles } from 'lucide-react'
+import { loadDetailTile } from '../sites/lunarDetail'
 import { loadAtlas,type AtlasData } from '../sites/atlasGeometry'
 import TacticalSurvivalCockpit from './TacticalSurvivalCockpit'
 import { Tactical3DScene } from './Tactical3DScene'
@@ -17,6 +18,8 @@ export default function MissionExperience({onOpenScientific,active=true}:{onOpen
   const [selection,setSelection]=useState<PolarCell|null>(null),[notice,setNotice]=useState('')
   const [layer,setLayer]=useState<'screening'|'relief'>('screening'),[inspector,setInspector]=useState(false)
   const [focusZone,setFocusZone]=useState(false)
+  const [focusTerrain,setFocusTerrain]=useState<AtlasData|null>(null),[detailStatus,setDetailStatus]=useState('')
+  const [shadingStatus,setShadingStatus]=useState('Relieve NASA')
   const [showCandidates,setShowCandidates]=useState(()=>window.innerWidth>700)
   const localRef=useRef<HTMLDivElement>(null)
   const fresh=evaluated&&Number(threshold)===applied&&threshold.trim()!==''
@@ -31,6 +34,15 @@ export default function MissionExperience({onOpenScientific,active=true}:{onOpen
       .then(([s,a])=>{if(!ac.signal.aborted){setData(s);setAtlas(a)}}).catch(e=>{if(!ac.signal.aborted)setLoadError(e instanceof Error?e.message:'Datos regionales no disponibles.')})
     return()=>ac.abort()
   },[attempt])
+  useEffect(()=>{
+    if(!focusZone||!selection||!atlas){setFocusTerrain(null);setDetailStatus('');return}
+    const ac=new AbortController()
+    setFocusTerrain(null);setDetailStatus('Cargando relieve de mayor detalle…')
+    loadDetailTile(atlas,selection.latitude_deg,selection.longitude_deg,ac.signal)
+      .then(tile=>{if(!ac.signal.aborted){setFocusTerrain(tile);setDetailStatus(tile?'Relieve visual ~396 m · fuente NASA 80 m':'Sin detalle adicional; se conserva la vista regional')}})
+      .catch(()=>{if(!ac.signal.aborted)setDetailStatus('No se pudo cargar más detalle; la vista regional sigue disponible')})
+    return()=>ac.abort()
+  },[focusZone,selection,atlas])
   function analyze(){
     const t=Number(threshold)
     if(!data||!threshold.trim()||!Number.isFinite(t)||t<0||t>45){setNotice('Define un umbral regional entre 0 y 45 grados.');return}
@@ -92,8 +104,8 @@ export default function MissionExperience({onOpenScientific,active=true}:{onOpen
           <div className="explorer-map-heading"><div><span className="eyebrow">MAPA INTERACTIVO · POLO SUR LUNAR</span><h2>{fresh?'Descubre dónde seguir explorando.':'Empieza mirando el panorama completo.'}</h2></div><div className="layer-tabs">{focusZone&&<button onClick={()=>setFocusZone(false)}>Todo el polo</button>}<button aria-pressed={layer==='screening'} onClick={()=>setLayer('screening')}>Evaluación</button><button aria-pressed={layer==='relief'} onClick={()=>setLayer('relief')}>Relieve</button></div></div>
           <div className="explorer-map" data-testid="polar-map">
             <Tactical3DScene latDeg={selection?.latitude_deg??-90} lonDeg={selection?.longitude_deg??0} observerHeightM={2} sunAzimuthDeg={0} sunElevationDeg={0} earthAzimuthDeg={0} earthElevationDeg={0} minSolarElevation={0} maxSlopeDeg={applied} currentSlopeDeg={NaN}
-              atlasData={atlas} sunRaycast={ray} earthRaycast={ray} cameraView="polar" siteName="Polo sur" placementMode onSurfacePlace={select} active={active&&mode==='polar'} overview focusZone={focusZone} cameraResetKey={focusZone?1:0} polarSurface={data} polarAssessments={fresh&&layer==='screening'?assessments:[]} polarSelection={selection}/>
-            <div className="polar-scope-badge"><span className={fresh?'live-dot':''}/>{fresh&&layer==='screening'?'EVALUACIÓN REGIONAL DE TERRENO':'RELIEVE NASA · SIN CLASIFICAR'}<small>{loadError?'Datos no disponibles · usa Reintentar':data?n(data.statistics.known_cells,0)+' zonas evaluables':'Cargando datos…'}</small></div>
+              atlasData={atlas} focusTerrainData={focusTerrain} sunRaycast={ray} earthRaycast={ray} cameraView="polar" siteName="Polo sur" placementMode onSurfacePlace={select} active={active&&mode==='polar'} overview onShadingStatus={setShadingStatus} focusZone={focusZone} cameraResetKey={focusZone?1:0} polarSurface={data} polarAssessments={fresh&&layer==='screening'?assessments:[]} polarSelection={selection}/>
+            <div className="polar-quality-note">{shadingStatus}{detailStatus&&<small role="status">{detailStatus}</small>}</div><div className="polar-scope-badge"><span className={fresh?'live-dot':''}/>{fresh&&layer==='screening'?'EVALUACIÓN REGIONAL DE TERRENO':'RELIEVE NASA · SIN CLASIFICAR'}<small>{loadError?'Datos no disponibles · usa Reintentar':data?n(data.statistics.known_cells,0)+' zonas evaluables':'Cargando datos…'}</small></div>
             {!selection&&<div className="polar-click-hint"><MapPin size={15}/>{loadError?'No se puede analizar sin datos NASA. Reintenta la carga.':fresh?'Haz clic en una zona para conocer sus datos':'Pulsa «Analizar todo el polo sur» para empezar'}</div>}
             <div className="polar-legend"><span><i className="green"/>Prioridad de estudio{fresh?' · '+n(counts.green,0):''}</span><span><i className="yellow"/>Precaución</span><span><i className="red"/>Relieve exigente</span><span><i className="unknown"/>Datos ausentes</span></div>
           </div>
@@ -102,7 +114,7 @@ export default function MissionExperience({onOpenScientific,active=true}:{onOpen
         </main>
         <aside className="explorer-right">
           {selection?<section className="zone-summary"><span className="eyebrow">TU ZONA SELECCIONADA</span><h2>{n(Math.abs(selection.latitude_deg),3)}°S · {n(selection.longitude_deg,3)}°E</h2><span className={'zone-class '+(selected?.risk??'unknown')}>{selected?.label??'Pendiente de analizar'}</span><p>{selected?.reason??'Ejecuta el análisis regional para clasificar esta zona.'}</p><button className="zoom-zone" onClick={()=>setFocusZone(v=>!v)}>{focusZone?'Volver a todo el polo':'Acercar esta zona'} <Search size={13}/></button><dl><div><dt>Pendiente P95 · 80 m</dt><dd>{n(selection.regional_slope_deg)}°</dd></div><div><dt>Elevación del centro</dt><dd>{n(selection.elevation_m,0)} m</dd></div><div><dt>Sol y Tierra</dt><dd>Sin evaluar</dd></div><div><dt>Aterrizaje local</dt><dd>Requiere detalle</dd></div></dl><button onClick={openLocal}>Ver áreas con estudio de misión <ArrowRight size={13}/></button></section>:<section className="zone-summary welcome"><MapPin size={22}/><h2>Elige tu próximo destino.</h2><p>Haz clic sobre la Luna o usa una zona propuesta. Aquí verás sus mediciones y qué falta por estudiar.</p></section>}
-          <MissionCopilot context={copilotContext} onAction={action}/>
+          <MissionCopilot context={copilotContext} onAction={action} active={active&&mode==='polar'}/>
         </aside>
       </div>
     </div>

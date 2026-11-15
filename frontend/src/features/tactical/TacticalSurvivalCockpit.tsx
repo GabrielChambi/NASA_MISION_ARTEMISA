@@ -6,6 +6,7 @@ import { useMission } from '../mission/MissionContext'
 import { DEFAULT_DESCENT, descentAt, simulateDescent, type DescentRun } from '../mission/descentPhysics'
 import { assessCell, nearestCell, parseUtcInput, validateBody, validateSurface, windowMetrics, type BodyResult, type LandingRun, type LandingSurface, type Limits } from './landingScience'
 import type { RaycastHit } from './tacticalMath'
+import WindowPlannerPanel from './WindowPlannerPanel'
 import MissionCopilot,{type CopilotAction} from './MissionCopilot'
 import './tactical-cockpit.css'
 
@@ -295,7 +296,8 @@ export default function TacticalSurvivalCockpit({ onOpenScientific, onBackToPola
           <p role="status" className="touchdown-status">{landed?(flight.outcome==='soft-touchdown'?'CONTACTO SUAVE · ':'IMPACTO / DESCENSO INCOMPLETO · ')+format(flight.impactSpeedMps,2)+' m/s · '+format(cell?.latitude_deg,6)+'°, '+format(cell?.longitude_deg,6)+'°':'Descendiendo · '+format(flightTime,0)+' / '+format(flight.durationS,0)+' s'}</p>
           {landed&&<p className="field-help">La velocidad de contacto y la aptitud ambiental son evaluaciones independientes. El marcador indica la celda seleccionada.</p>}</>}
         </section>
-        <MissionCopilot context={copilotContext} onAction={copilotAction}/>
+        <WindowPlannerPanel run={current} onApplyStart={setStart} active={active}/>
+        <MissionCopilot context={copilotContext} onAction={copilotAction} active={active}/>
         <div className="model-scope"><Database size={13}/><p>Modelo de planificación con datos NASA. Sin balance térmico, energía eléctrica, presupuesto RF, rocas menores de 5 m ni validación SPICE independiente. Verde expresa el cumplimiento del modelo.</p></div>
         <button className="wide quiet" disabled={!current} onClick={exportRun}>Descargar evidencia JSON</button>
       </aside>

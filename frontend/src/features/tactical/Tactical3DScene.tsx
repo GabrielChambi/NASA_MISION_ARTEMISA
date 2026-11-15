@@ -8,20 +8,21 @@ import { buildAtlasGeometry, projectedToWorld, bodyDirection, type AtlasData } f
 import { latLonToStereoM, sampleExactStereoMeshPoint, type RaycastHit } from './tacticalMath'
 import { LunarRocketLanderModel } from './LunarLanderModel'
 import type { CellAssessment, Risk } from './landingScience'
+import { loadLunarShading } from '../sites/lunarDetail'
 import { findPolarCell,type PolarSurface,type PolarAssessment,type PolarCell } from './polarScience'
 
 export interface Tactical3DSceneProps {
   latDeg:number;lonDeg:number;observerHeightM:number
   sunAzimuthDeg:number;sunElevationDeg:number;earthAzimuthDeg:number;earthElevationDeg:number
   minSolarElevation:number;maxSlopeDeg:number;currentSlopeDeg:number
-  atlasData:AtlasData|null;detailAtlasData?:AtlasData|null;contextAtlasData?:AtlasData|null
+  atlasData:AtlasData|null;focusTerrainData?:AtlasData|null;detailAtlasData?:AtlasData|null;contextAtlasData?:AtlasData|null
   sunRaycast:RaycastHit;earthRaycast:RaycastHit
   cameraView:'orbit'|'mast'|'top'|'polar';siteName:string
   placementMode?:boolean;onTogglePlacementMode?:()=>void
   onSurfacePlace?:(lat:number,lon:number)=>void;cameraResetKey?:number
   scienceReady?:boolean;assessmentRisk?:Risk;assessments?:CellAssessment[]
   active?:boolean;altitudeM?:number;landed?:boolean
-  overview?:boolean;focusZone?:boolean;polarSurface?:PolarSurface|null;polarAssessments?:PolarAssessment[];polarSelection?:PolarCell|null
+  overview?:boolean;focusZone?:boolean;onShadingStatus?:(status:string)=>void;polarSurface?:PolarSurface|null;polarAssessments?:PolarAssessment[];polarSelection?:PolarCell|null
 }
 const EXAGGERATION=1
 const COLORS:Record<Risk,string>={green:'#62e6a0',yellow:'#f5cb67',red:'#ff797f',unknown:'#788e9e'}
@@ -52,7 +53,7 @@ export function Tactical3DScene(props:Tactical3DSceneProps){
       <button className="tactical-surface-place-btn" onClick={props.onTogglePlacementMode} aria-pressed={props.placementMode}>{props.placementMode?<Crosshair size={12}/>:<MapPin size={12}/>} {props.placementMode?'CLIC PARA ELEGIR DESTINO':'ELEGIR SOBRE LA SUPERFICIE'}</button>
       <span>{hover&&props.placementMode?hover[0].toFixed(5)+'°, '+hover[1].toFixed(5)+'°':'Arrastra para orbitar · rueda para acercar'}</span>
     </div>
-    <Canvas frameloop={props.active===false?'never':'always'} dpr={[1,1.7]} camera={{position:[12,7,14],near:0.001,far:5000,fov:45}} gl={{antialias:true,alpha:false,localClippingEnabled:true}}>
+    <Canvas frameloop={props.active===false?'never':'always'} dpr={[1,1.7]} camera={{position:[12,7,14],near:props.overview?0.1:0.001,far:props.overview?2500:5000,fov:45}} gl={{antialias:true,alpha:false,localClippingEnabled:true}}>
       <color attach="background" args={['#03080d']}/>
       <ambientLight intensity={0.45}/>
       <Stars radius={1100} depth={200} count={2000} factor={2} fade/>
@@ -73,39 +74,106 @@ export function Tactical3DScene(props:Tactical3DSceneProps){
     </div>}
   </div>
 }
-function clipBox(data:AtlasData|null|undefined) {
+function clipBox(data:AtlasData|null|undefined,overlap=.002) {
   if(!data)return []
   const b=data.manifest.sample_extent_m
   const points=[[b.xmin,b.ymin],[b.xmax,b.ymax],[b.xmin,b.ymax],[b.xmax,b.ymin]].map(([x,y])=>cellPosition(data,x,y,0))
-  const overlap=.002
   const xmin=Math.min(...points.map(p=>p.x))+overlap,xmax=Math.max(...points.map(p=>p.x))-overlap
   const zmin=Math.min(...points.map(p=>p.z))+overlap,zmax=Math.max(...points.map(p=>p.z))-overlap
   return [new THREE.Plane(new THREE.Vector3(-1,0,0),xmin),new THREE.Plane(new THREE.Vector3(1,0,0),-xmax),new THREE.Plane(new THREE.Vector3(0,0,-1),zmin),new THREE.Plane(new THREE.Vector3(0,0,1),-zmax)]
 }
-function Terrain(props:Tactical3DSceneProps&{dragging:boolean;onHover:(v:[number,number]|null)=>void}){
-  const regional=props.atlasData!,detail=props.detailAtlasData,context=props.contextAtlasData
-  const geometry=useMemo(()=>{
-    const g=buildAtlasGeometry(regional,EXAGGERATION,props.overview?'natural':'elevation',2)
-    if(props.overview&&props.polarSurface&&props.polarAssessments?.length){
-      const byId=new Map(props.polarAssessments.map(a=>[a.cell.id,a.risk]))
-      const positions=g.getAttribute('position'),colors=g.getAttribute('color'),colour=new THREE.Color()
-      for(let i=0;i<positions.count;i++){
-        const x=positions.getX(i),y=positions.getY(i)+regional.manifest.radius_m/1000,z=positions.getZ(i),length=Math.hypot(x,y,z)
-        if(!length)continue
-        const lat=-Math.asin(THREE.MathUtils.clamp(y/length,-1,1))*180/Math.PI,lon=Math.atan2(-x,z)*180/Math.PI
-        const cell=findPolarCell(props.polarSurface,lat,lon),risk=cell?byId.get(cell.id)??'unknown':'unknown'
-        colour.set(COLORS[risk]).multiplyScalar(.72)
-        colors.setXYZ(i,colour.r,colour.g,colour.b)
-      }
+function visualGeometry(data:AtlasData,stride:number,props:Tactical3DSceneProps,localTexture=false){
+  const g=buildAtlasGeometry(data,EXAGGERATION,props.overview?'natural':'elevation',stride)
+  const positions=g.getAttribute('position'),colors=g.getAttribute('color')
+  const uv=new Float32Array(positions.count*2),grid=Math.floor((data.manifest.grid_size-1)/stride)+1
+  const b=data.manifest.sample_extent_m
+  const assessments=new Map((props.polarAssessments??[]).map(a=>[a.cell.id,a.risk]))
+  const base=new THREE.Color('#c9cbd0'),tint=new THREE.Color()
+  for(let i=0;i<positions.count;i++){
+    const x=b.xmin+(i%grid)*stride*data.manifest.display_spacing_m
+    const y=b.ymax-Math.floor(i/grid)*stride*data.manifest.display_spacing_m
+    // All tiles and the overview use one NASA south-polar projection texture.
+    uv[i*2]=localTexture?(x-b.xmin)/(b.xmax-b.xmin):(x+304000)/608000;uv[i*2+1]=localTexture?(y-b.ymin)/(b.ymax-b.ymin):(y+304000)/608000
+    if(props.overview&&props.polarSurface&&assessments.size){
+      const rho=Math.hypot(x,y),lat=2*Math.atan2(rho,2*data.manifest.radius_m)*180/Math.PI-90,lon=Math.atan2(x,y)*180/Math.PI
+      const c=findPolarCell(props.polarSurface,lat,lon),risk=c?assessments.get(c.id)??'unknown':'unknown'
+      tint.copy(base).lerp(new THREE.Color(COLORS[risk]),.42)
+      colors.setXYZ(i,tint.r,tint.g,tint.b)
     }
+  }
+  g.setAttribute('uv',new THREE.BufferAttribute(uv,2))
+  return g
+}
+function Terrain(props:Tactical3DSceneProps&{dragging:boolean;onHover:(v:[number,number]|null)=>void}){
+  const {gl,size}=useThree()
+  const regional=props.atlasData!,detail=props.detailAtlasData,context=props.contextAtlasData
+  const stride=props.overview&&size.width>=650?1:2
+  const [shading,setShading]=useState<THREE.Texture|null>(null)
+  useEffect(()=>{
+    if(!props.overview)return
+    const ac=new AbortController()
+    props.onShadingStatus?.('Cargando sombreado NASA…')
+    let texture:THREE.Texture|null=null
+    loadLunarShading(ac.signal).then(asset=>{
+      if(ac.signal.aborted){asset.dispose();return}
+      texture=new THREE.TextureLoader().load(asset.url,t=>{
+        asset.dispose()
+        if(ac.signal.aborted){t.dispose();return}
+        t.colorSpace=THREE.SRGBColorSpace
+        t.anisotropy=Math.min(8,gl.capabilities.getMaxAnisotropy())
+        t.minFilter=THREE.LinearMipmapLinearFilter;t.magFilter=THREE.LinearFilter
+        t.needsUpdate=true;setShading(t);props.onShadingStatus?.('Sombreado NASA ilustrativo · no representa el Sol de la misión')
+      },undefined,()=>{asset.dispose();if(!ac.signal.aborted)props.onShadingStatus?.('Sombreado no disponible; relieve conservado')})
+    }).catch(()=>{if(!ac.signal.aborted)props.onShadingStatus?.('Sombreado no disponible; relieve conservado')})
+    return()=>{ac.abort();texture?.dispose()}
+  },[props.overview,props.onShadingStatus,gl])
+  const geometry=useMemo(()=>visualGeometry(regional,stride,props),[regional,stride,props.overview,props.polarSurface,props.polarAssessments])
+  const focus=props.focusTerrainData
+  const [localShading,setLocalShading]=useState<{id:string;texture:THREE.Texture}|null>(null)
+  useEffect(()=>{
+    if(!focus)return
+    const ac=new AbortController()
+    let texture:THREE.Texture|null=null
+    loadLunarShading(ac.signal,focus.manifest.data_url).then(asset=>{
+      if(ac.signal.aborted||!asset.local){asset.dispose();return}
+      texture=new THREE.TextureLoader().load(asset.url,t=>{
+        asset.dispose()
+        if(ac.signal.aborted){t.dispose();return}
+        t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=Math.min(8,gl.capabilities.getMaxAnisotropy())
+        t.needsUpdate=true;setLocalShading({id:focus.manifest.data_url,texture:t})
+      },undefined,()=>asset.dispose())
+    }).catch(()=>{})
+    return()=>{ac.abort();texture?.dispose()}
+  },[focus,gl])
+  const focusedTexture=focus&&localShading?.id===focus.manifest.data_url?localShading.texture:null
+  const focusGeometry=useMemo(()=>{
+    if(!focus)return null
+    const g=visualGeometry(focus,1,props,Boolean(focusedTexture)),positions=g.getAttribute('position')
+    const b=focus.manifest.sample_extent_m,side=focus.manifest.grid_size,spacing=focus.manifest.display_spacing_m
+    const transition=regional.manifest.display_spacing_m*stride*2
+    // Join the visible LOD to the coarser triangles along its perimeter. This
+    // changes display geometry only; native NASA science never reads this mesh.
+    for(let i=0;i<positions.count;i++){
+      if(focus.heights[i]===focus.manifest.nodata)continue
+      const x=b.xmin+(i%side)*spacing,y=b.ymax-Math.floor(i/side)*spacing
+      const distance=Math.min(x-b.xmin,b.xmax-x,y-b.ymin,b.ymax-y)
+      if(distance>=transition)continue
+      const coarse=sampleExactStereoMeshPoint(x,y,regional.heights,regional.manifest,1,stride)
+      if(!Number.isFinite(coarse.position.y))continue
+      const t=THREE.MathUtils.clamp(distance/transition,0,1),weight=t*t*(3-2*t)
+      const precise=new THREE.Vector3().fromBufferAttribute(positions,i)
+      precise.lerp(coarse.position,1-weight);positions.setXYZ(i,precise.x,precise.y,precise.z)
+    }
+    g.computeVertexNormals();g.computeBoundingSphere()
     return g
-  },[regional,props.overview,props.polarSurface,props.polarAssessments])
+  },[focus,focusedTexture,regional,stride,props.overview,props.polarSurface,props.polarAssessments])
+  useEffect(()=>()=>focusGeometry?.dispose(),[focusGeometry])
   const local=useMemo(()=>detail?buildAtlasGeometry(detail,EXAGGERATION,'natural',1):null,[detail])
   const middle=useMemo(()=>context?buildAtlasGeometry(context,EXAGGERATION,'natural',1):null,[context])
   useEffect(()=>()=>geometry.dispose(),[geometry])
   useEffect(()=>()=>local?.dispose(),[local])
   useEffect(()=>()=>middle?.dispose(),[middle])
-  const planes=useMemo(()=>clipBox(context??detail),[context,detail])
+  const planes=useMemo(()=>clipBox(context??detail??focus,(context||detail)?0.002:0.25),[context,detail,focus])
   const localPlanes=useMemo(()=>clipBox(detail),[detail])
   const direction=props.scienceReady?bodyDirection({latitude_deg:props.latDeg,longitude_deg:props.lonDeg} as never,props.sunAzimuthDeg,props.sunElevationDeg):new THREE.Vector3(-1,1,0.2).normalize()
   function hit(e:ThreeEvent<PointerEvent|MouseEvent>,place:boolean){
@@ -123,7 +191,8 @@ function Terrain(props:Tactical3DSceneProps&{dragging:boolean;onHover:(v:[number
   return <group>
     <directionalLight position={direction.clone().multiplyScalar(300)} color="#fff1d4" intensity={props.scienceReady?2:1.4}/>
     <directionalLight position={[70,100,-90]} color="#809fac" intensity={0.35}/>
-    <mesh name="regional-lola-terrain" geometry={geometry} {...handlers}><meshStandardMaterial vertexColors roughness={.95} clippingPlanes={planes} clipIntersection/></mesh>
+    <mesh name="regional-lola-terrain" geometry={geometry} {...handlers}><meshStandardMaterial vertexColors map={shading} roughness={1} clippingPlanes={planes} clipIntersection/></mesh>
+    {focusGeometry&&<mesh name="lunar-detail-tile" geometry={focusGeometry} {...handlers}><meshStandardMaterial vertexColors map={focusedTexture??shading} roughness={1}/></mesh>}
     {middle&&<mesh name="local-context-terrain" geometry={middle} {...handlers}><meshStandardMaterial color="#99a8ae" roughness={1} clippingPlanes={localPlanes} clipIntersection/></mesh>}
     {local&&<mesh name="native-5m-lola-terrain" geometry={local} {...handlers}><meshStandardMaterial color="#a6afb6" roughness={1}/></mesh>}
   </group>

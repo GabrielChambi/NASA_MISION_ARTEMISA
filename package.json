@@ -8,6 +8,7 @@
     "build": "npm --prefix frontend run build",
     "build:hosted": "npm --prefix frontend run build:hosted",
     "test:science": "npm --prefix frontend run test:science",
-    "preview": "npm --prefix frontend run preview"
+    "preview": "npm --prefix frontend run preview",
+    "ai:check": "node scripts/check-gemini.mjs"
   }
 }

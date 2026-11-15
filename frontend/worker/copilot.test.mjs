@@ -61,7 +61,7 @@ test('unsupported quantities, arbitrary destinations and guarantees invalidate m
     const api=createCopilotApi({fetcher:async()=>response({...reply,...patch})})
     const result=await(await post(api,input,env)).json()
     assert.equal(result.mode,'guide')
-    assert.equal(result.reason,'provider_unavailable')
+    assert.equal(result.reason,'invalid_model_reply')
     assert.equal(result.action.type,'polar_view')
   }
 })
@@ -97,4 +97,39 @@ test('provider outage or oversized output cannot expose diagnostics or make up a
     const result=await(await post(createCopilotApi({fetcher}),input,env)).json()
     assert.equal(result.mode,'guide');assert.ok(!JSON.stringify(result).includes('secret'))
   }
+})
+
+
+test('Gemini error statuses distinguish key, permission, quota and model failures without exposing provider diagnostics',async()=>{
+  for(const [status,reason] of [[401,'invalid_api_key'],[403,'permission_denied'],[404,'model_not_available'],[429,'quota_exceeded'],[500,'provider_unavailable'],[502,'provider_unavailable']]){
+    const api=createCopilotApi({fetcher:async()=>Response.json({error:{message:'test-only-secret private diagnostic'}},{status})})
+    for(const r of [await api(new Request('https://test.local/api/copilot/status'),env),await post(api,input,env)]){
+      const result=await r.json()
+      assert.equal(result.mode,'guide');assert.equal(result.reason,reason)
+      assert.ok(!JSON.stringify(result).includes('test-only-secret'))
+      assert.ok(!JSON.stringify(result).includes('private diagnostic'))
+    }
+  }
+})
+
+
+test('Gemini 400 ErrorInfo recognizes only bounded known invalid-key enum values',async()=>{
+  for(const [payload,reason] of [
+    [{error:{details:[{reason:'API_KEY_INVALID',metadata:{key:'test-only-secret'}}]}},'invalid_api_key'],
+    [{error:{details:[{reason:'API_KEY_EXPIRED'}]}},'invalid_api_key'],
+    [{error:{details:[{reason:'INVALID_ARGUMENT'}],message:'test-only-secret'}},'provider_unavailable'],
+    [{error:{details:'API_KEY_INVALID'}},'provider_unavailable'],
+    [{error:['API_KEY_INVALID']},'provider_unavailable']
+  ]){
+    const api=createCopilotApi({fetcher:async()=>Response.json(payload,{status:400})})
+    for(const r of [await api(new Request('https://test.local/api/copilot/status'),env),await post(api,input,env)]){
+      const result=await r.json()
+      assert.equal(result.mode,'guide');assert.equal(result.reason,reason)
+      assert.ok(!JSON.stringify(result).includes('test-only-secret'))
+      assert.ok(!JSON.stringify(result).includes('API_KEY_INVALID'))
+    }
+  }
+  const oversized=JSON.stringify({error:{details:[{reason:'API_KEY_INVALID'}],padding:'x'.repeat(17000)}})
+  const api=createCopilotApi({fetcher:async()=>new Response(oversized,{status:400})})
+  assert.equal((await(await post(api,input,env)).json()).reason,'provider_unavailable')
 })

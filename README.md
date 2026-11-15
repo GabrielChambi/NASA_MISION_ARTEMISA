@@ -40,6 +40,16 @@ Gris conserva datos ausentes. Una zona regional roja puede contener enclaves sua
 
 El casquete tiene unas 288.139 km². Las celdas de 4,75 km cubren aproximadamente 287.391 km² (99,74%); el borde finito y nodata no se declaran evaluados. Se calculan pendientes en los píxeles originales de 80 m, corrigiendo la escala de la proyección, y se agregan por zona; no se derivan del atlas visual de ~791 m.
 
+### Luna con más detalle
+
+La vista general dibuja más geometría en escritorio y usa un sombreado de relieve derivado del DEM NASA. Al pulsar **Acercar esta zona** se descarga sólo una pieza visual de ~396 m entre vértices; antes se dibujaban ~1.581 m. Los colores regionales se mezclan suavemente con el relieve para conservar los cráteres. Este sombreado es ilustrativo, no una foto ni la iluminación solar de la fecha elegida. Si falla un recurso visual, se conserva el relieve base y se informa.
+
+### Buscar fechas y comprobar margen temporal
+
+En el estudio local, después de analizar Sol y Tierra, **Buscar alternativas con NASA** compara trece inicios entre la fecha actual y +12 h. Ensaya además −2, −1, 0, +1 y +2 h para cada candidato y conserva todos tus requisitos. Sólo consulta dos series ampliadas, una por astro; cada recorte mantiene la URL y las fechas originales. Un terreno que incumple pendiente o relieve se bloquea antes de consultar: cambiar la fecha no corrige el terreno.
+
+Los resultados distinguen el primer inicio que cumple del primer inicio que cumple en los cinco cambios temporales. No son probabilidades de éxito ni una búsqueda global continua. **Aplicar fecha al formulario** requiere analizar de nuevo; no reemplaza silenciosamente el escenario anterior. El caso Site01:2:0 dispone de sus cuatro respuestas originales preparadas, nominales y ampliadas.
+
 ### Activar Gemini
 
 La integración está implementada en las APIs Python y Worker. Hace falta una clave propia para probar inferencia real:
@@ -50,11 +60,11 @@ if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 npm.cmd run dev:full
 ~~~
 
-Si ya tienes .env, edítalo sin reemplazarlo. Crear la clave: [Google AI Studio](https://aistudio.google.com/apikey). El proveedor se configura con AI_PROVIDER=gemini y el modelo mediante AI_MODEL; el ejemplo usa gemini-3.5-flash-lite, configurable según disponibilidad de tu proyecto. Tras editar la clave, reinicia el servidor. El lanzador también lee .env para la API alojada en la vista previa local.
+Si ya tienes .env, edítalo sin reemplazarlo. Crear la clave: [Google AI Studio](https://aistudio.google.com/apikey). El proveedor se configura con AI_PROVIDER=gemini y el modelo mediante AI_MODEL; el ejemplo usa gemini-3.5-flash-lite, configurable según disponibilidad de tu proyecto. Tras editar la clave, reinicia el servidor. Puedes comprobar la configuración con **npm run ai:check** y hacer una generación real breve con **npm run ai:check -- --generate**. El copiloto incluye **Configurar Gemini** y **Comprobar**. Distingue clave inválida, falta de permisos, modelo ausente, cuota agotada y proveedor no disponible. El lanzador también lee .env para la API alojada en la vista previa local.
 
 La clave sólo la usa el servidor: no aparece en variables VITE_, HTML, URLs de consulta ni Git. En un despliegue remoto hay que configurar la misma clave como secreto del servidor, no subir .env.
 
-Sin clave o ante una caída, el componente dice **Guía del sistema · sin modelo IA**. No se presenta el buscador determinista como IA. El copiloto explica los datos de la vista actual y propone acciones limitadas; no cambia ecuaciones, restricciones, coordenadas ni ejecuta cálculos por su cuenta. Las respuestas generadas que contienen cifras no verificadas, garantías o destinos no autorizados se descartan. Los tests de inferencia usan respuestas simuladas del proveedor; no sustituyen una comprobación real con una clave válida.
+Sin clave o ante una caída, el componente dice **Guía del sistema · sin modelo IA**. No se presenta el buscador determinista como IA. El copiloto explica los datos de la vista actual y propone acciones limitadas; no cambia ecuaciones, restricciones, coordenadas ni ejecuta cálculos por su cuenta. Las respuestas generadas que contienen cifras no verificadas, garantías o destinos no autorizados se descartan. Los tests de inferencia usan respuestas simuladas del proveedor; además se ha comprobado una generación real con la configuración privada del proyecto.
 
 **Herramientas científicas** abre los módulos anteriores. El caso local se conserva al ir y volver. El intervalo local de ejemplo es 14–17 de diciembre de 2026, altura 2 m, cadencia 60 minutos y respuestas JPL originales incluidas; otras celdas/fechas necesitan conexión o caché exacta.
 
@@ -92,6 +102,8 @@ npm.cmd --prefix frontend run preview:hosted
 
 # En otra terminal, con Google Chrome instalado
 node frontend/scripts/verify-experience.mjs
+node frontend/scripts/verify-mission-polish.mjs
+node frontend/scripts/verify-window-planner.mjs
 node frontend/scripts/verify-landing.mjs
 node frontend/scripts/verify-planner.mjs
 node frontend/scripts/verify-main-integration.mjs
@@ -105,8 +117,10 @@ Los tests científicos incluyen casos NASA almacenados, igualdad de perfiles ent
 api/.venv/Scripts/python.exe api/scripts/acquire_nasa.py
 api/.venv/Scripts/python.exe api/scripts/prepare_polar_atlas.py
 api/.venv/Scripts/python.exe api/scripts/prepare_polar_screening.py
+api/.venv/Scripts/python.exe api/scripts/prepare_lunar_detail.py
 api/.venv/Scripts/python.exe api/scripts/prepare_landing_surface.py
 api/.venv/Scripts/python.exe api/scripts/prepare_landing_ephemeris.py
+api/.venv/Scripts/python.exe api/scripts/prepare_window_records.py --include-nominal
 ~~~
 
 Los TIFF originales se guardan en data/raw, ignorado por Git. landing_surface.json conserva los SHA-256 de las siete fuentes originales, criterios de muestreo y limitaciones. Las consultas preparadas conservan parámetros completos, URL, fecha de recuperación y respuesta textual original JPL. Las peticiones JPL de preparación se ejecutan en serie.
@@ -123,4 +137,4 @@ Los TIFF originales se guardan en data/raw, ignorado por Git. landing_surface.js
 
 El siguiente paso científico es ampliar los perfiles locales y validar marcos con SPICE antes de calcular Sol/Tierra en todas las zonas regionales. Después conviene propagar incertidumbres, añadir energía y probar robustez temporal. El copiloto Gemini ya está integrado; su activación requiere la clave del servidor.
 
-Esta revisión está publicada en [Lunar Oracle](https://lunar-oracle-mission-control.gptcompartir.chatgpt.site), versión 3, conservando el acceso público sin cuenta ChatGPT. El análisis regional y el estudio local funcionan también allí. Gemini todavía requiere configurar GEMINI_API_KEY como secreto del servidor público; mientras tanto se muestra la guía identificada sin modelo IA. La clave de tu .env local no se sube con el despliegue.
+Esta revisión está publicada en [Lunar Oracle](https://lunar-oracle-mission-control.gptcompartir.chatgpt.site), con la revisión actual, conservando el acceso público sin cuenta ChatGPT. El análisis regional y el estudio local funcionan también allí. Gemini está configurado como secreto del servidor y se ha comprobado con generación real. Si el proveedor falla, la guía del sistema se identifica explícitamente; revisa el diagnóstico del copiloto. La clave de tu .env local no se sube con el despliegue.
