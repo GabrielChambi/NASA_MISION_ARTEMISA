@@ -898,7 +898,7 @@ export default function UnifiedMissionPlanner(){
     setPinnedTarget(pin)
     appendChatTurn(
       'assistant',
-      `📍 **Lugar fijado en el mapa lunar:** ${latStr}, ${lonStr} (Sector \`${cell.id}\`)\n* **Elevación LOLA:** ${cell.elevation_m!=null?Math.round(cell.elevation_m)+' m':'Desconocida'}\n* **Pendiente regional:** ${cell.regional_slope_deg!=null?cell.regional_slope_deg.toFixed(1)+'°':'Desconocida'}\n\n*Escribe una fecha para evaluar este destino y comparar el polo sur. Las condiciones se calculan con datos NASA para ese escenario; fijar un punto no implica que sea apto.*`
+      `**Lugar fijado en el mapa lunar:** ${latStr}, ${lonStr} (Sector \`${cell.id}\`)\n* **Elevación LOLA:** ${cell.elevation_m!=null?Math.round(cell.elevation_m)+' m':'Desconocida'}\n* **Pendiente regional:** ${cell.regional_slope_deg!=null?cell.regional_slope_deg.toFixed(1)+'°':'Desconocida'}\n\n*Escribe una fecha para evaluar este destino y comparar el polo sur. Las condiciones se calculan con datos NASA para ese escenario; fijar un punto no implica que sea apto.*`
     )
     if(plan&&polarById.has(cell.id)){
       choose(cell.id)
@@ -1342,7 +1342,7 @@ export default function UnifiedMissionPlanner(){
         ) : (
           <div className="one-moon-map" data-testid="mission-map">
             <Tactical3DScene latDeg={selected?.latitude_deg??pinnedTarget?.lat??-90} lonDeg={selected?.longitude_deg??pinnedTarget?.lon??0} observerHeightM={2} sunAzimuthDeg={current?.sun_azimuth_deg??0} sunElevationDeg={current?.sun_elevation_deg??0} earthAzimuthDeg={current?.earth_azimuth_deg??0} earthElevationDeg={current?.earth_elevation_deg??0} minSolarElevation={0} maxSlopeDeg={vehicle.center_of_gravity_tolerance} currentSlopeDeg={selected?.regional_slope_deg??pinnedTarget?.regional_slope_deg??NaN}
-              atlasData={atlas} focusTerrainData={detail} scientificSurfaceElevationM={selected?.elevation_m} sunRaycast={ray(current?.sun_elevation_deg,current?.sun_horizon_deg)} earthRaycast={ray(current?.earth_elevation_deg,current?.earth_horizon_deg)} cameraView="polar" siteName={selected?`${vehicle.lander_name} · Destino`:pinnedTarget?`📍 ${pinnedTarget.label}`:'Polo sur'}
+              atlasData={atlas} focusTerrainData={detail} scientificSurfaceElevationM={selected?.elevation_m} sunRaycast={ray(current?.sun_elevation_deg,current?.sun_horizon_deg)} earthRaycast={ray(current?.earth_elevation_deg,current?.earth_horizon_deg)} cameraView="polar" siteName={selected?`${vehicle.lander_name} · Destino`:pinnedTarget?`${pinnedTarget.label}`:'Polo sur'}
               overview focusZone={focus} onShadingStatus={setShadingStatus} cameraResetKey={cameraRevision+(focus?1:0)} missionMarkers={flight?[]:markers} onMarkerSelect={choose} polarSurface={polar} missionCoverage={coverageLayer} onCoverageSelect={choose} onCoverageHover={setHoveredId}
               onSurfacePlace={sampleMap} placementMode scienceReady={Boolean(current)} assessmentRisk={selected?.risk??'unknown'} showSurfaceVehicle={Boolean(flight)} altitudeM={telemetry?.altitudeM??0} landed={landed}
               solarPanelHeightM={vehicle.solar_panel_height} antennaHeightM={vehicle.antenna_height} landerName={vehicle.lander_name} vehiclePulseKey={vehiclePulseKey}

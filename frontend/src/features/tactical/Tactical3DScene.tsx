@@ -82,9 +82,9 @@ export function Tactical3DScene(props:Tactical3DSceneProps){
         </Html>)}
       </group>}
       {props.overview&&props.polarSelection&&props.atlasData&&<PolarSelection data={props.atlasData} cell={props.polarSelection}/>}
-      {props.atlasData&&props.pinnedTarget&&<PinnedPinMarker data={props.atlasData} pin={props.pinnedTarget}/>}
+      {props.atlasData&&props.pinnedTarget&&<PinnedPinMarker data={props.atlasData} pin={props.pinnedTarget} traverseRadiusKm={props.traverseRadiusKm} roverName={props.roverName} roverSpeed={props.roverSpeed}/>}
       {props.atlasData&&props.missionMarkers&&<MissionMarkers data={props.atlasData} markers={props.missionMarkers} onSelect={props.onMarkerSelect}/>}
-      {props.atlasData&&props.traverseRadiusKm&&props.traverseRadiusKm>0&&<RoverTraverseRange data={props.atlasData} lat={props.latDeg} lon={props.lonDeg} radiusKm={props.traverseRadiusKm} roverName={props.roverName} roverSpeed={props.roverSpeed}/>}
+      {props.atlasData&&props.traverseRadiusKm&&props.traverseRadiusKm>0&&<RoverTraverseRange data={props.atlasData} lat={props.latDeg} lon={props.lonDeg} radiusKm={props.traverseRadiusKm}/>}
       <Camera {...props} dragging={dragging}/>
     </Canvas>
     {props.atlasData&&!props.overview&&<div className="surface-destination" style={{borderColor:COLORS[props.assessmentRisk??'unknown']}}>
@@ -395,35 +395,48 @@ function MissionMarkers({data,markers,onSelect}:{data:AtlasData;markers:PlanMapM
   </group>
 }
 
-function PinnedPinMarker({data,pin}:{data:AtlasData;pin:{lat:number;lon:number;label?:string}}){
- const {tr}=useI18n()
+function PinnedPinMarker({
+  data,
+  pin,
+  traverseRadiusKm,
+  roverName,
+  roverSpeed
+}: {
+  data: AtlasData
+  pin: { lat: number; lon: number; label?: string }
+  traverseRadiusKm?: number | null
+  roverName?: string
+  roverSpeed?: number
+}){
+  const {tr}=useI18n()
 
   const surface=surfacePoint(data,pin.lat,pin.lon)
   if(!Number.isFinite(surface.position.y))return null
   const up=bodyDirection({latitude_deg:pin.lat,longitude_deg:pin.lon} as never,0,90)
   const rotation=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1),up)
   return (
-    <group position={surface.position.clone().addScaledVector(up,.35)} quaternion={rotation}>
+    <group position={surface.position.clone().addScaledVector(up,.08)} quaternion={rotation}>
+      {/* Delicate surface target reticle — clean ground indicator, no artificial pipe or cylinder */}
       <mesh renderOrder={40} raycast={()=>null}>
-        <ringGeometry args={[5.5,7.2,48]}/>
-        <meshBasicMaterial color="#38bdf8" transparent opacity={0.92} side={THREE.DoubleSide} depthTest={false} depthWrite={false}/>
-      </mesh>
-      <mesh renderOrder={39} raycast={()=>null}>
-        <circleGeometry args={[5.5,36]}/>
-        <meshBasicMaterial color="#38bdf8" transparent opacity={0.25} side={THREE.DoubleSide} depthTest={false} depthWrite={false}/>
+        <ringGeometry args={[1.0, 1.3, 48]}/>
+        <meshBasicMaterial color="#e2e8f0" transparent opacity={0.7} side={THREE.DoubleSide} depthTest={false} depthWrite={false}/>
       </mesh>
       <mesh renderOrder={41} raycast={()=>null}>
-        <circleGeometry args={[1.8,24]}/>
+        <circleGeometry args={[0.25, 20]}/>
         <meshBasicMaterial color="#ffffff" side={THREE.DoubleSide} depthTest={false} depthWrite={false}/>
-      </mesh>
-      <mesh position={[0,0,3.5]} rotation={[Math.PI/2,0,0]} renderOrder={42} raycast={()=>null}>
-        <cylinderGeometry args={[0.2,0.3,7,12]}/>
-        <meshBasicMaterial color="#38bdf8" depthTest={false}/>
       </mesh>
       <Html center zIndexRange={[50,35]}>
         <div className="tactical-pinned-flag">
-          <span className="pinned-flag-dot"/>
-          <strong>📍 {tr(pin.label??'Lugar fijado')}</strong>
+          <div className="pinned-flag-head">
+            <span className="pinned-flag-dot"/>
+            <strong>{tr(pin.label??'Lugar fijado')}</strong>
+          </div>
+          {traverseRadiusKm && traverseRadiusKm > 0 && (
+            <div className="pinned-rover-sub">
+              <span>{tr("Radio de travesía:")} <b>{traverseRadiusKm.toFixed(1)} km</b></span>
+              <small>{tr(roverName??'Rover')}{roverSpeed ? ` · ${roverSpeed} km/h` : ''} · {tr("ida y vuelta")}</small>
+            </div>
+          )}
         </div>
       </Html>
     </group>
@@ -435,46 +448,34 @@ function RoverTraverseRange({
   lat,
   lon,
   radiusKm,
-  roverName,
-  roverSpeed
 }: {
   data: AtlasData
   lat: number
   lon: number
   radiusKm: number
-  roverName?: string
-  roverSpeed?: number
 }) {
-  const {tr}=useI18n()
   const surface=surfacePoint(data,lat,lon)
   if(!Number.isFinite(surface.position.y))return null
   const up=bodyDirection({latitude_deg:lat,longitude_deg:lon} as never,0,90)
   const rotation=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1),up)
-  const pos=surface.position.clone().addScaledVector(up,0.2)
+  const pos=surface.position.clone().addScaledVector(up,0.06)
   return (
     <group position={pos} quaternion={rotation} name="rover-traverse-range">
-      {/* Declared geometric radius; no terrain traversal or energy calculation */}
+      {/* Outer exploration boundary ring (delicate and natural; declared geometric radius) */}
       <mesh renderOrder={32} raycast={()=>null}>
-        <ringGeometry args={[radiusKm*0.96, radiusKm, 80]}/>
-        <meshBasicMaterial color="#38bdf8" transparent opacity={0.82} side={THREE.DoubleSide} depthTest={false} depthWrite={false}/>
+        <ringGeometry args={[radiusKm*0.98, radiusKm, 96]}/>
+        <meshBasicMaterial color="#94a3b8" transparent opacity={0.45} side={THREE.DoubleSide} depthTest={false} depthWrite={false}/>
       </mesh>
       {/* Illustrative disk; this does not identify traversable ground */}
       <mesh renderOrder={31} raycast={()=>null}>
-        <circleGeometry args={[radiusKm*0.96, 64]}/>
-        <meshBasicMaterial color="#0284c7" transparent opacity={0.12} side={THREE.DoubleSide} depthTest={false} depthWrite={false}/>
+        <circleGeometry args={[radiusKm*0.98, 64]}/>
+        <meshBasicMaterial color="#38bdf8" transparent opacity={0.05} side={THREE.DoubleSide} depthTest={false} depthWrite={false}/>
       </mesh>
-      {/* Half-radius reference, without a return-path or vehicle-energy guarantee */}
+      {/* Mid-range reference ring */}
       <mesh renderOrder={32} raycast={()=>null}>
-        <ringGeometry args={[radiusKm*0.48, radiusKm*0.50, 48]}/>
-        <meshBasicMaterial color="#38bdf8" transparent opacity={0.38} side={THREE.DoubleSide} depthTest={false} depthWrite={false}/>
+        <ringGeometry args={[radiusKm*0.49, radiusKm*0.50, 64]}/>
+        <meshBasicMaterial color="#94a3b8" transparent opacity={0.25} side={THREE.DoubleSide} depthTest={false} depthWrite={false}/>
       </mesh>
-      {/* Label hovering on the perimeter */}
-      <Html position={[radiusKm*0.72, radiusKm*0.72, 0.5]} center zIndexRange={[45,30]}>
-        <div className="rover-range-badge" title={tr("Radio geométrico declarado. No calcula rutas, pendientes, consumo ni retorno seguro.")}>
-          <span className="rover-badge-title">🚗 {tr("Radio geométrico:")} <b>{radiusKm.toFixed(1)} km</b></span>
-          <small>{tr(roverName??'Rover')}{roverSpeed ? ` · ${roverSpeed} km/h` : ''} · {tr("sin ruta calculada")}</small>
-        </div>
-      </Html>
     </group>
   )
 }
