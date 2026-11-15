@@ -123,6 +123,18 @@ try{
   const text=JSON.stringify(review).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
   check('The lander review avoids unverified survival and energy/link guarantees',!/energia nominal|enlace garantizado|starship.{0,30}sobrevive/.test(text))
  }
+ const intervals=restored.best.time_series.slice(0,-1)
+ for(const [target,index] of [['sun',0],['earth',1]]){
+  const row=page.locator('.status-bar-row').nth(index),segments=row.locator('.bar-segments .seg')
+  check(target+' timeline covers intervals without adding an hour at its final boundary',await segments.count()===restored.mission.surface_hours&&intervals.length===restored.mission.surface_hours)
+  const visibleCount=intervals.filter(sample=>sample[target+'_elevation_deg']-sample[target+'_horizon_deg']>0.3).length
+  check(target+' timeline matches NASA geometric clearance samples',await row.locator('.seg.'+target+'-ok').count()===visibleCount)
+ }
+ const sectorBefore=await page.locator('.selected-sector-id').innerText(),callsBefore=scientificRequestCount()
+ await page.getByRole('button',{name:'Pantalla grande',exact:true}).click()
+ check('The map can expand without replacing the active mission',await page.locator('.unified-mission.map-is-fullscreen').count()===1&&!await page.locator('.trip-panel').isVisible()&&!await page.locator('.mission-decisions').isVisible())
+ await page.keyboard.press('Escape')
+ check('Escape restores the selected sector and does not recalculate the mission',await page.locator('.unified-mission.map-is-fullscreen').count()===0&&await page.locator('.selected-sector-id').innerText()===sectorBefore&&scientificRequestCount()===callsBefore)
  await page.screenshot({path:path('vehicle-profile-reference.png'),fullPage:true})
  await page.setViewportSize({width:390,height:844})
  await page.locator('.composer-catalog-btn').click()
