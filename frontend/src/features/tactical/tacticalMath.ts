@@ -132,7 +132,7 @@ export function sampleLolaHeight(
   const rowF = (sample_extent_m.ymax - yM) / display_spacing_m
 
   if (colF < 0 || colF >= grid_size - 1 || rowF < 0 || rowF >= grid_size - 1) {
-    return 0
+    return NaN
   }
 
   const c0 = Math.floor(colF)
@@ -145,7 +145,7 @@ export function sampleLolaHeight(
 
   const getH = (r: number, c: number): number => {
     const raw = heights[r * grid_size + c]
-    if (raw === nodata) return 0
+    if (raw === nodata) return NaN
     return raw * scale_m + offset_m
   }
 
@@ -191,83 +191,31 @@ export interface RaycastHit {
  * Returns exact collision distance, impact coordinates, and angular clearance margin.
  */
 export function raycastTerrainObstruction(
-  siteLat: number,
-  siteLon: number,
-  observerHeightM: number,
-  azimuthDeg: number,
-  targetElevationDeg: number,
-  heights: Uint16Array,
-  manifest: AtlasManifest,
-  exaggeration = TERRAIN_EXAGGERATION,
-  maxDistanceKm = 80.0
+  siteLat: number, siteLon: number, observerHeightM: number,
+  azimuthDeg: number, targetElevationDeg: number, heights: Uint16Array,
+  manifest: AtlasManifest, exaggeration = TERRAIN_EXAGGERATION, maxDistanceKm = 80
 ): RaycastHit {
-  const [startX, startY] = latLonToStereoM(siteLat, siteLon, manifest.radius_m)
-  const startTerrainH = sampleLolaHeight(startX, startY, heights, manifest)
-  const eyeAltitudeM = startTerrainH + observerHeightM
-
-  const startSurface = sampleExactMeshSurface(siteLat, siteLon, heights, manifest, exaggeration, MESH_STRIDE)
-  const rayOriginWorld = startSurface.position.clone().add(new THREE.Vector3(0, 0.35, 0))
-  const rayDirWorld = topocentricToWorldDirection(siteLat, siteLon, azimuthDeg, targetElevationDeg)
-
-  const azRad = azimuthDeg * (Math.PI / 180)
-  const elRad = targetElevationDeg * (Math.PI / 180)
-  const tanEl = Math.tan(elRad)
-
-  const dxStep = Math.sin(azRad)
-  const dyStep = Math.cos(azRad)
-
-  const stepSizeM = 250 // 250 meters per ray sampling step
-  const maxSteps = Math.floor((maxDistanceKm * 1000) / stepSizeM)
-
-  let maxObstacleAngleDeg = -90
-
-  for (let i = 1; i <= maxSteps; i++) {
-    const distM = i * stepSizeM
-    const curX = startX + dxStep * distM
-    const curY = startY + dyStep * distM
-
-    // Curvature drop: drop = dist^2 / (2 * R_moon)
-    const curvatureDropM = (distM * distM) / (2 * manifest.radius_m)
-
-    // Physical ray height above reference sphere
-    const rayH = eyeAltitudeM + distM * tanEl - curvatureDropM
-
-    // Terrain height from NASA LOLA
-    const terrainH = sampleLolaHeight(curX, curY, heights, manifest)
-
-    // Compute angular elevation of this terrain point seen from observer
-    const deltaH = terrainH - eyeAltitudeM + curvatureDropM
-    const pointAngleDeg = Math.atan2(deltaH, distM) * (180 / Math.PI)
-    if (pointAngleDeg > maxObstacleAngleDeg) {
-      maxObstacleAngleDeg = pointAngleDeg
-    }
-
-    // Direct physical collision check: ray dips below terrain
-    if (terrainH >= rayH && pointAngleDeg > targetElevationDeg) {
-      // Collision detected! Place hit point strictly along the 3D ray at the mountain intersection
-      const hitWorld = rayOriginWorld.clone().addScaledVector(rayDirWorld, distM / 1000)
-      return {
-        hit: true,
-        hitDistanceM: distM,
-        hitPositionWorld: hitWorld,
-        obstacleElevationDeg: pointAngleDeg,
-        marginDeg: targetElevationDeg - pointAngleDeg,
-      }
-    }
+  const [x0,y0]=latLonToStereoM(siteLat,siteLon,manifest.radius_m)
+  const eye=sampleLolaHeight(x0,y0,heights,manifest)+observerHeightM
+  const unknown:RaycastHit={hit:true,hitDistanceM:NaN,hitPositionWorld:null,obstacleElevationDeg:NaN,marginDeg:NaN}
+  if(![eye,azimuthDeg,targetElevationDeg,observerHeightM].every(Number.isFinite))return unknown
+  const lat=siteLat*Math.PI/180,lon=siteLon*Math.PI/180,az=azimuthDeg*Math.PI/180,R=manifest.radius_m
+  let maxAngle=-90,hitDistance=NaN,position:THREE.Vector3|null=null,hit=false
+  for(let d=Math.max(5,manifest.display_spacing_m/2);d<=maxDistanceKm*1000;d+=Math.max(5,manifest.display_spacing_m/2)){
+    const arc=d/R
+    const p=Math.asin(Math.sin(lat)*Math.cos(arc)+Math.cos(lat)*Math.sin(arc)*Math.cos(az))
+    const l=lon+Math.atan2(Math.sin(az)*Math.sin(arc)*Math.cos(lat),Math.cos(arc)-Math.sin(lat)*Math.sin(p))
+    const [x,y]=latLonToStereoM(p*180/Math.PI,l*180/Math.PI,R)
+    const h=sampleLolaHeight(x,y,heights,manifest)
+    if(!Number.isFinite(h))return unknown
+    const angle=Math.atan2((R+h)*Math.cos(arc)-(R+eye),(R+h)*Math.sin(arc))*180/Math.PI
+    maxAngle=Math.max(maxAngle,angle)
+    if(!hit&&targetElevationDeg<=angle){hit=true;hitDistance=d;position=projectStereoTo3D(x,y,h,exaggeration,R)}
   }
-
-  return {
-    hit: false,
-    hitDistanceM: maxDistanceKm * 1000,
-    hitPositionWorld: null,
-    obstacleElevationDeg: maxObstacleAngleDeg,
-    marginDeg: targetElevationDeg - maxObstacleAngleDeg,
-  }
+  if(maxAngle===-90)return unknown
+  return {hit,hitDistanceM:hitDistance,hitPositionWorld:position,obstacleElevationDeg:maxAngle,marginDeg:targetElevationDeg-maxAngle}
 }
 
-/**
- * Projects stereographic coordinates to 3D world coordinates on the Moon sphere.
- */
 export function projectStereoTo3D(
   xM: number,
   yM: number,
@@ -300,10 +248,14 @@ export function sampleExactStereoMeshPoint(
   exaggeration = TERRAIN_EXAGGERATION,
   stride = MESH_STRIDE
 ): ExactSurfaceSample {
+  const bounds = manifest.sample_extent_m
+  if (![xM,yM].every(Number.isFinite) || xM<bounds.xmin || xM>bounds.xmax || yM<bounds.ymin || yM>bounds.ymax) {
+    return {position:new THREE.Vector3(NaN,NaN,NaN),normal:new THREE.Vector3(0,1,0),elevationM:NaN}
+  }
   const grid = Math.floor((manifest.grid_size - 1) / stride) + 1
   const cellSpacing = manifest.display_spacing_m * stride
-  const colF = THREE.MathUtils.clamp((xM - manifest.sample_extent_m.xmin) / cellSpacing, 0, grid - 1.0001)
-  const rowF = THREE.MathUtils.clamp((manifest.sample_extent_m.ymax - yM) / cellSpacing, 0, grid - 1.0001)
+  const colF = THREE.MathUtils.clamp((xM - manifest.sample_extent_m.xmin) / cellSpacing, 0, grid - 1.000000001)
+  const rowF = THREE.MathUtils.clamp((manifest.sample_extent_m.ymax - yM) / cellSpacing, 0, grid - 1.000000001)
 
   const col = Math.floor(colF)
   const row = Math.floor(rowF)
@@ -314,7 +266,7 @@ export function sampleExactStereoMeshPoint(
     const sr = Math.min(manifest.grid_size - 1, r * stride)
     const sc = Math.min(manifest.grid_size - 1, c * stride)
     const encoded = heights[sr * manifest.grid_size + sc]
-    const h = encoded === manifest.nodata ? 0 : encoded * manifest.scale_m + manifest.offset_m
+    const h = encoded === manifest.nodata ? NaN : encoded * manifest.scale_m + manifest.offset_m
     const vx = manifest.sample_extent_m.xmin + sc * manifest.display_spacing_m
     const vy = manifest.sample_extent_m.ymax - sr * manifest.display_spacing_m
     return {
@@ -417,95 +369,4 @@ export function topocentricToWorldDirection(
     .addScaledVector(north, Math.cos(az) * Math.cos(el))
     .addScaledVector(up, Math.sin(el))
     .normalize()
-}
-
-export interface EphemerisPoint {
-  hour: number
-  dateUtc: string
-  sunAzimuthDeg: number
-  sunElevationDeg: number
-  earthAzimuthDeg: number
-  earthElevationDeg: number
-  sunObstacleDeg: number
-  earthObstacleDeg: number
-  sunClear: boolean
-  earthClear: boolean
-}
-
-/**
- * Generates an astronomical 14-day timeline (336 hours) of topocentric solar and Earth
- * coordinates for the lunar south pole based on NASA DE441 mechanics.
- */
-export function generate14DayTimeline(
-  startEpochUtc: string,
-  latDeg: number,
-  lonDeg: number,
-  heights?: Uint16Array,
-  manifest?: AtlasManifest,
-  minSolarElevation = 1.5
-): EphemerisPoint[] {
-  const baseDate = new Date(startEpochUtc)
-  const points: EphemerisPoint[] = []
-
-  // Day offset from reference epoch (2026-11-14T09:00Z)
-  const refEpoch = Date.parse('2026-11-14T09:00:00Z')
-  const requestedEpoch = baseDate.getTime()
-  const daysDiff = (requestedEpoch - refEpoch) / (86400 * 1000)
-
-  // Solar synodic rotation rate: ~12.19° per Earth day (~0.508°/hour)
-  // Earth sidereal/draconic libration: ~27.3 day cycle
-  for (let h = 0; h <= 336; h += 2) {
-    const timeMs = requestedEpoch + h * 3600 * 1000
-    const pointDate = new Date(timeMs)
-    const tDays = daysDiff + h / 24
-
-    // Topocentric Solar Azimuth & Elevation
-    // Starting base at Shackleton on Nov 14 is az ~152.2°, el ~1.85° (clear over low ridge)
-    const sunAz = ((152.26 + tDays * 12.19 + (lonDeg + 160.0)) % 360 + 360) % 360
-
-    // Solar elevation: on Nov 14 (~Day 0) elevation is ~1.9° (> 1.5° threshold).
-    // On Nov 20 (~Day 6, delay scenario), azimuth reaches the western crater massif (220°-245°).
-    // Topographic ridge obstruction from Shackleton Rim rises to +2.4° in that direction.
-    const baseSunEl = 1.85 + 0.55 * Math.sin(((tDays - 1.5) / 29.53) * 2 * Math.PI) + (Math.abs(latDeg) - 89.70) * 0.2
-    const sunEl = Number(baseSunEl.toFixed(3))
-
-    // Topocentric Earth Azimuth & Elevation (librating around ~203° az, ~4.8° el)
-    const earthAz = ((203.29 + 6.8 * Math.sin((tDays / 27.3) * 2 * Math.PI)) % 360 + 360) % 360
-    const earthEl = Number((4.82 + 5.9 * Math.cos(((tDays + 2) / 27.3) * 2 * Math.PI) + (90 + latDeg) * 0.85).toFixed(3))
-
-    let sunObstacle = 0
-    let earthObstacle = 0
-    let sunClear = sunEl >= minSolarElevation
-    let earthClear = earthEl >= 0.0
-
-    if (heights && manifest) {
-      const sunCheck = raycastTerrainObstruction(latDeg, lonDeg, 2.0, sunAz, sunEl, heights, manifest, 1.0, 50.0)
-      const earthCheck = raycastTerrainObstruction(latDeg, lonDeg, 2.0, earthAz, earthEl, heights, manifest, 1.0, 50.0)
-      sunObstacle = sunCheck.obstacleElevationDeg
-      earthObstacle = earthCheck.obstacleElevationDeg
-
-      // Shadow hazard condition when delayDays >= 6 and longitude is at base (-160.0)
-      // At Nov 20, the western ridge massif blocks the sun ray at T+4h unless shifted to higher crest (-158.5)
-      const isWesternMassifShadow = daysDiff >= 5.5 && daysDiff <= 7.5 && lonDeg <= -159.5 && (sunAz >= 215 && sunAz <= 250)
-      const isBlockedByTerrain = sunCheck.hit || isWesternMassifShadow
-
-      sunClear = !isBlockedByTerrain && sunEl >= minSolarElevation
-      earthClear = !earthCheck.hit && earthEl >= 0.0
-    }
-
-    points.push({
-      hour: h,
-      dateUtc: pointDate.toISOString().slice(0, 16).replace('T', ' ') + ' UTC',
-      sunAzimuthDeg: sunAz,
-      sunElevationDeg: sunEl,
-      earthAzimuthDeg: earthAz,
-      earthElevationDeg: earthEl,
-      sunObstacleDeg: sunObstacle,
-      earthObstacleDeg: earthObstacle,
-      sunClear,
-      earthClear,
-    })
-  }
-
-  return points
 }

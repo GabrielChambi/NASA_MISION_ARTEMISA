@@ -1,3 +1,4 @@
+import {openReferencePlanner} from './browser-helpers.mjs'
 import {chromium} from 'playwright'
 import assert from 'node:assert/strict'
 import {mkdir} from 'node:fs/promises'
@@ -12,7 +13,7 @@ page.setDefaultTimeout(30000)
 const errors=[];page.on('pageerror',e=>errors.push(e.message))
 const screenshot=async name=>page.locator('.atlas-viewport').screenshot({path:fileURLToPath(new URL(name+'.png',out))})
 try{
-  await page.goto(base,{waitUntil:'domcontentloaded'})
+  await page.goto(base,{waitUntil:'domcontentloaded'});await openReferencePlanner(page)
   await page.getByRole('button',{name:'Explore NASA data',exact:true}).click()
   const atlas=page.getByRole('region',{name:'NASA lunar south pole 3D terrain atlas'})
   await atlas.getByRole('button',{name:'Inspect lunar feature Shackleton',exact:true}).waitFor()

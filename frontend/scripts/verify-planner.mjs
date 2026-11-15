@@ -1,3 +1,4 @@
+import {openReferencePlanner} from './browser-helpers.mjs'
 import {chromium} from 'playwright'
 import assert from 'node:assert/strict'
 import {mkdir,readFile} from 'node:fs/promises'
@@ -20,7 +21,7 @@ const range=async(label,value)=>page.getByLabel(label,{exact:true}).evaluate((el
 },value)
 const done=async(label)=>{const max=await page.getByLabel(label,{exact:true}).getAttribute('max');await range(label,Number(max))}
 try {
-  await page.goto(base,{waitUntil:'domcontentloaded'});await ready()
+  await page.goto(base,{waitUntil:'domcontentloaded'});await openReferencePlanner(page);await ready()
   assert.match(await page.title(),/Planificador/)
   assert.equal(await page.getByTestId('comparison-site01').count(),1)
   assert.equal(await page.getByTestId('comparison-site04').count(),1)
@@ -102,7 +103,7 @@ try {
   console.log('PASS: NASA failure removes stale metrics and prevents starting a flight')
   for (const width of [390,360,768,1500]) {
     await page.setViewportSize({width,height:width>1000?1100:844})
-    await page.reload({waitUntil:'domcontentloaded'});await ready()
+    await page.reload({waitUntil:'domcontentloaded'});await openReferencePlanner(page);await ready()
     await page.evaluate(()=>window.scrollTo(0,0))
     await page.waitForTimeout(1200)
     if(width===390)assert.ok(await page.locator('.planner-map-anchor').evaluate(el=>el.getBoundingClientRect().top<600),'Map must appear before the long form on mobile')

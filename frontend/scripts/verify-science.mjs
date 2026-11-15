@@ -1,3 +1,4 @@
+import {openReferencePlanner} from './browser-helpers.mjs'
 import { chromium } from 'playwright'
 import assert from 'node:assert/strict'
 import { mkdir } from 'node:fs/promises'
@@ -24,7 +25,7 @@ const screenshot = async name => {
 const noOverflow = async () => assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'Horizontal overflow')
 
 try {
-  await page.goto(process.env.LUNAR_ORACLE_TEST_URL || 'http://127.0.0.1:5173/', { waitUntil: 'domcontentloaded' })
+  await page.goto(process.env.LUNAR_ORACLE_TEST_URL || 'http://127.0.0.1:5173/', { waitUntil: 'domcontentloaded' });await openReferencePlanner(page)
   await page.getByRole('button', { name: 'Explore NASA data' }).click()
   const workspace = page.getByRole('region', { name: 'Lunar scientific workspace' })
   await workspace.getByRole('button', { name: 'Select Connecting ridge', exact: true }).waitFor()
