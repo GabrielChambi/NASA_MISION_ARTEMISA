@@ -4,7 +4,11 @@ import numpy as np
 from datetime import datetime,timezone
 from fastapi import APIRouter,Request
 from fastapi.responses import JSONResponse
-from spiceypy.utils.exceptions import SpiceyError
+try:
+    from spiceypy.utils.exceptions import SpiceyError
+except ImportError:
+    class SpiceyError(Exception):
+        pass
 from . import operations
 from .engineering_models import coupled_scenario,thermal_config,rf_config,BATTERY_CURVE,battery_factors
 from .spice_service import compare_samples,SpiceUnavailable
