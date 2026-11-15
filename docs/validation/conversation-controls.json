@@ -1,6 +1,6 @@
 {
-  "checked_at_utc": "2026-11-15T17:21:29.687900+00:00",
-  "scope": "Local Python API and real Chrome, including merged interactive pin and complete south-pole coverage",
+  "checked_at_utc": "2026-11-15T17:25:05.639892+00:00",
+  "scope": "Local Python API and real Chrome, including merged interactive pin, complete south-pole coverage and manual-settings gear",
   "base_url": "http://127.0.0.1:5173/",
   "unit_tests": {
     "python_passed": 277,

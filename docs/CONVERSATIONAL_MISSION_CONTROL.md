@@ -57,7 +57,7 @@ El resumen principal separa tres estados:
 
 Un sector verde regional no implica presupuesto energético suficiente ni huella segura. Los datos de 80 m no resuelven una huella pequeña de la nave. Los estados pendientes permanecen explícitos.
 
-Las mediciones detalladas del copiloto se pueden desplegar. El JSON descargado conserva el historial reciente de conversación, fechas interpretadas, centro de lanzamiento, parámetros, fuentes, estudios y propuestas aplicadas. Ese registro permite revisar qué se pidió, qué se cambió y qué se calculó.
+Las mediciones detalladas del copiloto se pueden desplegar. El engranaje superior abre las preferencias; si un valor es incompatible, muestra el error y mantiene abierto el formulario para corregirlo. Escape permite cerrarlo. El JSON descargado conserva el historial reciente de conversación, fechas interpretadas, centro de lanzamiento, parámetros, fuentes, estudios y propuestas aplicadas. Ese registro permite revisar qué se pidió, qué se cambió y qué se calculó.
 
 ## Reproducir
 

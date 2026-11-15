@@ -936,7 +936,10 @@ export default function UnifiedMissionPlanner(){
               type="button"
               className={'chat-settings-gear-btn'+(preferences?' active':'')}
               onClick={()=>setPreferences(v=>!v)}
-              aria-label={t.manualSettings}
+              aria-label={intent?'Cambiar fecha o requisitos':t.manualSettings}
+              aria-expanded={preferences}
+              aria-controls="mission-manual-settings"
+              aria-haspopup="dialog"
               title={t.manualSettings}
             >
               <Settings2 size={16}/>
@@ -946,10 +949,10 @@ export default function UnifiedMissionPlanner(){
         </div>
 
         {preferences&&(
-          <div className="chat-manual-modal" role="dialog" aria-modal="true" aria-label="Ajustes y requisitos manuales">
+          <div id="mission-manual-settings" className="chat-manual-modal" role="dialog" aria-label="Ajustes y requisitos manuales" onKeyDown={e=>{if(e.key==='Escape')setPreferences(false)}}>
             <div className="manual-modal-head">
               <strong>{plan?'Cambiar fecha o requisitos':'Ajustes y Requisitos Manuales'}</strong>
-              <button type="button" onClick={()=>setPreferences(false)} aria-label="Cerrar ajustes"><X size={15}/></button>
+              <button type="button" autoFocus onClick={()=>setPreferences(false)} aria-label="Cerrar ajustes"><X size={15}/></button>
             </div>
             <div className="trip-preferences">
               {intent&&<label>{intent.date_kind==='landing'?'Fecha de alunizaje':'Fecha de salida'} · {TIMEZONE}<input aria-label="Fecha de viaje" type="datetime-local" value={departureInput} onChange={e=>{clearResult();setDepartureInput(e.target.value)}}/></label>}
@@ -957,8 +960,8 @@ export default function UnifiedMissionPlanner(){
               <label>Pendiente regional máxima · grados<input aria-label="Pendiente máxima" type="number" min={0} max={45} value={slope} onChange={e=>{clearResult();setSlope(Number(e.target.value))}}/></label>
               <label>Horas mínimas de Sol<input aria-label="Horas mínimas de Sol" type="number" min={0} max={Number(stay)} value={sunHours} onChange={e=>{clearResult();setSunHours(Number(e.target.value))}}/></label>
               <label>Horas mínimas de Tierra visible<input aria-label="Horas mínimas de Tierra" type="number" min={0} max={Number(stay)} value={earthHours} onChange={e=>{clearResult();setEarthHours(Number(e.target.value))}}/></label>
-              <p>El viaje de ida y vuelta se estima por separado. La estancia no es la duración total.</p>
-              {intent&&<button type="button" onClick={()=>{setPreferences(false);void recalculate()}} disabled={Boolean(busy)}>Recalcular con estos cambios</button>}
+              <p>El viaje de ida y vuelta se estima por separado. La estancia no es la duración total. Los perfiles del catálogo son hipótesis editables, no fichas verificadas del fabricante.</p>{(error||loadError)&&<p className="trip-error" role="alert">{error||loadError}</p>}
+              {intent&&<button type="button" onClick={()=>void recalculate()} disabled={Boolean(busy)}>Recalcular con estos cambios</button>}
             </div>
           </div>
         )}
@@ -1045,7 +1048,7 @@ export default function UnifiedMissionPlanner(){
           <div ref={chatEndRef}/>
         </div>
 
-        {(error||loadError)&&<div className="trip-error" role="alert">{error||loadError}{loadError&&<button onClick={()=>setRetry(r=>r+1)}>Reintentar datos</button>}</div>}
+        {!preferences&&(error||loadError)&&<div className="trip-error" role="alert">{error||loadError}{loadError&&<button onClick={()=>setRetry(r=>r+1)}>Reintentar datos</button>}</div>}
         {!atlas&&!loadError&&<p className="loading-note">Cargando el relieve lunar…</p>}
 
         {/* ChatGPT / Gemini style unified composer with single + (.json/.gltf) and Lunar Object Selector */}
