@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowRight, Bot, Check, ChevronDown, CircleHelp, Compass, Cpu, Download, Globe2, Layers, LoaderCircle, MapPin, Maximize2, Minimize2, Orbit, PanelBottom, PanelLeft, PanelRight, Pause, Play, Plus, Rocket, Send, Settings2, Sun, X } from 'lucide-react'
 
 import { Tactical3DScene,type PlanMapMarker } from '../tactical/Tactical3DScene'
+import LunarObject3DViewer from '../tactical/LunarObject3DViewer'
 import { loadAtlas,type AtlasData } from '../sites/atlasGeometry'
 import { loadDetailTile } from '../sites/lunarDetail'
 import { validatePolarSurface, type PolarSurface } from '../tactical/polarScience'
@@ -323,6 +324,7 @@ export default function UnifiedMissionPlanner(){
   const [landerReview,setLanderReview]=useState<LanderReview|null>(null),[reviewBusy,setReviewBusy]=useState(false)
   const [catalogOpen,setCatalogOpen]=useState(false),[composerDrag,setComposerDrag]=useState(false)
   const [visibilityModalTarget,setVisibilityModalTarget]=useState<'sun'|'earth'|null>(null)
+  const [viewMode,setViewMode]=useState<'map'|'vehicle'>('map')
   const [mapFullscreen,setMapFullscreen]=useState(false)
   const [hideLeftPanel,setHideLeftPanel]=useState(false),[hideRightPanel,setHideRightPanel]=useState(false),[hideTimelinePanel,setHideTimelinePanel]=useState(false)
   const [chatTurns,setChatTurns]=useState<ChatTurn[]>([])
@@ -1253,10 +1255,43 @@ export default function UnifiedMissionPlanner(){
             {(vehicle.is_rover||vehicle.category==='Rover y Movilidad')&&<span className="rover-range-indicator"><Compass size={12}/>{" "}{tr("Radio de acción:")}{" "}<b>{vehicle.nominal_range_km??15} km</b>{" "}<small>({tr("ida y vuelta")})</small></span>}
           </div>
           <div className="one-map-actions">
-            <button onClick={()=>{setFocus(false);setFlight(null);setFlying(false);setCameraRevision(r=>r+1)}} aria-pressed={!focus}>{tr("Todo el polo")}</button>
-            <button disabled={!selected||selected.latitude_deg> -80||selected.elevation_m==null} onClick={()=>{setFocus(true);setCameraRevision(r=>r+1)}} aria-pressed={focus}>{tr("Acercar destino")}</button>
-            <button disabled={!plan} onClick={()=>document.querySelector('.mission-operations')?.scrollIntoView({behavior:'smooth',block:'start'})}>{tr("Estudio de misión")}</button>
-            <button onClick={()=>{setMapFullscreen(v=>!v);setTimeout(()=>setCameraRevision(r=>r+1),60)}} aria-pressed={mapFullscreen} title={tr(mapFullscreen?'Salir de pantalla grande (Esc)':'Ver vistazo de la Luna en pantalla grande')}>
+            <button
+              type="button"
+              onClick={()=>{setViewMode('map');setFocus(false);setFlight(null);setFlying(false);setCameraRevision(r=>r+1)}}
+              aria-pressed={viewMode==='map'&&!focus}
+            >
+              {tr("Todo el polo")}
+            </button>
+            <button
+              type="button"
+              disabled={!selected||selected.latitude_deg> -80||selected.elevation_m==null}
+              onClick={()=>{setViewMode('map');setFocus(true);setCameraRevision(r=>r+1)}}
+              aria-pressed={viewMode==='map'&&focus}
+            >
+              {tr("Acercar destino")}
+            </button>
+            <button
+              type="button"
+              className="vehicle-3d-tab-btn"
+              onClick={()=>setViewMode(v=>v==='vehicle'?'map':'vehicle')}
+              aria-pressed={viewMode==='vehicle'}
+              title={tr("Visualizar nave o rover en 3D con giro automático")}
+            >
+              <Orbit size={13}/>{" "}{tr("Vehículo 3D")}
+            </button>
+            <button
+              type="button"
+              disabled={!plan}
+              onClick={()=>document.querySelector('.mission-operations')?.scrollIntoView({behavior:'smooth',block:'start'})}
+            >
+              {tr("Estudio de misión")}
+            </button>
+            <button
+              type="button"
+              onClick={()=>{setMapFullscreen(v=>!v);setTimeout(()=>setCameraRevision(r=>r+1),60)}}
+              aria-pressed={mapFullscreen}
+              title={tr(mapFullscreen?'Salir de pantalla grande (Esc)':'Ver vistazo de la Luna en pantalla grande')}
+            >
               {mapFullscreen?<Minimize2 size={13}/>:<Maximize2 size={13}/>}
               {tr(mapFullscreen?'Salir de pantalla grande':'Pantalla grande')}
             </button>
@@ -1294,33 +1329,41 @@ export default function UnifiedMissionPlanner(){
             </div>
           </div>
         </div>
-        <div className="one-moon-map" data-testid="mission-map">
-          <Tactical3DScene latDeg={selected?.latitude_deg??pinnedTarget?.lat??-90} lonDeg={selected?.longitude_deg??pinnedTarget?.lon??0} observerHeightM={2} sunAzimuthDeg={current?.sun_azimuth_deg??0} sunElevationDeg={current?.sun_elevation_deg??0} earthAzimuthDeg={current?.earth_azimuth_deg??0} earthElevationDeg={current?.earth_elevation_deg??0} minSolarElevation={0} maxSlopeDeg={vehicle.center_of_gravity_tolerance} currentSlopeDeg={selected?.regional_slope_deg??pinnedTarget?.regional_slope_deg??NaN}
-            atlasData={atlas} focusTerrainData={detail} scientificSurfaceElevationM={selected?.elevation_m} sunRaycast={ray(current?.sun_elevation_deg,current?.sun_horizon_deg)} earthRaycast={ray(current?.earth_elevation_deg,current?.earth_horizon_deg)} cameraView="polar" siteName={selected?`${vehicle.lander_name} · Destino`:pinnedTarget?`📍 ${pinnedTarget.label}`:'Polo sur'}
-            overview focusZone={focus} onShadingStatus={setShadingStatus} cameraResetKey={cameraRevision+(focus?1:0)} missionMarkers={flight?[]:markers} onMarkerSelect={choose} polarSurface={polar} missionCoverage={coverageLayer} onCoverageSelect={choose} onCoverageHover={setHoveredId}
-            onSurfacePlace={sampleMap} placementMode scienceReady={Boolean(current)} assessmentRisk={selected?.risk??'unknown'} showSurfaceVehicle={Boolean(flight)} altitudeM={telemetry?.altitudeM??0} landed={landed}
-            solarPanelHeightM={vehicle.solar_panel_height} antennaHeightM={vehicle.antenna_height} landerName={vehicle.lander_name} vehiclePulseKey={vehiclePulseKey}
-            pinnedTarget={pinnedTarget}
-            traverseRadiusKm={vehicle.is_rover||vehicle.category==='Rover y Movilidad'?(vehicle.nominal_range_km??15):null}
-            roverName={vehicle.lander_name} roverSpeed={vehicle.speed_km_h}/>
-          <div className="one-map-source"><span>{tr(plan&&coverageVisible&&!flight?'Evaluación de toda la superficie':'NASA LOLA · relieve continuo')}</span><small>{tr(focus&&detail?'Detalle visual ~396 m · fuente 80 m':shadingStatus.includes('no disponible')?'Sombreado no disponible; relieve conservado':'Vista regional · fuente de 80 m')}{tr(visualStatus.includes('no disponible')?' · '+visualStatus:'')}</small><small>{tr("Nave y astros en escala ilustrativa.")}</small></div>
+        {viewMode === 'vehicle' ? (
+          <LunarObject3DViewer
+            activeVehicle={vehicle}
+            onSelectVehicle={applyVehicleProfile}
+            onClose={() => setViewMode('map')}
+          />
+        ) : (
+          <div className="one-moon-map" data-testid="mission-map">
+            <Tactical3DScene latDeg={selected?.latitude_deg??pinnedTarget?.lat??-90} lonDeg={selected?.longitude_deg??pinnedTarget?.lon??0} observerHeightM={2} sunAzimuthDeg={current?.sun_azimuth_deg??0} sunElevationDeg={current?.sun_elevation_deg??0} earthAzimuthDeg={current?.earth_azimuth_deg??0} earthElevationDeg={current?.earth_elevation_deg??0} minSolarElevation={0} maxSlopeDeg={vehicle.center_of_gravity_tolerance} currentSlopeDeg={selected?.regional_slope_deg??pinnedTarget?.regional_slope_deg??NaN}
+              atlasData={atlas} focusTerrainData={detail} scientificSurfaceElevationM={selected?.elevation_m} sunRaycast={ray(current?.sun_elevation_deg,current?.sun_horizon_deg)} earthRaycast={ray(current?.earth_elevation_deg,current?.earth_horizon_deg)} cameraView="polar" siteName={selected?`${vehicle.lander_name} · Destino`:pinnedTarget?`📍 ${pinnedTarget.label}`:'Polo sur'}
+              overview focusZone={focus} onShadingStatus={setShadingStatus} cameraResetKey={cameraRevision+(focus?1:0)} missionMarkers={flight?[]:markers} onMarkerSelect={choose} polarSurface={polar} missionCoverage={coverageLayer} onCoverageSelect={choose} onCoverageHover={setHoveredId}
+              onSurfacePlace={sampleMap} placementMode scienceReady={Boolean(current)} assessmentRisk={selected?.risk??'unknown'} showSurfaceVehicle={Boolean(flight)} altitudeM={telemetry?.altitudeM??0} landed={landed}
+              solarPanelHeightM={vehicle.solar_panel_height} antennaHeightM={vehicle.antenna_height} landerName={vehicle.lander_name} vehiclePulseKey={vehiclePulseKey}
+              pinnedTarget={pinnedTarget}
+              traverseRadiusKm={vehicle.is_rover||vehicle.category==='Rover y Movilidad'?(vehicle.nominal_range_km??15):null}
+              roverName={vehicle.lander_name} roverSpeed={vehicle.speed_km_h}/>
+            <div className="one-map-source"><span>{tr(plan&&coverageVisible&&!flight?'Evaluación de toda la superficie':'NASA LOLA · relieve continuo')}</span><small>{tr(focus&&detail?'Detalle visual ~396 m · fuente 80 m':shadingStatus.includes('no disponible')?'Sombreado no disponible; relieve conservado':'Vista regional · fuente de 80 m')}{tr(visualStatus.includes('no disponible')?' · '+visualStatus:'')}</small><small>{tr("Nave y astros en escala ilustrativa.")}</small></div>
 
-          {/* Icon-only "Simular llegada a este destino" button inside the Moon map screen */}
-          {plan&&selected&&<button
-            type="button"
-            className={'simulate-arrival map-simulate-icon-btn'+(flight?' active':'')}
-            aria-label={tr("Simular llegada a este destino")}
-            title={tr(isRejected||!plan.best?'Selecciona un candidato favorable para simular el descenso':'Simular llegada a este destino')}
-            disabled={isRejected||!plan.best||cellLoading||Boolean(cellError)}
-            onClick={runDescent}
-          >
-            <Rocket size={16}/>
-          </button>}
+            {/* Icon-only "Simular llegada a este destino" button inside the Moon map screen */}
+            {plan&&selected&&<button
+              type="button"
+              className={'simulate-arrival map-simulate-icon-btn'+(flight?' active':'')}
+              aria-label={tr("Simular llegada a este destino")}
+              title={tr(isRejected||!plan.best?'Selecciona un candidato favorable para simular el descenso':'Simular llegada a este destino')}
+              disabled={isRejected||!plan.best||cellLoading||Boolean(cellError)}
+              onClick={runDescent}
+            >
+              <Rocket size={16}/>
+            </button>}
 
-          {!plan&&!pinnedTarget&&<div className="one-map-empty"><Orbit size={20}/><strong>{tr(busy?'Estamos calculando tus destinos.':'Escribe tu viaje o haz clic en la Luna para fijar un punto.')}</strong><span>{tr(busy?'La recomendación aparecerá aquí con sus alternativas.':'Haz clic en el mapa para fijar un destino y escribe la fecha que quieres evaluar.')}</span></div>}
-          {!plan&&pinnedTarget&&<div className="surface-inspection-hint"><MapPin size={12}/><b>{tr("Lugar fijado:")}{" "}{tr(pinnedTarget.label)}</b><span>{tr("Elevación")}{" "}{tr(pinnedTarget.elevation_m!=null?Math.round(pinnedTarget.elevation_m)+' m':'—')}{" "}{tr("· Pendiente")}{" "}{tr(pinnedTarget.regional_slope_deg!=null?pinnedTarget.regional_slope_deg.toFixed(1)+'°':'—')}{" "}{tr("· Escribe una fecha para calcular sus condiciones")}</span></div>}
-          {plan&&!flight&&<div className="surface-inspection-hint"><MapPin size={12}/>{hovered?<><b className={'risk-text '+hovered.risk}>{tr(SURFACE_CLASS_LABELS[hovered.risk])}</b><span>{tr(num(Math.abs(hovered.latitude_deg),2))}°S · {tr(longitude(hovered.longitude_deg))}{" "}{tr("· pendiente P95")}{" "}{tr(num(hovered.regional_slope_deg))}°</span></>:<span>{tr("Haz clic en cualquier área para ver sus mediciones y motivos.")}</span>}</div>}
-        </div>
+            {!plan&&!pinnedTarget&&<div className="one-map-empty"><Orbit size={20}/><strong>{tr(busy?'Estamos calculando tus destinos.':'Escribe tu viaje o haz clic en la Luna para fijar un punto.')}</strong><span>{tr(busy?'La recomendación aparecerá aquí con sus alternativas.':'Haz clic en el mapa para fijar un destino y escribe la fecha que quieres evaluar.')}</span></div>}
+            {!plan&&pinnedTarget&&<div className="surface-inspection-hint"><MapPin size={12}/><b>{tr("Lugar fijado:")}{" "}{tr(pinnedTarget.label)}</b><span>{tr("Elevación")}{" "}{tr(pinnedTarget.elevation_m!=null?Math.round(pinnedTarget.elevation_m)+' m':'—')}{" "}{tr("· Pendiente")}{" "}{tr(pinnedTarget.regional_slope_deg!=null?pinnedTarget.regional_slope_deg.toFixed(1)+'°':'—')}{" "}{tr("· Escribe una fecha para calcular sus condiciones")}</span></div>}
+            {plan&&!flight&&<div className="surface-inspection-hint"><MapPin size={12}/>{hovered?<><b className={'risk-text '+hovered.risk}>{tr(SURFACE_CLASS_LABELS[hovered.risk])}</b><span>{tr(num(Math.abs(hovered.latitude_deg),2))}°S · {tr(longitude(hovered.longitude_deg))}{" "}{tr("· pendiente P95")}{" "}{tr(num(hovered.regional_slope_deg))}°</span></>:<span>{tr("Haz clic en cualquier área para ver sus mediciones y motivos.")}</span>}</div>}
+          </div>
+        )}
         {plan&&!hideTimelinePanel&&<SurfaceCoverageSummary plan={plan} active={coverageVisible} onToggle={()=>setCoverageVisible(v=>!v)} onEvidence={()=>setEvidence(true)}/>}
         {plan&&!hideTimelinePanel&&<div className="mission-conditions">
           <div className="conditions-heading">
