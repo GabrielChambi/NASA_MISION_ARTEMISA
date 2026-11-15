@@ -88,13 +88,22 @@ def test_duration_question_is_not_an_explicit_stay():
 
 
 @pytest.mark.parametrize("message", [
-    "¿Dónde debería caer?", "Viaje el 25 de diciembre a las 8 am", "Quiero alunizar el 25 de diciembre de 2026"
+    "¿Dónde debería caer?", "Viaje el 25 de diciembre a las 8 am"
 ])
-def test_missing_date_or_time_requests_clarification(message):
+def test_missing_date_requests_clarification(message):
     parsed = module.parse_mission_intent(data(message))
     assert parsed["needs_clarification"]
     assert "departure_utc" not in parsed["intent"]
     assert parsed["question"]
+
+
+def test_date_without_hour_and_colloquial_spanish_connectors_plan_automatically():
+    for msg in ("Quiero alunizar el 25 de diciembre de 2026", "dime donde aterrizarel 9 de agosto el 2027", "aterrizar el 9 de agosto del 2027"):
+        parsed = module.parse_mission_intent(data(msg))
+        assert not parsed["needs_clarification"], msg
+        assert parsed["intent"]["date_kind"] == "landing"
+        assert parsed["intent"]["departure_utc"].endswith("T12:00:00Z")
+        assert "No indicaste hora" in " ".join(parsed["assumptions"])
 
 
 @pytest.mark.parametrize("message", [

@@ -62,16 +62,19 @@ test('unknown total mission duration is a question and not an explicit stay',()=
  assert.equal(parsed.explicit_fields.includes('surface_hours'),false)
 })
 
-test('missing absolute dates and missing hours request just the missing information',()=>{
+test('missing absolute dates request just the missing date, while date-only requests assume 08:00',()=>{
  for(const message of ['¿Dónde debería caer?','Viaje el 25 de diciembre a las 8 am']){
   const parsed=parseMissionIntent(input(message))
   assert.equal(parsed.needs_clarification,true)
   assert.match(parsed.question,/fecha/)
   assert.equal(parsed.intent.departure_utc,undefined)
  }
- const parsed=parseMissionIntent(input('Quiero alunizar el 25 de diciembre de 2026'))
- assert.equal(parsed.needs_clarification,true)
- assert.match(parsed.question,/hora.*alunizar/)
+ for(const message of ['Quiero alunizar el 25 de diciembre de 2026','dime donde aterrizarel 9 de agosto el 2027','aterrizar el 9 de agosto del 2027']){
+  const parsed=parseMissionIntent(input(message))
+  assert.equal(parsed.needs_clarification,false,message)
+  assert.equal(parsed.intent.date_kind,'landing')
+  assert.match(parsed.assumptions.join(' '),/No indicaste hora/)
+ }
 })
 
 test('invalid calendar, clock and contradictory constraints cannot be silently repaired',()=>{

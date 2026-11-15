@@ -127,8 +127,8 @@ def raw_parse(value):
                 except ValueError:
                     fatal = "La fecha, hora o desplazamiento UTC no es válido."
     else:
-        named = re.search(r"\b(\d{1,2})(?:\s+de)?\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)(?:\s+de)?\s+(\d{4})\b", text)
-        numeric = re.search(r"\b(\d{1,2})/(\d{1,2})/(\d{4})\b", text)
+        named = re.search(r"(?:^|\b|(?<=el)|(?<=del)|(?<=al))(\d{1,2})(?:\s*(?:de|del|el|,|-|/)\s*|\s+)(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)(?:\s*(?:de\s+el|en\s+el|del|de|el|en|ano|año|,|-|/)\s*|\s+)(\d{4})\b", text)
+        numeric = re.search(r"\b(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})\b", text)
         match = named or numeric
         if match:
             month = MONTHS[match[2]] if named else int(match[2])
@@ -148,8 +148,10 @@ def raw_parse(value):
             time = f"{hour:02d}:{minute:02d}"
     if re.search(r"\b(?:utc|gmt)\b(?!\s*[-+]\s*0?4)", text) and not offset:
         tz = "UTC"
-    verbs = re.findall(r"\b(alunizar|alunizaje|aterrizar|llegar|salir|salida|despegar|viaje|viajar|partir|lanzar)\b", text[:index] if index >= 0 else text)
-    if verbs and verbs[-1] in ("alunizar", "alunizaje", "aterrizar", "llegar"):
+    verbs = re.findall(r"\b(alunizar|alunizaje|aterrizar|aterrizaje|llegar|llegada|salir|salida|despegar|despegue|viaje|viajar|partir|lanzar|lanzamiento)(?:el|en|al)?\b", text[:index] if index >= 0 else text)
+    if not verbs and index >= 0:
+        verbs = re.findall(r"\b(alunizar|alunizaje|aterrizar|aterrizaje|llegar|llegada|salir|salida|despegar|despegue|viaje|viajar|partir|lanzar|lanzamiento)(?:el|en|al)?\b", text)
+    if verbs and verbs[-1] in ("alunizar", "alunizaje", "aterrizar", "aterrizaje", "llegar", "llegada"):
         kind = "landing"
     if date and not valid_date(date):
         fatal = "La fecha no existe o está fuera del intervalo 1962–2100."
@@ -178,23 +180,32 @@ def finish(value, raw, mode="parser", reason=None):
         assumptions.append(f"No indicaste estancia en la Luna: uso {params['surface_hours']:g} horas como hipótesis editable, no como duración total de la misión.")
     if "max_slope_deg" not in explicit:
         assumptions.append(f"Uso una pendiente regional máxima de {params['max_slope_deg']:g}° como criterio editable.")
+    local_date = raw.get("local_date")
+    local_time = raw.get("local_time")
+    time_assumed = False
+    if local_date and not local_time and not problem:
+        local_time = "08:00"
+        time_assumed = True
     partial = dict(**params, date_kind=raw.get("date_kind", "departure"), timezone=raw.get("timezone", value["timezone"]),
-                   local_datetime=f"{raw['local_date']}T{raw['local_time']}" if raw.get("local_date") and raw.get("local_time") else None)
-    missing = "¿Qué fecha, con día, mes y año, quieres usar para tu viaje?" if not raw.get("local_date") else ("¿A qué hora quieres alunizar?" if partial["date_kind"] == "landing" else "¿A qué hora quieres salir?") if not raw.get("local_time") else None
+                   local_datetime=f"{local_date}T{local_time}" if local_date and local_time else None)
+    missing = "¿Qué fecha, con día, mes y año, quieres usar para tu viaje?" if not local_date else None
     base = dict(status="ok", mode=mode, reason=reason, intent=partial, assumptions=assumptions, explicit_fields=explicit)
     if problem or missing:
         return dict(**base, needs_clarification=True, question=problem or missing, display_summary=problem or missing)
-    if not valid_date(raw["local_date"]) or not re.fullmatch(r"(?:[01]\d|2[0-3]):[0-5]\d", raw["local_time"]):
+    if not valid_date(local_date) or not re.fullmatch(r"(?:[01]\d|2[0-3]):[0-5]\d", local_time):
         raise IntentError("Fecha u hora extraída no válida.")
-    requested = datetime.fromisoformat(f"{raw['local_date']}T{raw['local_time']}:00").replace(tzinfo=timezone.utc)
+    requested = datetime.fromisoformat(f"{local_date}T{local_time}:00").replace(tzinfo=timezone.utc)
     if partial["timezone"] == "America/La_Paz":
         requested += timedelta(hours=4)
     if requested.year > 2100:
         raise IntentError("El instante UTC queda fuera del intervalo admitido.")
     utc = requested.strftime("%Y-%m-%dT%H:%M:%SZ")
     partial.update(departure_utc=utc, requested_utc=utc)
-    assumptions.insert(0, f"Interpreto las {raw['local_time']} en {partial['timezone']}" + (" (UTC−04:00)." if partial["timezone"] == "America/La_Paz" else " (UTC)."))
-    return dict(**base, needs_clarification=False, display_summary=("Alunizaje solicitado" if partial["date_kind"] == "landing" else "Salida solicitada") + f": {raw['local_date']} {raw['local_time']} · {partial['timezone']}. Estancia superficial: {params['surface_hours']:g} h.")
+    if time_assumed:
+        assumptions.insert(0, f"No indicaste hora: uso las {local_time} en {partial['timezone']}" + (" (UTC−04:00) como hipótesis editable." if partial["timezone"] == "America/La_Paz" else " (UTC) como hipótesis editable."))
+    else:
+        assumptions.insert(0, f"Interpreto las {local_time} en {partial['timezone']}" + (" (UTC−04:00)." if partial["timezone"] == "America/La_Paz" else " (UTC)."))
+    return dict(**base, needs_clarification=False, display_summary=("Alunizaje solicitado" if partial["date_kind"] == "landing" else "Salida solicitada") + f": {local_date} {local_time} · {partial['timezone']}. Estancia superficial: {params['surface_hours']:g} h.")
 
 
 def parse_mission_intent(value):

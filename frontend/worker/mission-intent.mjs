@@ -55,7 +55,7 @@ function rawParse(input){
    else {const ms=Date.parse(utcOverride);if(Number.isFinite(ms)){const d=new Date(ms).toISOString();local_date=d.slice(0,10);local_time=d.slice(11,16);tz='UTC'}}
   }
  }else{
-  const named=text.match(/\b(\d{1,2})(?:\s+de)?\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)(?:\s+de)?\s+(\d{4})\b/),numeric=text.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/),m=named||numeric
+  const named=text.match(/(?:^|\b|(?<=el)|(?<=del)|(?<=al))(\d{1,2})(?:\s*(?:de|del|el|,|-|\/)\s*|\s+)(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)(?:\s*(?:de\s+el|en\s+el|del|de|el|en|ano|año|,|-|\/)\s*|\s+)(\d{4})\b/),numeric=text.match(/\b(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})\b/),m=named||numeric
   if(m){local_date=m[3]+'-'+pad(named?MONTHS[m[2]]:Number(m[2]))+'-'+pad(Number(m[1]));index=m.index}
  }
  if(!local_time){
@@ -68,11 +68,16 @@ function rawParse(input){
   }
  }
  if(/\b(?:utc|gmt)\b(?!\s*[-+]\s*0?4)/.test(text)&&!utcOverride)tz='UTC'
+ const verbRe=/\b(alunizar|alunizaje|aterrizar|aterrizaje|llegar|llegada|salir|salida|despegar|despegue|viaje|viajar|partir|lanzar|lanzamiento)(?:el|en|al)?\b/g
+ const landingVerbs=['alunizar','alunizaje','aterrizar','aterrizaje','llegar','llegada']
  if(index>=0){
-  const before=text.slice(0,index),verbs=[...before.matchAll(/\b(alunizar|alunizaje|aterrizar|llegar|salir|salida|despegar|viaje|viajar|partir|lanzar)\b/g)],verb=verbs.at(-1)?.[1]
+  const before=text.slice(0,index),verbs=[...before.matchAll(verbRe)],allVerbs=verbs.length?verbs:[...text.matchAll(verbRe)],verb=allVerbs.at(-1)?.[1]
   date_kind_explicit=Boolean(verb)
-  if(['alunizar','alunizaje','aterrizar','llegar'].includes(verb))date_kind='landing'
- }else if(/\b(?:alunizar|alunizaje|aterrizar|llegar)\b/.test(text)){date_kind='landing';date_kind_explicit=true}
+  if(landingVerbs.includes(verb))date_kind='landing'
+ }else{
+  const verbs=[...text.matchAll(verbRe)],verb=verbs.at(-1)?.[1]
+  if(verb){date_kind_explicit=true;if(landingVerbs.includes(verb))date_kind='landing'}
+ }
  if(local_date&&!validDate(local_date))fatal='La fecha no existe o está fuera del intervalo 1962–2100.'
  const numbers=explicitNumbers(text)
  return {local_date,local_time,timezone:tz,date_kind,date_kind_explicit,date_explicit:Boolean(local_date),time_explicit:Boolean(local_time),...numbers.values,explicit_fields:numbers.explicit,fatal}
@@ -89,14 +94,17 @@ function finish(input,raw,mode='parser',reason=null){
  }
  if(!explicit.includes('surface_hours'))assumptions.push('No indicaste estancia en la Luna: uso '+params.surface_hours+' horas como hipótesis editable, no como duración total de la misión.')
  if(!explicit.includes('max_slope_deg'))assumptions.push('Uso una pendiente regional máxima de '+params.max_slope_deg+'° como criterio editable.')
- const partial={...params,date_kind:raw.date_kind??'departure',timezone:raw.timezone??input.timezone,local_datetime:raw.local_date&&raw.local_time?raw.local_date+'T'+raw.local_time:null}
- const missing=!raw.local_date?'¿Qué fecha, con día, mes y año, quieres usar para tu viaje?':!raw.local_time?'¿A qué hora quieres '+(partial.date_kind==='landing'?'alunizar':'salir')+'?':null
+ const local_date=raw.local_date
+ let local_time=raw.local_time,timeAssumed=false
+ if(local_date&&!local_time&&!problem){local_time='08:00';timeAssumed=true}
+ const partial={...params,date_kind:raw.date_kind??'departure',timezone:raw.timezone??input.timezone,local_datetime:local_date&&local_time?local_date+'T'+local_time:null}
+ const missing=!local_date?'¿Qué fecha, con día, mes y año, quieres usar para tu viaje?':null
  if(problem||missing)return {status:'ok',mode,reason,intent:partial,assumptions,explicit_fields:explicit,needs_clarification:true,question:problem??missing,display_summary:problem??missing}
- if(!validDate(raw.local_date)||!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(raw.local_time))throw new InputError('Fecha u hora extraída no válida.')
- const requested=new Date(Date.parse(raw.local_date+'T'+raw.local_time+':00Z')+(partial.timezone==='America/La_Paz'?4*3600000:0)).toISOString().replace('.000Z','Z')
+ if(!validDate(local_date)||!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(local_time))throw new InputError('Fecha u hora extraída no válida.')
+ const requested=new Date(Date.parse(local_date+'T'+local_time+':00Z')+(partial.timezone==='America/La_Paz'?4*3600000:0)).toISOString().replace('.000Z','Z')
  if(Number(requested.slice(0,4))>2100)throw new InputError('El instante UTC queda fuera del intervalo admitido.')
- assumptions.unshift('Interpreto las '+raw.local_time+' en '+partial.timezone+(partial.timezone==='America/La_Paz'?' (UTC−04:00).':' (UTC).'))
- return {status:'ok',mode,reason,intent:{...partial,departure_utc:requested,requested_utc:requested},assumptions,explicit_fields:explicit,needs_clarification:false,display_summary:(partial.date_kind==='landing'?'Alunizaje solicitado':'Salida solicitada')+': '+raw.local_date+' '+raw.local_time+' · '+partial.timezone+'. Estancia superficial: '+params.surface_hours+' h.'}
+ assumptions.unshift((timeAssumed?'No indicaste hora: uso las ':'Interpreto las ')+local_time+' en '+partial.timezone+(partial.timezone==='America/La_Paz'?' (UTC−04:00)':' (UTC)')+(timeAssumed?' como hipótesis editable.':'.'))
+ return {status:'ok',mode,reason,intent:{...partial,departure_utc:requested,requested_utc:requested},assumptions,explicit_fields:explicit,needs_clarification:false,display_summary:(partial.date_kind==='landing'?'Alunizaje solicitado':'Salida solicitada')+': '+local_date+' '+local_time+' · '+partial.timezone+'. Estancia superficial: '+params.surface_hours+' h.'}
 }
 export function parseMissionIntent(value){const input=validateIntentRequest(value);return finish(input,rawParse(input))}
 function validateModel(value,input,baseline){
