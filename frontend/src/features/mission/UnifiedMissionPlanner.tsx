@@ -196,6 +196,42 @@ function toUserDatetimeInputValue(utc:string):string{
   return `${get('year')}-${get('month')}-${get('day')}T${hour}:${get('minute')}`
 }
 
+function formatInlineMarkdown(raw:string):string{
+  const safe=raw
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+  return safe
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/(^|[^*])\*([^*]+?)\*/g,'$1<em>$2</em>')
+    .replace(/`([^`]+)`/g,'<code>$1</code>')
+}
+
+function renderMarkdown(text:string){
+  const paragraphs=text.split(/\n\s*\n/)
+  return paragraphs.map((para,pIdx)=>{
+    const lines=para.split('\n').map(l=>l.trim()).filter(Boolean)
+    const isList=lines.length>0&&lines.every(l=>/^[*•-]\s+/.test(l))
+    if(isList){
+      return (
+        <ul key={pIdx} className="chat-md-list">
+          {lines.map((item,i)=>(
+            <li key={i} dangerouslySetInnerHTML={{__html:formatInlineMarkdown(item.replace(/^[*•-]\s+/,''))}}/>
+          ))}
+        </ul>
+      )
+    }
+    if(para.startsWith('### ')){
+      return <h4 key={pIdx} className="chat-md-h4" dangerouslySetInnerHTML={{__html:formatInlineMarkdown(para.replace(/^###\s+/,''))}}/>
+    }
+    if(para.startsWith('## ')){
+      return <h3 key={pIdx} className="chat-md-h3" dangerouslySetInnerHTML={{__html:formatInlineMarkdown(para.replace(/^##\s+/,''))}}/>
+    }
+    const html=lines.map(l=>formatInlineMarkdown(l)).join('<br/>')
+    return <p key={pIdx} className="chat-md-p" dangerouslySetInnerHTML={{__html:html}}/>
+  })
+}
+
 type ChatTurn={
   id:string
   role:'user'|'assistant'
@@ -236,7 +272,7 @@ export default function UnifiedMissionPlanner(){
   const t=STRINGS[lang]
   const [atlas,setAtlas]=useState<AtlasData|null>(null),[polar,setPolar]=useState<PolarSurface|null>(null)
   const [loadError,setLoadError]=useState(''),[retry,setRetry]=useState(0)
-  const [message,setMessage]=useState(''),[intent,setIntent]=useState<MissionIntent|null>(null),[assumptions,setAssumptions]=useState<string[]>([])
+  const [message,setMessage]=useState(''),[sentHistory,setSentHistory]=useState<string[]>([]),[historyIndex,setHistoryIndex]=useState<number>(-1),[intent,setIntent]=useState<MissionIntent|null>(null),[assumptions,setAssumptions]=useState<string[]>([])
   const [coverageVisible,setCoverageVisible]=useState(true),[hoveredId,setHoveredId]=useState<string|null>(null)
   const [cellDetail,setCellDetail]=useState<MissionPoint|null>(null),[cellLoading,setCellLoading]=useState(false),[cellError,setCellError]=useState('')
   const [inspectLat,setInspectLat]=useState(''),[inspectLon,setInspectLon]=useState(''),[coordinateError,setCoordinateError]=useState('')
@@ -554,6 +590,10 @@ export default function UnifiedMissionPlanner(){
         body:JSON.stringify({
           message:question,
           context:{
+            history:chatTurns.slice(-6).map(t=>({
+              role:t.role,
+              text:t.text
+            })),
             vehicle:{
               lander_name:activeVeh.lander_name,
               solar_panel_height:activeVeh.solar_panel_height,
@@ -807,7 +847,7 @@ export default function UnifiedMissionPlanner(){
             return (
               <div key={turn.id} className="gemini-msg assistant">
                 <div className="gemini-msg-head"><Bot size={15}/><span>Copiloto de misión</span><small>{turn.timestamp}</small></div>
-                <div className="gemini-msg-content"><p>{turn.text}</p></div>
+                <div className="gemini-msg-content">{renderMarkdown(turn.text)}</div>
               </div>
             )
           })}
@@ -845,7 +885,9 @@ export default function UnifiedMissionPlanner(){
           onSubmit={e=>{
             e.preventDefault()
             const txt=message.trim()
-            if(!txt)return
+            if(!txt||busy)return
+            setSentHistory(prev=>[txt,...prev.filter(m=>m!==txt)].slice(0,50))
+            setHistoryIndex(-1)
             setMessage('')
             if(plan&&selected&&!/(\d{1,2}\s+de\s+[a-z]+|\d{4}-\d{2}-\d{2}|viaj|aluniz|salid)/i.test(txt)){
               void askMissionQA(txt)
@@ -875,10 +917,35 @@ export default function UnifiedMissionPlanner(){
             value={message}
             onChange={e=>setMessage(e.target.value)}
             onKeyDown={e=>{
+              if(e.key==='ArrowUp'){
+                const isAtStart=e.currentTarget.selectionStart===0&&e.currentTarget.selectionEnd===0
+                if(isAtStart&&sentHistory.length>0){
+                  e.preventDefault()
+                  const nextIdx=Math.min(historyIndex+1,sentHistory.length-1)
+                  setHistoryIndex(nextIdx)
+                  setMessage(sentHistory[nextIdx])
+                }
+                return
+              }
+              if(e.key==='ArrowDown'){
+                if(historyIndex>0){
+                  e.preventDefault()
+                  const nextIdx=historyIndex-1
+                  setHistoryIndex(nextIdx)
+                  setMessage(sentHistory[nextIdx])
+                }else if(historyIndex===0){
+                  e.preventDefault()
+                  setHistoryIndex(-1)
+                  setMessage('')
+                }
+                return
+              }
               if(e.key==='Enter'&&!e.shiftKey){
                 e.preventDefault()
                 const txt=message.trim()
                 if(!txt||busy||!atlas||!polar)return
+                setSentHistory(prev=>[txt,...prev.filter(m=>m!==txt)].slice(0,50))
+                setHistoryIndex(-1)
                 setMessage('')
                 if(plan&&selected&&!/(\d{1,2}\s+de\s+[a-z]+|\d{4}-\d{2}-\d{2}|viaj|aluniz|salid)/i.test(txt)){
                   void askMissionQA(txt)

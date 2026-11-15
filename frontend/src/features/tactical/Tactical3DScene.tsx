@@ -254,12 +254,15 @@ function Spacecraft(props:Tactical3DSceneProps&{onDrag:()=>void}){
   const base=useMemo(()=>surfacePoint(data,props.latDeg,props.lonDeg),[data,props.latDeg,props.lonDeg])
   if(!Number.isFinite(base.position.y))return null
   const site={latitude_deg:props.latDeg,longitude_deg:props.lonDeg} as never
-  const up=bodyDirection(site,0,90),position=base.position.clone().addScaledVector(up,(props.altitudeM??0)/1000)
-  const rotation=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),(props.altitudeM??0)>0?up:base.normal)
-  const solarH=props.solarPanelHeightM??props.observerHeightM
-  const antennaH=props.antennaHeightM??props.observerHeightM
+  const up=bodyDirection(site,0,90)
+  const norm=base.normal.lengthSq()>0.5?base.normal:up
   const showVehicle=!props.overview||props.showSurfaceVehicle||props.focusZone
   const vehicleScale=props.focusZone&&!props.showSurfaceVehicle?0.45:0.008
+  const groundOffset=vehicleScale*0.22+(props.overview?0.005:0.002)
+  const position=base.position.clone().addScaledVector(norm,groundOffset).addScaledVector(up,(props.altitudeM??0)/1000)
+  const rotation=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),(props.altitudeM??0)>0?up:norm)
+  const solarH=props.solarPanelHeightM??props.observerHeightM
+  const antennaH=props.antennaHeightM??props.observerHeightM
   const maxH=Math.max(solarH,antennaH,4)
   const heightStretch=THREE.MathUtils.clamp(maxH/12,0.75,3.2)
   const noseTopLocalY=(1.05+1.4*heightStretch+0.8)*vehicleScale

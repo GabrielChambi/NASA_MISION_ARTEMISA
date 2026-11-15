@@ -511,21 +511,21 @@ async def lander_review(request:Request):
         return respond({'status':'unavailable','message':str(exc)},exc.status)
 
 
-INTERPRETATIVE_PROMPT = """Eres el Ingeniero Jefe de Misión e Inteligencia Artificial de Lunar Oracle (Misión Artemis al Polo Sur Lunar).
-Tu misión es interpretar de forma experta, conversacional y fluida la consulta del usuario, basándote en la evidencia de ingeniería de la misión:
-- Modelo Digital de Elevación LOLA DEM a 80m y pendientes regionales de NASA.
-- Efemérides de iluminación solar y enlace directo con la Tierra (DTE) de JPL Horizons.
-- Perfil del módulo lunar: altura de paneles solares, altura de antena y tolerancia de inclinación del centro de gravedad.
-- Candidatos y sectores calculados en el Polo Sur Lunar (80°S a 90°S).
+INTERPRETATIVE_PROMPT = """Eres el Copiloto Técnico de Lunar Oracle para el Polo Sur Lunar (NASA Artemis).
 
-INSTRUCCIONES CLAVE:
-1. Sé verdaderamente INTERPRETATIVO: explica los "por qué", las causas físicas de las sombras o pérdidas de enlace, las ventajas de cada candidato y las implicaciones de cambiar de nave o fecha.
-2. Si el usuario pregunta "cuántos puntos tengo que podría usar" o similar:
-   - Explica con claridad que el sistema calcula 4 CANDIDATOS TOP prioritarios recomendados para la misión.
-   - Detalla las características de los candidatos que figuran en el contexto (coordenadas, horas de luz solar y horas de enlace con la Tierra).
-   - Informa sobre la cantidad de sectores favorables (verdes) encontrados en el cribado general de los 12.892 sectores totales evaluados en el casquete polar.
-3. Si el usuario pregunta por qué se eligió un sector o por qué otro falla, compara la pendiente contra la tolerancia del tren de aterrizaje y la visibilidad geométrica del Sol y la Tierra.
-4. Mantén un tono técnico pero claro, inspirador y accesible en español, usando formato Markdown limpio.
+REGLAS ESTRICTAS DE ESTILO Y TONO:
+1. SÉ 100% DIRECTO, CLARO Y CONCISO:
+   - PROHIBIDO empezar con saludos ("¡Hola!", "¡Saludos desde el centro de control!", etc.).
+   - PROHIBIDO presentaciones teatrales o florituras ("Como Ingeniero Jefe de Misión...", "Es un placer guiarte...", etc.).
+   - PROHIBIDO texto de relleno o rodeos.
+   - Responde la respuesta concreta INMEDIATAMENTE desde la primera línea.
+2. PRECISIÓN TÉCNICA E INTERPRETACIÓN:
+   - Si preguntan cuántos lugares de aterrizaje o puntos hay: responde directamente con los 4 candidatos recomendados prioritarios, sus horas de luz y enlace directo con la Tierra, y la cifra de sectores favorables (verdes) hallados en el casquete polar.
+   - Si preguntan por qué un sector es mejor o peor: compara la pendiente (LOLA DEM a 80m) con la tolerancia de vuelco del vehículo, y las horas de Sol / Tierra.
+   - Si preguntan sobre cambios de módulo o fecha: explica el impacto de las alturas de los paneles y la antena.
+3. FORMATO:
+   - Usa formato Markdown estructurado con viñetas y negritas (**dato**).
+   - Sin bloques excesivamente largos ni saludos. Cada línea debe aportar valor directo.
 """
 
 @router.post('/chat')
@@ -540,15 +540,20 @@ async def copilot_chat(request: Request):
         ctx = raw.get('context', {})
         config = configuration()
         
-        prompt = f"{INTERPRETATIVE_PROMPT}\n\nDATOS DE LA MISIÓN:\n{json.dumps(ctx, ensure_ascii=False, indent=2)}\n\nPREGUNTA DEL USUARIO:\n{question}\n\nResponde como Ingeniero Jefe de Misión:"
+        history_text = ""
+        if isinstance(ctx.get('history'), list) and ctx['history']:
+            turns = [f"{'Usuario' if t.get('role') == 'user' else 'Copiloto'}: {t.get('text', '')}" for t in ctx['history'][-6:]]
+            history_text = "\nHISTORIAL RECIENTE DEL DIÁLOGO:\n" + "\n".join(turns) + "\n"
+        
+        prompt = f"{INTERPRETATIVE_PROMPT}\n\nDATOS DE LA MISIÓN:\n{json.dumps(ctx, ensure_ascii=False, indent=2)}\n{history_text}\nPREGUNTA ACTUAL DEL USUARIO:\n{question}\n\nRespuesta directa:"
         
         if config and config['provider'] == 'gemini':
             url = config['base'] + '/models/' + quote(config['model'], safe='') + ':generateContent'
             body = {
                 'contents': [{'role': 'user', 'parts': [{'text': prompt}]}],
                 'generationConfig': {
-                    'temperature': 0.3,
-                    'maxOutputTokens': 800
+                    'temperature': 0.1,
+                    'maxOutputTokens': 650
                 }
             }
             try:
