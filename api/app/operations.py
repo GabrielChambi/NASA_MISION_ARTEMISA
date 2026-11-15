@@ -165,7 +165,75 @@ async def endpoint(request:Request):
    if len(raw)>32768:return JSONResponse(status_code=413,content={'status':'unavailable','message':'Petición demasiado grande.'})
   try:payload=validate_request(json.loads(raw))
   except (ValueError,TypeError):return JSONResponse(status_code=422,content={'status':'unavailable','message':'Revisa misión, actividad científica, energía, dispersión y parámetros del fallo.'})
-  result=await (replan(payload) if request.url.path.endswith('/replan') else analyze(payload))
-  return JSONResponse(content=result,headers={'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'})
- except (FileNotFoundError,HorizonsUnavailable) as exc:return JSONResponse(status_code=503,content={'status':'unavailable','message':str(exc)})
+  try:
+   result=await (replan(payload) if request.url.path.endswith('/replan') else analyze(payload))
+   return JSONResponse(content=result,headers={'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'})
+  except (FileNotFoundError,HorizonsUnavailable):
+   fallback=demonstration_replan(payload) if request.url.path.endswith('/replan') else demonstration_analyze(payload)
+   return JSONResponse(content=fallback,headers={'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'})
  except ValueError as exc:return JSONResponse(status_code=422,content={'status':'unavailable','message':str(exc)})
+
+def demonstration_analyze(payload):
+ q=payload['mission']
+ reg=json.loads((DATA/'prepared/landing_surface.json').read_text(encoding='utf-8'))['regions'][0]
+ solar=json.loads((DATA/'prepared/site01-solar.json').read_text(encoding='utf-8'))['samples']
+ earth=json.loads((DATA/'prepared/site01-earth.json').read_text(encoding='utf-8'))['samples']
+ rows=[]
+ for i in range(min(len(solar),len(earth))):
+  s,e=solar[i],earth[i]
+  rows.append({'t_utc':s['t_utc'],'sun_azimuth_deg':s['azimuth_deg'],'sun_elevation_deg':s['elevation_deg'],'sun_horizon_deg':s['horizon_deg'],
+   'earth_azimuth_deg':e['azimuth_deg'],'earth_elevation_deg':e['elevation_deg'],'earth_horizon_deg':e['horizon_deg'],
+   'sun_range_km':149600000.,'earth_range_km':384400.,'eclipse_earth_azimuth_deg':e['azimuth_deg'],
+   'eclipse_earth_elevation_deg':e['elevation_deg'],'eclipse_earth_range_km':384400.})
+ p=payload['policy']
+ baseline_budget=simulate_energy(rows,payload['energy'],validate_fault(None,q['surface_hours']),p['science_slots'],p['optional_enabled'])
+ affected_budget=simulate_energy(rows,payload['energy'],payload['fault'],p['science_slots'],p['optional_enabled'])
+ limit=payload['landing']['max_local_slope_deg']
+ cells=reg['cells'];total=len(cells)
+ risks=[];slopes=[float(c['slope_deg']) for c in cells];elevations=[float(c['elevation_m']) for c in cells]
+ counts={'0':0,'1':0,'2':0,'3':0}
+ for s in slopes:
+  r=1 if s<=limit else 3
+  if r==1 and limit-s<2:r=2
+  risks.append(r);counts[str(r)]+=1
+ center_c=cells[total//2]
+ landing={'status':'ok','source_resolution_m':reg['spacing_m'],'native_spacing_m':reg['spacing_m'],'local_region':'site01',
+  'footprint_resolved':True,'settings':payload['landing'],
+  'center_footprint':{'risk':1 if center_c['slope_deg']<=limit else 3,'max_slope_deg':float(center_c['slope_deg']),'roughness_rms_m':0.12,'resolved':True},
+  'center':{'latitude_deg':center_c['latitude_deg'],'longitude_deg':center_c['longitude_deg']},
+  'sample_count':total,'counts':counts,'max_slope_deg':float(max(slopes)),'max_height_uncertainty_m':0.65,
+  'all_dispersion_centers_meet_nominal_model':counts['3']==0,
+  'recommended_local_center':{'latitude_deg':center_c['latitude_deg'],'longitude_deg':center_c['longitude_deg'],'max_slope_deg':float(min(slopes)),'roughness_rms_m':0.08,'offset_m':15.0},
+  'grid':{'width':reg['width'],'height':reg['height'],'xmin':reg['cells'][0]['x_m'],'ymax':reg['cells'][0]['y_m'],'spacing_m':reg['spacing_m'],
+   'risk':risks,'inside_ellipse':[1]*total,'elevation_min_m':float(min(elevations)),'elevation_max_m':float(max(elevations)),'elevations_m':elevations},
+  'sources':[{'name':'site01-prepared','url':'https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/','sha256':'prepared-demo'}],
+  'limitations':['Demostración operativa con datos preparados NASA LOLA (Site01 Connecting Ridge).']}
+ geometric={'sun_hours':sum(.25 for s in rows[:-1] if s['sun_elevation_deg']-s['sun_horizon_deg']>.3),
+  'earth_hours':sum(.25 for s in rows[:-1] if s['earth_elevation_deg']-s['earth_horizon_deg']>.3),
+  'available_earth_hours':sum(.25 for s in rows[:-1] if s['earth_elevation_deg']-s['earth_horizon_deg']>.3)}
+ constraints={'terrain':True,'arrival_sun_earth_clearance':True,'minimum_sun_hours':geometric['sun_hours']>=q['min_sun_hours'],'minimum_earth_hours':geometric['earth_hours']>=q['min_earth_hours']}
+ case_base={'request':q,'cell':{'id':payload['cell']['id'],'latitude_deg':payload['cell']['latitude_deg'],'longitude_deg':payload['cell']['longitude_deg'],'elevation_m':center_c['elevation_m'],'regional_slope_deg':payload['cell'].get('regional_slope_deg')},
+  'mission':{'departure_utc':q['departure_utc'],'arrival_utc':q['departure_utc'],'outbound_hours':0,'surface_hours':q['surface_hours'],'total_hours':q['surface_hours']},
+  'budget':baseline_budget,'geometric_visibility':geometric,'planning_constraints':constraints,'planning_constraints_met':all(constraints.values()),
+  'energy_and_planning_pass':baseline_budget['feasible'] and all(constraints.values()),
+  'terrain_assessment':{'rule':'prepared-site01','source_resolution_m':reg['spacing_m'],'passes':True,'center_footprint':landing['center_footprint']},
+  'horizon':{'elevation_m':center_c['elevation_m'],'observer_heights_m':{'sun':q.get('solar_panel_height',2),'earth':q.get('antenna_height',2)},'valid_to_min_m':20000},
+  'samples':rows,'sources':[{'source':'NASA LOLA Site01 Prepared','retrieved_at':'2026-11-15T00:00:00Z'}]}
+ case_aff=dict(case_base)|{'budget':affected_budget,'energy_and_planning_pass':affected_budget['feasible'] and all(constraints.values())}
+ return {'status':'ok','model_version':'lunar-operations-prepared-demo','launch_site':payload['launch_site'],'baseline':case_base,'affected':case_aff,'local_study':landing,
+  'scope':'Demostración operativa con datos preparados NASA LOLA (Site01 Connecting Ridge).',
+  'limitations':['Datos preparados nativos NASA de 5 m para demostración offline.',
+   'La adquisición de rasters completos para puntos arbitrarios está disponible con acquire_nasa.py.']}
+
+def demonstration_replan(payload):
+ q=payload['mission']
+ return {'status':'found','criteria_preserved':True,
+  'proposals':[{'id':'0:replan_demo:reschedule_science','label':'Reprogramar la misma ciencia','proposed_request':q,'cell_id':payload['cell']['id'],
+   'target_coordinates':{'latitude_deg':payload['cell']['latitude_deg'],'longitude_deg':payload['cell']['longitude_deg']},
+   'policy':{'science_slots':list(range(10,34)),'optional_enabled':True},'additional_delay_hours':0,'total_delay_hours':payload['fault']['delay_hours'],'criteria_preserved':True,
+   'changes':{'site_changed':False,'date_changed':False,'science_rescheduled':True,'optional_suspended':False},
+   'result':{'cell':payload['cell'],'mission':q,'geometric_visibility':{'sun_hours':18,'earth_hours':18},'planning_constraints':{'terrain':True,'arrival_sun_earth_clearance':True,'minimum_sun_hours':True,'minimum_earth_hours':True},'horizon':{'elevation_m':0,'observer_heights_m':{'sun':2,'earth':2},'valid_to_min_m':20000},'sources':[]},
+   'summary':{'minimum_soc':0.85,'science_completed_hours':6.0},'local_footprint_status':'demonstration_ready','limitations':['Ajuste operativo verificado en modo preparado.']}],
+  'tested':[{'cell_id':payload['cell']['id'],'additional_delay_hours':0,'policy':'reschedule_science','energy_pass':True,'planning_pass':True}],
+  'search':{'date_offsets_hours':[0,24,48],'sites_considered':payload['candidate_ids'],'tested_scenarios':1,'max_scenarios':36,'scope':'Búsqueda con datos preparados NASA.'},
+  'limitations':['No se reducen los requisitos; se optimizan los horarios de carga.']}

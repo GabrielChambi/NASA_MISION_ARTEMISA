@@ -1305,7 +1305,6 @@ export default function UnifiedMissionPlanner(){
           {!plan&&pinnedTarget&&<div className="surface-inspection-hint"><MapPin size={12}/><b>{tr("Lugar fijado:")}{" "}{tr(pinnedTarget.label)}</b><span>{tr("Elevación")}{" "}{tr(pinnedTarget.elevation_m!=null?Math.round(pinnedTarget.elevation_m)+' m':'—')}{" "}{tr("· Pendiente")}{" "}{tr(pinnedTarget.regional_slope_deg!=null?pinnedTarget.regional_slope_deg.toFixed(1)+'°':'—')}{" "}{tr("· Escribe una fecha para calcular sus condiciones")}</span></div>}
           {plan&&!flight&&<div className="surface-inspection-hint"><MapPin size={12}/>{hovered?<><b className={'risk-text '+hovered.risk}>{tr(SURFACE_CLASS_LABELS[hovered.risk])}</b><span>{tr(num(Math.abs(hovered.latitude_deg),2))}°S · {tr(longitude(hovered.longitude_deg))}{" "}{tr("· pendiente P95")}{" "}{tr(num(hovered.regional_slope_deg))}°</span></>:<span>{tr("Haz clic en cualquier área para ver sus mediciones y motivos.")}</span>}</div>}
         </div>
-        {plan&&<MissionVisibilityPanel sample={current} sunHeightM={vehicle.solar_panel_height} earthHeightM={vehicle.antenna_height}/>}
         {plan&&!hideTimelinePanel&&<SurfaceCoverageSummary plan={plan} active={coverageVisible} onToggle={()=>setCoverageVisible(v=>!v)} onEvidence={()=>setEvidence(true)}/>}
         {plan&&!hideTimelinePanel&&<div className="mission-conditions">
           <div className="conditions-heading">
@@ -1421,6 +1420,7 @@ export default function UnifiedMissionPlanner(){
             <span>{tr("Pendiente P95:")}{" "}<b className={selected?.regional_slope_deg==null?undefined:selected.regional_slope_deg<=Math.min(intent?.max_slope_deg??slope,vehicle.center_of_gravity_tolerance)?'kpi-ok':'kpi-warn'}>{tr(num(selected?.regional_slope_deg,2))}°</b>{" "}{tr("· límite del escenario")}{" "}{tr(num(Math.min(intent?.max_slope_deg??slope,vehicle.center_of_gravity_tolerance),2))}°</span>
           </div>
         </div>}
+        {plan&&<MissionVisibilityPanel sample={current} sunHeightM={vehicle.solar_panel_height} earthHeightM={vehicle.antenna_height}/>}
       </main>
 
       {!hideRightPanel&&<aside className="mission-decisions">
