@@ -3,6 +3,8 @@ export type VehicleProfile = {
   solar_panel_height:number
   antenna_height:number
   center_of_gravity_tolerance:number
+  category?:string
+  description?:string
 }
 export type LanderReview = {
   status:string
