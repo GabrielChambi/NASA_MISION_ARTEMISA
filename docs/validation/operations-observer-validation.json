@@ -1,0 +1,92 @@
+{
+  "status": "pass",
+  "checked_at": "2026-11-15T16:00:07.480579+00:00",
+  "point": {
+    "id": "operations-independent-observer",
+    "latitude_deg": -80.78120657,
+    "longitude_deg": -7.30575953,
+    "elevation_m": 3176.864501953125
+  },
+  "reports": [
+    {
+      "target": "sun",
+      "observer_height_m": 50,
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-7.30575953%2C-80.78120657%2C3.226864502%27&START_TIME=%272026-12-30+01%3A00%3A00%27&STOP_TIME=%272026-12-30+02%3A00%3A00%27&STEP_SIZE=%2715+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "retrieved_at": "2026-11-15T16:00:06.767680+00:00",
+      "samples": [
+        {
+          "t_utc": "2026-12-30T01:00:00Z",
+          "azimuth_difference_deg": 4.2460283111722674e-07,
+          "elevation_difference_deg": 7.61835425855395e-07,
+          "range_difference_km": 0.025916695594787598
+        },
+        {
+          "t_utc": "2026-12-30T01:15:00Z",
+          "azimuth_difference_deg": 4.539793962976546e-08,
+          "elevation_difference_deg": 2.074576421762231e-08,
+          "range_difference_km": 0.025938034057617188
+        },
+        {
+          "t_utc": "2026-12-30T01:30:00Z",
+          "azimuth_difference_deg": 4.6492289129673736e-07,
+          "elevation_difference_deg": 1.8257758238604538e-07,
+          "range_difference_km": 0.025959908962249756
+        },
+        {
+          "t_utc": "2026-12-30T01:45:00Z",
+          "azimuth_difference_deg": 8.496851933159633e-08,
+          "elevation_difference_deg": 2.821234206251688e-07,
+          "range_difference_km": 0.025984197854995728
+        },
+        {
+          "t_utc": "2026-12-30T02:00:00Z",
+          "azimuth_difference_deg": 3.54427697857318e-07,
+          "elevation_difference_deg": 8.009756893301301e-07,
+          "range_difference_km": 0.0260084867477417
+        }
+      ],
+      "maximum_angular_difference_deg": 8.009756893301301e-07
+    },
+    {
+      "target": "earth",
+      "observer_height_m": 38,
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-7.30575953%2C-80.78120657%2C3.214864502%27&START_TIME=%272026-12-30+01%3A00%3A00%27&STOP_TIME=%272026-12-30+02%3A00%3A00%27&STEP_SIZE=%2715+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "retrieved_at": "2026-11-15T16:00:07.476505+00:00",
+      "samples": [
+        {
+          "t_utc": "2026-12-30T01:00:00Z",
+          "azimuth_difference_deg": 1.430944735147932e-06,
+          "elevation_difference_deg": 3.5670206344207145e-07,
+          "range_difference_km": 0.025488027255050838
+        },
+        {
+          "t_utc": "2026-12-30T01:15:00Z",
+          "azimuth_difference_deg": 1.0605895397475251e-06,
+          "elevation_difference_deg": 1.270748999360194e-07,
+          "range_difference_km": 0.02551328483968973
+        },
+        {
+          "t_utc": "2026-12-30T01:30:00Z",
+          "azimuth_difference_deg": 1.6234787096891523e-06,
+          "elevation_difference_deg": 3.3639967345067134e-07,
+          "range_difference_km": 0.025538240326568484
+        },
+        {
+          "t_utc": "2026-12-30T01:45:00Z",
+          "azimuth_difference_deg": 2.0735498083013226e-06,
+          "elevation_difference_deg": 2.7144495717834616e-07,
+          "range_difference_km": 0.025562766124494374
+        },
+        {
+          "t_utc": "2026-12-30T02:00:00Z",
+          "azimuth_difference_deg": 1.4890202351125481e-06,
+          "elevation_difference_deg": 6.720304845941882e-08,
+          "range_difference_km": 0.025589801953174174
+        }
+      ],
+      "maximum_angular_difference_deg": 2.0735498083013226e-06
+    }
+  ],
+  "angular_tolerance_deg": 0.001,
+  "scope": "Five epochs per body and one point. Direct JPL observer queries independently check the polar-reference translation and heights. This does not validate all dates, terrain, spacecraft or the lunar frame with SPICE."
+}

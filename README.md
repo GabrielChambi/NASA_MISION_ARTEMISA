@@ -10,7 +10,7 @@ Escribe cuándo quieres viajar y el sistema calcula una **clasificación continu
 
 ## Cómo se usa
 
-1. Escribe fecha y hora y pulsa **Planificar mi misión**, o prueba el ejemplo. La hora predeterminada es Bolivia, `America/La_Paz` / UTC−04:00; puedes indicar UTC.
+1. Escribe fecha y hora y pulsa **Planificar mi misión**, o prueba el ejemplo. El origen predeterminado es **Kennedy LC-39B**, con hora de Florida (`America/New_York`) y horario de verano; también puedes trabajar en UTC.
 2. El sistema interpreta salida o alunizaje, estima el tránsito y compara automáticamente **12.892 zonas** de todo el casquete. No necesitas abrir otro estudio ni elegir capas.
 3. La **capa de evaluación cubre todo el casquete visible** con colores y contornos verdes, amarillos, rojos y grises sobre el relieve NASA. No se limita a unos puntos. Los marcadores destacan centros recomendados, pero no sustituyen el campo completo de resultados.
 4. Haz clic en **cualquier sector de la superficie**, aunque no tenga marcador, o introduce coordenadas en el inspector. Se muestran su clase, pendiente P95 y máxima, área, cobertura y razones. Cuando dispone de horizonte válido, el sistema obtiene su serie temporal propia; no copia la del mejor candidato. Reproduce **Condiciones durante tu estancia** para ver los cambios del Sol y la Tierra.
@@ -40,7 +40,7 @@ npm.cmd run dev:full
 
 Abre [la aplicación local](http://127.0.0.1:5173/). La documentación FastAPI está en [127.0.0.1:8000/docs](http://127.0.0.1:8000/docs). El lanzador inicia ambos servicios, carga `.env` y los detiene al cerrarse. En Linux/macOS usa `npm`, `python3` y `api/.venv/bin/python`.
 
-Los derivados NASA y las consultas originales del ejemplo están incluidos. Los TIFF grandes sólo hacen falta para regenerar o auditar el terreno.
+Los derivados NASA y las consultas originales del ejemplo están incluidos. Los TIFF grandes son necesarios para el nuevo estudio operativo local de huella y alturas. Descárgalos una vez con `api/.venv/Scripts/python.exe api/scripts/acquire_nasa.py`. El mapa regional puede utilizar sus derivados sin esos TIFF.
 
 ### Configurar Gemini
 
@@ -193,4 +193,20 @@ La explicación de Gemini se apoya en las mediciones y las fuentes del escenario
 
 ~~~powershell
 node frontend/scripts/test-vehicle-profile-integrity.mjs
+~~~
+
+
+## Energía, fallos y estudio local
+
+En **Estudio de misión**, la misma página calcula generación solar con distancias JPL cada 15 minutos, estado de batería, reserva, cargas suspendidas, memoria y transmisión con tasa declarada. El ejemplo de nave es hipotético y editable; no se atribuyen sus parámetros a NASA. Un presupuesto fallido activa propuestas que comparan sitio, fecha y horarios, conservando las horas científicas y los criterios.
+
+El destino local permite introducir coordenadas exactas, estudiar una elipse de dispersión con la huella circular de la nave y recalcular horizontes para las alturas declaradas de panel y antena. Los datos5m sólo se usan dentro de Site01/Site04; el resto mantiene80m y las huellas pequeñas quedan sin resolver. La evaluación detallada no cambia de color toda una celda regional.
+
+El centro de lanzamiento y el reloj se incluyen en la exportación, junto con los presupuestos, configuración, fuentes y propuesta aplicada. La elección de Kennedy no convierte la estimación orbital en un ascenso o una ventana de lanzamiento real.
+
+Consulta [metodología, fuentes, instalación de rasters y reproducción](docs/MISSION_OPERATIONS.md). Esta extensión nativa se ejecuta con la API Python local; el Worker conserva sus servicios anteriores y no ejecuta este cálculo de rasters.
+
+~~~powershell
+node frontend/scripts/test-mission-operations.mjs
+api/.venv/Scripts/python.exe api/scripts/validate_operations_observer.py
 ~~~

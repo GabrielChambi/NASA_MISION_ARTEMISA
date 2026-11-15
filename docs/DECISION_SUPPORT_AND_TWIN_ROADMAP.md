@@ -33,9 +33,9 @@ Las dos últimas filas son una hoja de ruta, no capacidades que el producto actu
 | P0 | Rescate automático del escenario | Qué fechas o lugares satisfacen las mismas restricciones | Implementado y probado con respuestas NASA originales |
 | P0 | Comparador del escenario original y propuestas | Qué cambió, qué se preservó y qué mejora realmente | Implementado: aplicación explícita y exportación de la comparación |
 | P1 | Ventanas operativas y cuenta atrás | Cuándo se pierde o recupera Sol/Tierra y cuánto dura el peor corte | Implementado con cadencia horaria, intervalos y fin de datos explícitos |
-| P1 | Modelo configurable de energía y memoria | Si la nave puede sostener la operación durante los cortes | Requiere parámetros de vehículo y actividades; no inferirlos de la apariencia del mapa |
+| P1 | Modelo configurable de energía y memoria | Si la nave puede sostener la operación durante los cortes | Implementado localmente con configuración declarada, balance, batería, datos y fallos; sin térmica ni RF |
 | P2 | Planificación de actividades y frontera de compromisos | Qué observaciones ejecutar con energía y comunicaciones disponibles | Depende del modelo de recursos |
-| P2 | Refinamiento local y validación independiente | Si la preselección regional se mantiene a escala de huella | Requiere datos locales y tolerancias de nave |
+| P2 | Refinamiento local y validación independiente | Si la preselección regional se mantiene a escala de huella | Implementado en coberturas5m para huella y elipse; fuera de ellas se conserva80m. Validación física completa pendiente |
 | P3 | Sincronización y evaluación de estados | Cómo cambia la predicción al incorporar una observación nueva | Requiere entidad, mediciones y protocolo de validación definidos |
 
 Este orden es una recomendación de producto: prioriza una mejora comprobable de decisiones frente a añadir funciones cuya fidelidad todavía no puede demostrarse.
@@ -189,3 +189,6 @@ El chat permite importar un perfil JSON o metadatos JSON glTF y elegir ejemplos 
 El conjunto actual de horizontes corresponde a un observador a 2 m. Una altura diferente requiere calcular su horizonte desde el terreno; hasta entonces, sus horas de Sol/Tierra quedan desconocidas y el rescate no propone una fecha ficticia. No se utiliza una distancia arbitraria a obstáculos para conceder visibilidad a vehículos altos. El límite efectivo de pendiente es el menor entre la preferencia del usuario y el límite declarado por el perfil; cargar un vehículo nunca relaja la preferencia.
 
 Gemini recibe un resumen compacto de mediciones, fuentes y cobertura. Su explicación no convierte despeje solar en energía, visibilidad de la Tierra en capacidad de transmisión, ni pendiente regional en estabilidad mecánica o supervivencia. El descenso sigue siendo un ensayo de una nave genérica hipotética, sin parámetros dinámicos identificados de los objetos del catálogo.
+
+
+La extensión operativa de esta iteración se documenta en [MISSION_OPERATIONS.md](MISSION_OPERATIONS.md): replanificación acotada frente a fallos, huellas nativas, horizontes por altura y contexto de lanzamiento Kennedy. No incorpora telemetría de una nave ni valida un gemelo operacional físico.

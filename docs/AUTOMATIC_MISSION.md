@@ -222,3 +222,8 @@ node frontend/scripts/test-mission-rescue.mjs
 ~~~
 
 Este recorrido utiliza el caso NASA real, aplica la alternativa al mapa completo, comprueba que una nueva planificación conserva la fecha adoptada, verifica ventanas y fin de datos, y prueba cancelación, error de fuente, respuestas antiguas y móvil.
+
+
+## Extensión operativa y reloj de lanzamiento
+
+El origen predeterminado de la interfaz es Kennedy LC-39B con horario de Florida o UTC. Los ejemplos históricos de Bolivia de este documento conservan sus instantes mediante offsets explícitos. El mapa regional se complementa con [energía, fallos, huella y alturas nativas](MISSION_OPERATIONS.md), ejecutados por la API local sobre los TIFF originales.

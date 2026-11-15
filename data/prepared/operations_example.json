@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "description": "Native NASA15minute operations example, with explicitly hypothetical equipment defaults. The UTC instant is explicit; it is07:00 local at Kennedy in December.",
+  "request": {
+    "mission": {
+      "departure_utc": "2026-12-25T12:00:00Z",
+      "surface_hours": 72
+    },
+    "cell_id": "polar:5:56",
+    "launch_site_id": "ksc-39b"
+  },
+  "nasa_records": [
+    "457ccd2ff59e5875a0ca727232ffe93ec7c2e664db8bcd81710cf5bd4a821599.json",
+    "d5859c26d48a18671850fa8046146ab454897e3eda74a373afa8b475031d6c18.json",
+    "ea5e69aef0e125cde6d58bf1a2b65a95ffc7400d19ea4031df9914348dee8aba.json"
+  ],
+  "expected": {
+    "native_resolution_m": 80,
+    "footprint_resolved": false,
+    "minimum_soc": 0.2828947368421066,
+    "science_completed_hours": 6,
+    "energy_balance_residual_tolerance_wh": 1e-05
+  },
+  "source_urls": [
+    "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-25+12%3A00%3A00%27&STOP_TIME=%272026-12-25+13%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+    "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-30+00%3A00%3A00%27&STOP_TIME=%272027-01-02+00%3A00%3A00%27&STEP_SIZE=%2715+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+    "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-30+00%3A00%3A00%27&STOP_TIME=%272027-01-02+00%3A00%3A00%27&STEP_SIZE=%2715+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27"
+  ]
+}

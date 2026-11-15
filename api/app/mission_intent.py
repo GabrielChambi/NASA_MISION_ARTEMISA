@@ -1,3 +1,4 @@
+from .launch_context import ALLOWED_TIMEZONES,local_to_utc
 """Extract mission parameters; the planning engine performs every scientific calculation."""
 from datetime import datetime, timedelta, timezone
 import json
@@ -24,7 +25,7 @@ SCHEMA = {
     "properties": {
         "local_date": {"anyOf": [{"type": "string"}, {"type": "null"}]},
         "local_time": {"anyOf": [{"type": "string"}, {"type": "null"}]},
-        "timezone": {"type": "string", "enum": ["America/La_Paz", "UTC"]},
+        "timezone": {"type": "string", "enum": list(ALLOWED_TIMEZONES)},
         "date_kind": {"type": "string", "enum": ["departure", "landing"]},
         "date_explicit": {"type": "boolean"}, "time_explicit": {"type": "boolean"},
         **{key: {"anyOf": [{"type": "number"}, {"type": "null"}]} for key in FIELDS},
@@ -60,9 +61,9 @@ def finite(value, minimum, maximum):
 def validate_input(value):
     if not isinstance(value, dict) or not isinstance(value.get("message"), str) or not value["message"].strip() or len(value["message"]) > 1600:
         raise IntentError("Escribe una petición de viaje de hasta 1600 caracteres.")
-    tz = value.get("timezone", "America/La_Paz")
-    if tz not in ("America/La_Paz", "UTC", "Etc/UTC"):
-        raise IntentError("La zona horaria debe ser America/La_Paz o UTC.")
+    tz = value.get("timezone", "America/New_York")
+    if tz not in (*ALLOWED_TIMEZONES, "Etc/UTC"):
+        raise IntentError("Elige la zona IANA del centro espacial o UTC.")
     defaults = dict(DEFAULTS)
     if "defaults" in value:
         if not isinstance(value["defaults"], dict):
@@ -148,6 +149,15 @@ def raw_parse(value):
             time = f"{hour:02d}:{minute:02d}"
     if re.search(r"\b(?:utc|gmt)\b(?!\s*[-+]\s*0?4)", text) and not offset:
         tz = "UTC"
+    explicit_offset=re.search(r"\b(?:utc|gmt)\s*([+-])\s*(\d{1,2})(?::?(\d{2}))?",text)
+    if explicit_offset and date and time and not offset and not fatal:
+        hh,mm=int(explicit_offset[2]),int(explicit_offset[3] or 0)
+        if hh>23 or mm>59:
+            fatal="El desplazamiento UTC no es válido."
+        else:
+            fixed=explicit_offset[1]+f"{hh:02d}:{mm:02d}"
+            instant=datetime.fromisoformat(f"{date}T{time}:00{fixed}").astimezone(timezone.utc)
+            date,time,tz=instant.strftime("%Y-%m-%d"),instant.strftime("%H:%M"),"UTC"
     verbs = re.findall(r"\b(alunizar|alunizaje|aterrizar|aterrizaje|llegar|llegada|salir|salida|despegar|despegue|viaje|viajar|partir|lanzar|lanzamiento)(?:el|en|al)?\b", text[:index] if index >= 0 else text)
     if not verbs and index >= 0:
         verbs = re.findall(r"\b(alunizar|alunizaje|aterrizar|aterrizaje|llegar|llegada|salir|salida|despegar|despegue|viaje|viajar|partir|lanzar|lanzamiento)(?:el|en|al)?\b", text)
@@ -194,17 +204,18 @@ def finish(value, raw, mode="parser", reason=None):
         return dict(**base, needs_clarification=True, question=problem or missing, display_summary=problem or missing)
     if not valid_date(local_date) or not re.fullmatch(r"(?:[01]\d|2[0-3]):[0-5]\d", local_time):
         raise IntentError("Fecha u hora extraída no válida.")
-    requested = datetime.fromisoformat(f"{local_date}T{local_time}:00").replace(tzinfo=timezone.utc)
-    if partial["timezone"] == "America/La_Paz":
-        requested += timedelta(hours=4)
+    try:
+        requested = local_to_utc(f"{local_date}T{local_time}",partial["timezone"])
+    except ValueError as exc:
+        return dict(**base, needs_clarification=True, question=str(exc), display_summary=str(exc))
     if requested.year > 2100:
         raise IntentError("El instante UTC queda fuera del intervalo admitido.")
     utc = requested.strftime("%Y-%m-%dT%H:%M:%SZ")
     partial.update(departure_utc=utc, requested_utc=utc)
     if time_assumed:
-        assumptions.insert(0, f"No indicaste hora: uso las {local_time} en {partial['timezone']}" + (" (UTC−04:00) como hipótesis editable." if partial["timezone"] == "America/La_Paz" else " (UTC) como hipótesis editable."))
+        assumptions.insert(0, f"No indicaste hora: uso las {local_time} en {partial['timezone']}" + (" (UTC−04:00) como hipótesis editable." if partial["timezone"] == "America/La_Paz" else " como hipótesis editable; se aplica la zona IANA y su horario de verano."))
     else:
-        assumptions.insert(0, f"Interpreto las {local_time} en {partial['timezone']}" + (" (UTC−04:00)." if partial["timezone"] == "America/La_Paz" else " (UTC)."))
+        assumptions.insert(0, f"Interpreto las {local_time} en {partial['timezone']}" + (" (UTC−04:00)." if partial["timezone"] == "America/La_Paz" else "; se aplica la zona IANA y su horario de verano."))
     return dict(**base, needs_clarification=False, display_summary=("Alunizaje solicitado" if partial["date_kind"] == "landing" else "Salida solicitada") + f": {local_date} {local_time} · {partial['timezone']}. Estancia superficial: {params['surface_hours']:g} h.")
 
 
@@ -214,7 +225,7 @@ def parse_mission_intent(value):
 
 
 def validate_model(value, request, baseline):
-    if not isinstance(value, dict) or value.get("date_kind") not in ("departure", "landing") or value.get("timezone") not in ("America/La_Paz", "UTC") or not isinstance(value.get("date_explicit"), bool) or not isinstance(value.get("time_explicit"), bool):
+    if not isinstance(value, dict) or value.get("date_kind") not in ("departure", "landing") or value.get("timezone") not in ALLOWED_TIMEZONES or not isinstance(value.get("date_explicit"), bool) or not isinstance(value.get("time_explicit"), bool):
         raise ValueError("Invalid intent schema")
     for key in FIELDS:
         if value.get(key) is not None and not finite(value[key], 0, 336):

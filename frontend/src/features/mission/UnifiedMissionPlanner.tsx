@@ -11,11 +11,13 @@ import type { AutomaticPlan,LanderReview,MissionIntent,MissionPoint,VehicleProfi
 import SurfaceCoverageSummary,{SURFACE_CLASS_LABELS} from './SurfaceCoverageSummary'
 import MissionRescuePanel from './MissionRescuePanel'
 import OperationalWindowsPanel from './OperationalWindowsPanel'
+import MissionOperationsPanel from './MissionOperationsPanel'
+import {LAUNCH_SITES,wallTime,wallToUtc,formatMissionDate} from '../../../worker/timezones.mjs'
+import type {PlanRequest} from './rescueTypes'
 import type {AdoptedAlternative,RescueReport,RescueProposal} from './rescueTypes'
 import './unified-mission.css'
 
 const EXAMPLE='Quiero hacer un viaje el 25 de diciembre de 2026 a las 8 am. ¿Dónde sería mejor alunizar y cuánto tardaría la misión?'
-const TIMEZONE='America/La_Paz'
 
 const CATALOG_EXAMPLES:Record<string,VehicleProfile>={
   blue_moon:{
@@ -126,7 +128,7 @@ const unknownRay:RaycastHit={hit:true,hitDistanceM:NaN,hitPositionWorld:null,obs
 const num=(value:number|null|undefined,digits=1)=>typeof value==='number'&&Number.isFinite(value)?value.toLocaleString('es',{maximumFractionDigits:digits}):'—'
 const duration=(hours:number)=>{if(!Number.isFinite(hours))return '—';const rounded=Math.round(hours),d=Math.floor(rounded/24),h=rounded%24;return d?d+' d'+(h?' '+h+' h':''):h+' h'}
 const longitude=(value:number,digits=2)=>num(Math.abs(value),digits)+'°'+(value<0?'O':'E')
-const localDate=(utc:string)=>{const d=new Date(utc);return Number.isFinite(d.getTime())?new Intl.DateTimeFormat('es',{timeZone:TIMEZONE,day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}).format(d):'—'}
+
 function reasonPoint(p:MissionPoint){return p.reasons?.join(' ')||p.reason||'No hay evaluación suficiente para clasificar este sector.'}
 function missionRequest(i:MissionIntent,v:VehicleProfile=LUNAR_OBJECTS.reference){return {departure_utc:i.departure_utc,date_kind:i.date_kind,surface_hours:i.surface_hours,max_slope_deg:i.max_slope_deg,min_sun_hours:i.min_sun_hours,min_earth_hours:i.min_earth_hours,observer_height_m:2,vehicle_profile:{lander_name:v.lander_name,solar_panel_height:v.solar_panel_height,antenna_height:v.antenna_height,center_of_gravity_tolerance:v.center_of_gravity_tolerance}}}
 
@@ -147,6 +149,11 @@ function matchCatalogVehicleFromText(text:string):VehicleProfile|null{
 }
 
 export default function UnifiedMissionPlanner(){
+  const [launchSiteId,setLaunchSiteId]=useState('ksc-39b'),[clockMode,setClockMode]=useState('local')
+  const launchSite=LAUNCH_SITES.find(site=>site.id===launchSiteId)??LAUNCH_SITES[0]
+  const TIMEZONE=clockMode==='UTC'?'UTC':launchSite.timezone
+  const localDate=(utc:string)=>Number.isFinite(Date.parse(utc))?formatMissionDate(utc,TIMEZONE):'—'
+  const operationsEvidence=useRef<unknown>(null)
   const [atlas,setAtlas]=useState<AtlasData|null>(null),[polar,setPolar]=useState<PolarSurface|null>(null)
   const [loadError,setLoadError]=useState(''),[retry,setRetry]=useState(0)
   const [message,setMessage]=useState(''),[intent,setIntent]=useState<MissionIntent|null>(null),[assumptions,setAssumptions]=useState<string[]>([])
@@ -277,7 +284,7 @@ export default function UnifiedMissionPlanner(){
           const date=Date.parse(proposal.proposed_request?.departure_utc),shift=(date-Date.parse(expected.departure_utc))/3600000
           if(proposal.criteria_preserved!==true||proposal.best?.risk!=='green'||!Number.isFinite(shift)||shift<0||shift>336||Math.abs(shift-proposal.delta_hours)>1e-6||equal.some(key=>proposal.proposed_request[key]!==expected[key])||!profileEqual(proposal.proposed_request.vehicle_profile,expected.vehicle_profile))throw new Error('Una alternativa no conserva tus requisitos. No se ha aplicado ningún cambio.')
         }
-        if(!ac.signal.aborted){setRescueReport(data);if(data.status==='found'&&data.proposals[0])appendChatTurn('assistant','El motor científico encontró '+data.proposals.length+' alternativas entre las fechas examinadas. La opción de menor retraso comprobado propone '+(data.proposals[0].proposed_request.date_kind==='landing'?'alunizar':'salir')+' el '+localDate(data.proposals[0].proposed_request.departure_utc)+' (hora de Bolivia), manteniendo la estancia y tus requisitos. Revisa las propuestas calculadas antes de aplicar una fecha.');if(data.status==='found'&&window.innerWidth<=900)setTimeout(()=>{if(!ac.signal.aborted)document.querySelector('.mission-rescue')?.scrollIntoView({behavior:'smooth',block:'start'})},100)}
+        if(!ac.signal.aborted){setRescueReport(data);if(data.status==='found'&&data.proposals[0])appendChatTurn('assistant','El motor científico encontró '+data.proposals.length+' alternativas entre las fechas examinadas. La opción de menor retraso comprobado propone '+(data.proposals[0].proposed_request.date_kind==='landing'?'alunizar':'salir')+' el '+localDate(data.proposals[0].proposed_request.departure_utc)+' ('+TIMEZONE+'), manteniendo la estancia y tus requisitos. Revisa las propuestas calculadas antes de aplicar una fecha.');if(data.status==='found'&&window.innerWidth<=900)setTimeout(()=>{if(!ac.signal.aborted)document.querySelector('.mission-rescue')?.scrollIntoView({behavior:'smooth',block:'start'})},100)}
       })
       .catch(e=>{if(!ac.signal.aborted)setRescueError(e instanceof Error?e.message:'No se pudo completar la búsqueda de alternativas.')})
       .finally(()=>{window.clearInterval(timer);if(!ac.signal.aborted)setRescueBusy(false)})
@@ -412,7 +419,7 @@ export default function UnifiedMissionPlanner(){
     request.current?.abort();requestId.current++;setBusy(null);setPlan(null);setIntent(null);setAdopted(null);setError('');setTimeline(0);setPlaying(false);setFlight(null);setFlying(false)
   }
   function clearResult(){setAdopted(null);request.current?.abort();requestId.current++;setBusy(null);setPlan(null);setError('');setFlight(null);setFlying(false);setPlaying(false)}
-  async function calculate(text=message,reuseIntent?:MissionIntent,overrideVehicle?:VehicleProfile,skipUserBubble=false,alternative?:AdoptedAlternative){
+  async function calculate(text=message,reuseIntent?:MissionIntent,overrideVehicle?:VehicleProfile,skipUserBubble=false,alternative?:AdoptedAlternative,preferredCellId?:string){
     const detectedVehicle=!overrideVehicle&&text?matchCatalogVehicleFromText(text):null
     const activeVehicle=overrideVehicle??detectedVehicle??vehicle
     if(detectedVehicle&&detectedVehicle.lander_name!==vehicle.lander_name){
@@ -449,12 +456,12 @@ export default function UnifiedMissionPlanner(){
         setAssumptions(data.assumptions??[]);setStay(String(parsed.surface_hours));setSlope(parsed.max_slope_deg);setSunHours(parsed.min_sun_hours);setEarthHours(parsed.min_earth_hours)
       }
       if(ac.signal.aborted||id!==requestId.current)return
-      setIntent(parsed);setDepartureInput(new Date(Date.parse(parsed.departure_utc)-4*3600000).toISOString().slice(0,16));setBusy('science')
+      setIntent(parsed);setDepartureInput(wallTime(parsed.departure_utc,TIMEZONE));setBusy('science')
       const response=await fetch('/api/automatic-plan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(missionRequest(parsed,activeVehicle)),signal:ac.signal})
       const data=await response.json()
       if(!response.ok||data.status!=='ok'||!data.coverage||!Array.isArray(data.cells))throw new Error(data.message??'NASA no pudo completar el análisis; no se inventará una recomendación.')
       if(ac.signal.aborted||id!==requestId.current)return
-      setCoverageVisible(true);setHoveredId(null);document.querySelector('.mission-decisions')?.scrollTo({top:0});setPlan(data);setSelectedId(data.best?.id??data.closest_candidate?.id??'');setPreferences(false)
+      setCoverageVisible(true);setHoveredId(null);document.querySelector('.mission-decisions')?.scrollTo({top:0});setPlan(data);setSelectedId(preferredCellId??data.best?.id??data.closest_candidate?.id??(data.cells.some((point:MissionPoint)=>point.id===selectedId)?selectedId:data.cells.find((point:MissionPoint)=>point.latitude_deg< -89&&point.elevation_m!=null)?.id??''));setPreferences(false)
       if(window.innerWidth<=900)setTimeout(()=>{if(id===requestId.current)document.querySelector('.one-map-heading')?.scrollIntoView({behavior:'smooth',block:'start'})},100)
     }catch(e){
       if(!ac.signal.aborted){
@@ -471,8 +478,8 @@ export default function UnifiedMissionPlanner(){
     const request=proposal.proposed_request,date=new Date(request.departure_utc)
     const day=new Intl.DateTimeFormat('es',{timeZone:TIMEZONE,day:'numeric',month:'long',year:'numeric'}).format(date)
     const clock=new Intl.DateTimeFormat('es',{timeZone:TIMEZONE,hour:'2-digit',minute:'2-digit',hour12:false}).format(date)
-    const updated='Quiero '+(request.date_kind==='landing'?'alunizar':'viajar')+' el '+day+' a las '+clock+' (hora de Bolivia) y estar '+request.surface_hours+' horas en la Luna. Pendiente máxima '+request.max_slope_deg+' grados; mínimo '+request.min_sun_hours+' horas de Sol y '+request.min_earth_hours+' horas de Tierra visible.'
-    const local=new Date(date.getTime()-4*3600000).toISOString().slice(0,16)
+    const updated='Quiero '+(request.date_kind==='landing'?'alunizar':'viajar')+' el '+day+' a las '+clock+' ('+TIMEZONE+') y estar '+request.surface_hours+' horas en la Luna. Pendiente máxima '+request.max_slope_deg+' grados; mínimo '+request.min_sun_hours+' horas de Sol y '+request.min_earth_hours+' horas de Tierra visible.'
+    const local=wallTime(request.departure_utc,TIMEZONE)
     setMessage(updated)
     void calculate(updated,{...intent,...request,requested_utc:request.departure_utc,timezone:TIMEZONE,local_datetime:local},undefined,false,chosen)
   }
@@ -482,7 +489,7 @@ export default function UnifiedMissionPlanner(){
     const rho=2*polar.radius_m*Math.tan((90+lat)*Math.PI/360),x=rho*Math.sin(lon*Math.PI/180),y=rho*Math.cos(lon*Math.PI/180)
     const col=Math.floor((x-polar.grid.xmin)/polar.cell_spacing_m),row=Math.floor((polar.grid.ymax-y)/polar.cell_spacing_m)
     const c=polar.cells[row*polar.grid_size+col]
-    if(c&&col>=0&&row>=0&&col<polar.grid_size&&row<polar.grid_size)choose(c.id)
+    if(c&&col>=0&&row>=0&&col<polar.grid_size&&row<polar.grid_size){choose(c.id);return c.id}
   }
   function inspectCoordinates(){
     const lat=Number(inspectLat),lon=Number(inspectLon)
@@ -496,15 +503,30 @@ export default function UnifiedMissionPlanner(){
   }
   function exportPlan(){
     if(!plan)return
-    const data={...plan,user_request:message,interpreted_intent:intent,interpretation_assumptions:assumptions,rescue_search:rescueReport,adopted_alternative:adopted,selected_id:selected?.id,exported_at:new Date().toISOString(),descent:flight?{configuration:flight.config,outcome:flight.outcome,impact_speed_mps:flight.impactSpeedMps}:null}
+    const data={...plan,launch_site:launchSite,display_timezone:TIMEZONE,operations:operationsEvidence.current,user_request:message,interpreted_intent:intent,interpretation_assumptions:assumptions,rescue_search:rescueReport,adopted_alternative:adopted,selected_id:selected?.id,exported_at:new Date().toISOString(),descent:flight?{configuration:flight.config,outcome:flight.outcome,impact_speed_mps:flight.impactSpeedMps}:null}
     const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'})),a=document.createElement('a')
     a.href=url;a.download='lunar-oracle-plan-de-mision.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)
   }
+  function describeScenario(i:MissionIntent){
+    return 'Quiero '+(i.date_kind==='landing'?'alunizar':'despegar')+' el '+i.departure_utc+' y estar '+i.surface_hours+' horas en la Luna. Pendiente máxima '+i.max_slope_deg+' grados; mínimo '+i.min_sun_hours+' horas de Sol y '+i.min_earth_hours+' horas de Tierra visible.'
+  }
+  function changeLaunchContext(id:string,mode:string){
+    const site=LAUNCH_SITES.find(s=>s.id===id)??LAUNCH_SITES[0],zone=mode==='UTC'?'UTC':site.timezone
+    setLaunchSiteId(id);setClockMode(mode)
+    if(intent){setDepartureInput(wallTime(intent.departure_utc,zone));setMessage(describeScenario(intent))}
+  }
   function recalculate(){
     if(!intent)return
-    const date=new Date(departureInput+':00-04:00')
-    if(!Number.isFinite(date.getTime())||!departureInput||new Date(date.getTime()-4*3600000).toISOString().slice(0,16)!==departureInput){setError('Revisa la fecha y hora.');return}
-    void calculate(message,{...intent,departure_utc:date.toISOString().replace('.000Z','Z'),local_datetime:departureInput,surface_hours:Number(stay),max_slope_deg:slope,min_sun_hours:sunHours,min_earth_hours:earthHours})
+    try{
+      const next={...intent,departure_utc:wallToUtc(departureInput,TIMEZONE),timezone:TIMEZONE,local_datetime:departureInput,surface_hours:Number(stay),max_slope_deg:slope,min_sun_hours:sunHours,min_earth_hours:earthHours}
+      const text=describeScenario(next);setMessage(text);void calculate(text,next)
+    }catch(e){setError(e instanceof Error?e.message:'Revisa la fecha y hora.')}
+  }
+  function applyOperationalScenario(q:PlanRequest,cellId:string,label:string){
+    if(!intent)return
+    const next={...intent,...q,timezone:TIMEZONE,local_datetime:wallTime(q.departure_utc,TIMEZONE)}
+    const text=describeScenario(next);setMessage(text);appendChatTurn('assistant','Aplicando propuesta verificada: '+label+'. Se vuelven a evaluar el mapa regional y el presupuesto operativo.')
+    void calculate(text,next,undefined,false,undefined,cellId)
   }
   const ray=(el:number|undefined,h:number|undefined):RaycastHit=>el!==undefined&&h!==undefined?{hit:el<=h,hitDistanceM:NaN,hitPositionWorld:null,obstacleElevationDeg:h,marginDeg:el-h}:unknownRay
   const rejectedTotal=plan?.counts.red??0
@@ -529,6 +551,7 @@ export default function UnifiedMissionPlanner(){
           <h1>Dinos cuándo.<br/><em>Encontramos dónde.</em></h1>
         </div>
 
+        <div className="launch-context" data-testid="launch-context"><label>Centro de lanzamiento<select aria-label="Centro de lanzamiento" value={launchSiteId} onChange={e=>changeLaunchContext(e.target.value,'local')}>{LAUNCH_SITES.map(site=><option key={site.id} value={site.id}>{site.name}</option>)}</select></label><label>Reloj de la misión<select aria-label="Zona horaria de misión" value={clockMode} onChange={e=>changeLaunchContext(launchSiteId,e.target.value)}><option value="local">Hora local del centro espacial</option><option value="UTC">UTC · tiempo universal</option></select></label><small>{launchSite.use} · {TIMEZONE}. Los instantes calculados se conservan al cambiar de reloj. <a href={launchSite.source_url} target="_blank" rel="noreferrer">Fuente NASA</a></small></div>
         {/* Fluid Gemini-style Conversational Thread */}
         <div className="mission-chat-thread" aria-live="polite">
           {chatTurns.length===0&&!plan&&!busy&&<div className="gemini-msg assistant">
@@ -571,12 +594,12 @@ export default function UnifiedMissionPlanner(){
           {plan&&(landerReview||reviewBusy)&&<div className="gemini-msg assistant" data-testid="gemini-engineer-card">
             <div className="gemini-msg-head">
               <Bot size={15}/>
-              <span>Explicación del escenario</span>
+              <span>Explicación del mapa regional</span>
               <small>{reviewBusy?'Analizando…':landerReview?.mode==='ai'?`IA · ${landerReview.model}`:'Guía con evidencia del modelo'}</small>
             </div>
             <div className="gemini-msg-content">
               {landerReview?<>
-                <p className="engineer-summary">{landerReview.summary}</p>
+                <p className="engineer-summary">{landerReview.summary}</p><small>Esta lectura corresponde al mapa regional. El estudio de misión calcula la energía y los horizontes locales de las alturas declaradas.</small>
                 <p className="gemini-paragraph-muted"><strong>Diagnóstico:</strong> {landerReview.risk_alert}</p>
                 <div className="gemini-recommendations-list">
                   <p><strong>1. Sitio alternativo:</strong> {landerReview.site_recommendation}</p>
@@ -701,17 +724,17 @@ export default function UnifiedMissionPlanner(){
           {uploadNotice&&<small className="upload-notice">{uploadNotice}</small>}
         </form>
         {adopted&&<div className="adopted-alternative" data-testid="adopted-alternative"><Check size={14}/><div><strong>Alternativa aplicada</strong><span>{adopted.original.date_kind==='landing'?'Alunizaje':'Salida'} original: {localDate(adopted.original.departure_utc)}<br/>Nueva fecha: {localDate(adopted.proposal.proposed_request.departure_utc)}</span><small>La solicitud original queda guardada en la comparación. La estancia y los requisitos no cambian.</small></div></div>}
-        <p className="profile-provenance" data-testid="profile-provenance">Perfil de referencia: horizontes preparados a 2 m. Los objetos del catálogo son ejemplos hipotéticos editables, no fichas de fabricante.</p><div className="trip-assumption"><Clock3 size={13}/><span>Hora de Bolivia · UTC−04:00<br/>Estancia de ejemplo: {num(Number(stay),0)} h, editable abajo.</span></div>
+        <p className="profile-provenance" data-testid="profile-provenance">Perfil de referencia: horizontes preparados a 2 m. Los objetos del catálogo son ejemplos hipotéticos editables, no fichas de fabricante.</p><div className="trip-assumption"><Clock3 size={13}/><span>Reloj: {TIMEZONE}<br/>Estancia de ejemplo: {num(Number(stay),0)} h, editable abajo.</span></div>
         <button className="preferences-toggle" onClick={()=>setPreferences(v=>!v)} aria-expanded={preferences}><Settings2 size={13}/> {plan?'Cambiar fecha o requisitos':'Preferencias del viaje'}</button>
         {preferences&&<div className="trip-preferences">
-          {intent&&<label>{intent.date_kind==='landing'?'Fecha de alunizaje':'Fecha de salida'} · hora Bolivia<input aria-label="Fecha de viaje" type="datetime-local" value={departureInput} onChange={e=>{clearResult();setDepartureInput(e.target.value)}}/></label>}
+          {intent&&<label>{intent.date_kind==='landing'?'Fecha de alunizaje':'Fecha de salida'} · {TIMEZONE}<input aria-label="Fecha de viaje" type="datetime-local" value={departureInput} onChange={e=>{clearResult();setDepartureInput(e.target.value)}}/></label>}
           <label>Tiempo en la Luna<select aria-label="Estancia en la Luna" value={stay} onChange={e=>{clearResult();setStay(e.target.value)}}><option value="24">1 día · 24 h</option><option value="48">2 días · 48 h</option><option value="72">3 días · 72 h</option><option value="168">7 días · 168 h</option>{!['24','48','72','168'].includes(stay)&&<option value={stay}>{stay} horas</option>}</select></label>
           <label>Pendiente regional máxima · grados<input aria-label="Pendiente máxima" type="number" min={0} max={45} value={slope} onChange={e=>{clearResult();setSlope(Number(e.target.value))}}/></label><label>Horas mínimas de Sol<input aria-label="Horas mínimas de Sol" type="number" min={0} max={Number(stay)} value={sunHours} onChange={e=>{clearResult();setSunHours(Number(e.target.value))}}/></label><label>Horas mínimas de Tierra visible<input aria-label="Horas mínimas de Tierra" type="number" min={0} max={Number(stay)} value={earthHours} onChange={e=>{clearResult();setEarthHours(Number(e.target.value))}}/></label><p>El viaje de ida y vuelta se estima por separado. La estancia no es la duración total.</p>
           {intent&&<button onClick={recalculate} disabled={Boolean(busy)}>Recalcular con estos cambios</button>}
         </div>}
 
         {plan&&<div className="trip-overview"><span className="micro-title">TU ITINERARIO ESTIMADO</span>
-          <div className="itinerary-item"><span className="itinerary-dot"/><div><small>Salida de la Tierra</small><strong>{localDate(plan.mission.departure_utc)}</strong></div></div>
+          <div className="itinerary-item"><span className="itinerary-dot"/><div><small>Salida · {launchSite.name}</small><strong>{localDate(plan.mission.departure_utc)}</strong></div></div>
           <div className="itinerary-duration">↓ Ida estimada: {duration(plan.mission.outbound_hours)}</div>
           <div className="itinerary-item"><span className="itinerary-dot moon"/><div><small>Alunizaje analizado</small><strong>{localDate(plan.mission.arrival_utc)}</strong></div></div>
           <div className="itinerary-duration">Estancia: {duration(plan.mission.surface_hours)}</div>
@@ -728,6 +751,7 @@ export default function UnifiedMissionPlanner(){
           <div className="one-map-actions">
             <button onClick={()=>{setFocus(false);setFlight(null);setFlying(false);setCameraRevision(r=>r+1)}} aria-pressed={!focus}>Todo el polo</button>
             <button disabled={!selected||selected.latitude_deg> -80||selected.elevation_m==null} onClick={()=>{setFocus(true);setCameraRevision(r=>r+1)}} aria-pressed={focus}>Acercar destino</button>
+            <button disabled={!plan} onClick={()=>document.querySelector('.mission-operations')?.scrollIntoView({behavior:'smooth',block:'start'})}>Estudio de misión</button>
             <button onClick={()=>{setMapFullscreen(v=>!v);setTimeout(()=>setCameraRevision(r=>r+1),60)}} aria-pressed={mapFullscreen} title={mapFullscreen?'Salir de pantalla grande (Esc)':'Ver vistazo de la Luna en pantalla grande'}>
               {mapFullscreen?<Minimize2 size={13}/>:<Maximize2 size={13}/>}
               {mapFullscreen?'Salir de pantalla grande':'Pantalla grande'}
@@ -748,7 +772,7 @@ export default function UnifiedMissionPlanner(){
         {plan&&<div className="mission-conditions">
           <div className="conditions-heading">
             <strong><Globe2 size={14}/> Línea de tiempo de estancia · {vehicle.lander_name}</strong>
-            <time>{current?localDate(current.t_utc):localDate(plan.mission.arrival_utc)} · Bolivia ({!current?'Datos no disponibles':currentBothOk?'Sol y Tierra visibles':!currentSunOk&&!currentEarthOk?'Sin despeje de Sol ni Tierra':!currentSunOk?'Sol sin despeje':'Tierra sin despeje'})</time>
+            <time>{current?localDate(current.t_utc):localDate(plan.mission.arrival_utc)} · {TIMEZONE} ({!current?'Datos no disponibles':currentBothOk?'Sol y Tierra visibles':!currentSunOk&&!currentEarthOk?'Sin despeje de Sol ni Tierra':!currentSunOk?'Sol sin despeje':'Tierra sin despeje'})</time>
           </div>
 
           <div className="conditions-slider">
@@ -830,7 +854,7 @@ export default function UnifiedMissionPlanner(){
 
       <aside className="mission-decisions">
         {!plan?<div className="decision-welcome"><MapPin size={28}/><h2>Aquí encontrarás tu mejor opción.</h2><p>El sistema relacionará la fecha de tu viaje y el objeto lunar elegido con el terreno, la luz y la visibilidad de la Tierra.</p><ul><li><Check size={13}/> Un destino recomendado y sus razones</li><li><Check size={13}/> Clasificación de toda la superficie</li><li><Check size={13}/> Diagnóstico conversacional en el chat izquierdo</li></ul><small>Los resultados corresponden a un modelo regional de planificación, no a una autorización de vuelo.</small></div>:<>
-          {!plan.best&&<><div className="decision-title"><span className="micro-title">{plan.best?'RECOMENDACIÓN CALCULADA':plan.counts.unknown===plan.total_cells?'FALTAN DATOS PARA EVALUAR ESTE PERFIL':'NINGUNA ZONA CUMPLE TODOS LOS CRITERIOS'}</span>{aiMode&&<small>{aiMode}</small>}</div><MissionRescuePanel report={rescueReport} busy={rescueBusy} error={rescueError} elapsed={rescueElapsed} onApply={applyAlternative} onRetry={()=>setRescueAttempt(a=>a+1)} onCancel={cancelRescue} onEvidence={()=>setEvidence(true)}/></>}
+          {!plan.best&&<><div className="decision-title"><span className="micro-title">{plan.best?'RECOMENDACIÓN CALCULADA':plan.counts.unknown===plan.total_cells?'FALTAN DATOS PARA EVALUAR ESTE PERFIL':'NINGUNA ZONA CUMPLE TODOS LOS CRITERIOS'}</span>{aiMode&&<small>{aiMode}</small>}</div><MissionRescuePanel timezone={TIMEZONE} report={rescueReport} busy={rescueBusy} error={rescueError} elapsed={rescueElapsed} onApply={applyAlternative} onRetry={()=>setRescueAttempt(a=>a+1)} onCancel={cancelRescue} onEvidence={()=>setEvidence(true)}/></>}
           {/* Selected sector, followed by the compact candidate list. */}
           {selected&&<section className="selected-destination top-selected-destination"><div className="selected-destination-title"><span className={'selected-color '+selected.risk}/><h3>{selectedLabel}</h3></div><span className="selected-sector-id">Sector {selected.id.replace('polar:','')} · {num(selected.area_km2,2)} km² regionales</span><p>{reasonPoint(selected)}</p><dl><div><dt>Perfil del escenario</dt><dd>{vehicle.lander_name}</dd></div><div><dt>Centro del sector</dt><dd>{num(selected.latitude_deg,5)}°, {num(selected.longitude_deg,5)}°</dd></div><div><dt>Elevación</dt><dd>{num(selected.elevation_m??selectedCell?.elevation_m,0)} m</dd></div><div><dt>Pendiente P95 · fuente de 80 m</dt><dd>{num(selected.regional_slope_deg,2)}°</dd></div><div><dt>Máxima pendiente nativa</dt><dd>{num(selected.max_slope_deg??selectedCell?.max_slope_deg)}°</dd></div><div><dt>Sol visible ({vehicle.solar_panel_height}m)</dt><dd>{num(selected.sun_hours,0)} h</dd></div><div><dt>Tierra visible ({vehicle.antenna_height}m)</dt><dd>{num(selected.earth_hours,0)} h</dd></div></dl>
 
@@ -873,8 +897,9 @@ export default function UnifiedMissionPlanner(){
         </>}
       </aside>
     </div>
+    <MissionOperationsPanel plan={plan} selected={selected} intent={intent} vehicle={vehicle} launchSite={launchSite} timezone={TIMEZONE} message={message} onApply={applyOperationalScenario} onInspect={sampleMap} onEvidence={value=>{operationsEvidence.current=value}}/>
     {(help||evidence)&&<div className="mission-modal-backdrop" onClick={()=>{setHelp(false);setEvidence(false)}}><section className="mission-modal" role="dialog" aria-modal="true" aria-label={help?'Cómo se planifica tu misión':'Datos del plan de misión'} onClick={e=>e.stopPropagation()} onKeyDown={e=>{if(e.key==='Escape'){setHelp(false);setEvidence(false)}}}><div className="modal-top"><h2>{help?'Escribe tu viaje. Nosotros calculamos.':'Los datos detrás de tu recomendación.'}</h2><button autoFocus aria-label="Cerrar información" onClick={()=>{setHelp(false);setEvidence(false)}}><X size={17}/></button></div>
-      {help?<><p>Escribe la fecha y hora de salida y pulsa <strong>Planificar mi misión</strong>. Gemini interpreta tu petición; el motor científico consulta NASA y compara el polo sur automáticamente. Si la fecha no produce candidatos favorables, busca automáticamente otras fechas manteniendo los requisitos y te permite comparar antes de aplicar.</p><p>Puedes adjuntar un perfil JSON o metadatos glTF y comparar parámetros hipotéticos del vehículo. El catálogo no constituye una ficha técnica verificada. Una altura nueva requiere un horizonte calculado para esa altura; sin él, la visibilidad queda desconocida.</p><p>La evaluación cubre todo el polo sur visible. Verde indica sectores favorables en el modelo, amarillo indica sensibilidad al muestreo, rojo indica que no cumplen los criterios y gris indica datos insuficientes. Haz clic en cualquier área para consultar su pendiente, Sol, Tierra y motivos. La estrella destaca el mejor centro candidato; los colores no certifican cada punto de un sector.</p><p>Si dices «alunizar el…», esa fecha se interpreta como llegada. Si dices «viajar el…», se interpreta como salida. La hora se interpreta en Bolivia (UTC−04:00) o en UTC si lo indicas.</p><p>La ida y vuelta usan una estimación orbital simplificada. La estancia se declara como supuesto editable. Una misión real requiere diseñar la trayectoria, la nave y sus operaciones.</p></>:<><p>{plan?'Datos del cálculo actual:':'Escribe y calcula una misión para obtener las consultas y mediciones de tu caso.'}</p>{(rescueReport||adopted)&&<details open><summary>Evidencia de la búsqueda de alternativas</summary><p>Se proponen cambios de fecha conservando las restricciones. El resultado sólo cubre los escenarios examinados.</p><pre>{JSON.stringify(rescueReport??adopted,null,2)}</pre></details>}<ul>{assumptions.map(a=><li key={a}>{a}</li>)}{plan?.mission.assumptions?.map(a=><li key={a}>{a}</li>)}</ul><p>Terreno: NASA LOLA de 80 m. Comparación regional por sectores de 4,75 km y perfiles de horizonte propios por centro. Los intervalos amarillo/verde comparan los azimuts vecinos del horizonte; no representan toda la incertidumbre del terreno. Los sectores del borde sin mediciones se conservan en gris. Las superficies se calculan sobre la esfera lunar y se recortan al casquete 80–90°S.</p><ul>{plan?.meta.limitations.map(note=><li key={note}>{note}</li>)}</ul><details><summary>Consultas y procedencia completas</summary><pre>{JSON.stringify(plan?.meta.sources??[],null,2)}</pre></details>{plan&&<button className="download-plan" onClick={exportPlan}><Download size={14}/> Descargar evidencia completa</button>}</>}
+      {help?<><p>Escribe la fecha y hora de salida y pulsa <strong>Planificar mi misión</strong>. Gemini interpreta tu petición; el motor científico consulta NASA y compara el polo sur automáticamente. Si la fecha no produce candidatos favorables, busca automáticamente otras fechas manteniendo los requisitos y te permite comparar antes de aplicar.</p><p>Puedes adjuntar un perfil JSON o metadatos glTF y comparar parámetros hipotéticos del vehículo. El catálogo no constituye una ficha técnica verificada. El estudio operativo recalcula horizontes nativos para las alturas declaradas en el punto elegido. La clasificación regional conserva sus horizontes preparados de 2 m; otras alturas se estudian localmente.</p><p>La evaluación cubre todo el polo sur visible. Verde indica sectores favorables en el modelo, amarillo indica sensibilidad al muestreo, rojo indica que no cumplen los criterios y gris indica datos insuficientes. Haz clic en cualquier área para consultar su pendiente, Sol, Tierra y motivos. La estrella destaca el mejor centro candidato; los colores no certifican cada punto de un sector.</p><p>Si dices «alunizar el…», esa fecha se interpreta como llegada. Si dices «viajar el…», se interpreta como salida. La hora se interpreta en el centro espacial elegido, con su horario de verano, o en UTC si lo indicas. Kennedy LC-39B es la referencia inicial para Artemis. El centro no convierte la estimación orbital en una ventana real de lanzamiento.</p><p>La ida y vuelta usan una estimación orbital simplificada. La estancia se declara como supuesto editable. Una misión real requiere diseñar la trayectoria, la nave y sus operaciones.</p></>:<><p>{plan?'Datos del cálculo actual:':'Escribe y calcula una misión para obtener las consultas y mediciones de tu caso.'}</p>{(rescueReport||adopted)&&<details open><summary>Evidencia de la búsqueda de alternativas</summary><p>Se proponen cambios de fecha conservando las restricciones. El resultado sólo cubre los escenarios examinados.</p><pre>{JSON.stringify(rescueReport??adopted,null,2)}</pre></details>}<ul>{assumptions.map(a=><li key={a}>{a}</li>)}{plan?.mission.assumptions?.map(a=><li key={a}>{a}</li>)}</ul><p>Terreno: NASA LOLA de 80 m. Comparación regional por sectores de 4,75 km y perfiles de horizonte propios por centro. Los intervalos amarillo/verde comparan los azimuts vecinos del horizonte; no representan toda la incertidumbre del terreno. Los sectores del borde sin mediciones se conservan en gris. Las superficies se calculan sobre la esfera lunar y se recortan al casquete 80–90°S.</p><ul>{plan?.meta.limitations.map(note=><li key={note}>{note}</li>)}</ul><details><summary>Consultas y procedencia completas</summary><pre>{JSON.stringify(plan?.meta.sources??[],null,2)}</pre></details>{plan&&<button className="download-plan" onClick={exportPlan}><Download size={14}/> Descargar evidencia completa</button>}</>}
     </section></div>}
   </div>
 }

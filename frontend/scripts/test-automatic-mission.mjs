@@ -10,7 +10,7 @@ import assert from 'node:assert/strict'
 const base=process.env.LUNAR_ORACLE_TEST_URL||process.env.BASE_URL||'http://127.0.0.1:4173/'
 const out=new URL('../../artifacts/',import.meta.url)
 await mkdir(out,{recursive:true})
-const example='si quiero hacer un viaje el 25 de diciembre de 2026 a las 8 am donde seria bueno caer y cuanto tardara la mision'
+const example='si quiero hacer un viaje el 25 de diciembre de 2026 a las 8 am UTC−04:00 donde seria bueno caer y cuanto tardara la mision'
 const checks=[],errors=[],failedRequests=[]
 const browser=await chromium.launch({channel:'chrome',headless:true})
 let page
@@ -27,7 +27,7 @@ async function execute(p){
  check('Intent extraction is explicitly identified as Gemini or fallback',intent.mode==='ai'||intent.mode==='parser')
  if(process.env.LUNAR_ORACLE_REQUIRE_AI==='1')check('A real connected Gemini model interprets the trip',intent.mode==='ai')
  checks.push({intent_mode:intent.mode})
- check('08:00 Bolivia is interpreted as 12:00 UTC',intent.intent.departure_utc==='2026-12-25T12:00:00Z')
+ check('An explicit historical08:00 UTC−04:00 is interpreted as12:00 UTC',intent.intent.departure_utc==='2026-12-25T12:00:00Z')
  check('A travel date means departure, with declared 72-hour surface stay',intent.intent.date_kind==='departure'&&intent.intent.surface_hours===72)
  const planResponse=await planWait,plan=await planResponse.json(),sent=planResponse.request().postDataJSON()
  check('Planner executes automatically after intent with the same UTC and duration',sent.departure_utc===intent.intent.departure_utc&&sent.surface_hours===72)
@@ -112,9 +112,9 @@ try{
  await page.getByRole('button',{name:'Cambiar fecha o requisitos',exact:true}).click()
  await page.getByLabel('Estancia en la Luna',{exact:true}).selectOption('48')
  check('Changing stay invalidates old recommendations immediately',await page.locator('.best-destination').count()===0&&await page.locator('.mission-marker-label').count()===0)
- await page.getByLabel('Fecha de viaje',{exact:true}).fill('2026-12-26T08:00')
+ await page.getByLabel('Fecha de viaje',{exact:true}).fill('2026-12-26T07:00')
  check('Changing departure date keeps stale green results hidden',await page.locator('.best-destination').count()===0)
- await page.getByLabel('Fecha de viaje',{exact:true}).fill('2026-12-25T08:00')
+ await page.getByLabel('Fecha de viaje',{exact:true}).fill('2026-12-25T07:00')
  await page.getByLabel('Estancia en la Luna',{exact:true}).selectOption('72')
  const repeat=apiResponse(page,'/api/automatic-plan')
  await page.getByRole('button',{name:'Recalcular con estos cambios',exact:true}).click()

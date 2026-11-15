@@ -73,7 +73,7 @@ try{
  page.on('requestfailed',r=>{if(r.failure()?.errorText!=='net::ERR_ABORTED')requestsFailed.push({path:new URL(r.url()).pathname,error:r.failure()?.errorText})})
  await page.goto(base,{waitUntil:'domcontentloaded'})
  await page.waitForFunction(()=>{const b=document.querySelector('.primary-plan');return b&&!b.disabled},null,{timeout:60000})
- await page.getByLabel('Describe tu misión',{exact:true}).fill('Quiero viajar el 25 de diciembre de 2026 a las 8 am y estar 72 horas en la Luna.')
+ await page.getByLabel('Describe tu misión',{exact:true}).fill('Quiero viajar el 25 de diciembre de 2026 a las 8 am UTC−04:00 y estar 72 horas en la Luna.')
  const intentWait=responseFor('/api/mission-intent'),planWait=responseFor('/api/automatic-plan')
  await page.getByRole('button',{name:'Planificar mi misión',exact:true}).click()
  const intent=await (await intentWait).json(),planResponse=await planWait,plan=await planResponse.json()

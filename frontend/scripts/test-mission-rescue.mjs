@@ -8,8 +8,8 @@ const base=process.env.LUNAR_ORACLE_TEST_URL||'http://127.0.0.1:5173/'
 const out=new URL('../../artifacts/',import.meta.url)
 await mkdir(out,{recursive:true})
 const file=name=>fileURLToPath(new URL(name,out))
-const REQUEST='quiero viajar el 1 de diciembre de 2026 a las 10am'
-const CHRISTMAS='Quiero viajar el 25 de diciembre de 2026 a las 8 am y estar 72 horas en la Luna.'
+const REQUEST='quiero viajar el 1 de diciembre de 2026 a las 10am UTC−04:00'
+const CHRISTMAS='Quiero viajar el 25 de diciembre de 2026 a las 8 am UTC−04:00 y estar 72 horas en la Luna.'
 const checks=[],errors=[],consoleErrors=[],failedRequests=[],requests=[]
 const browser=await chromium.launch({channel:'chrome',headless:true})
 let page,realRescue,originalPlan,adoptedPlan
@@ -83,9 +83,9 @@ try{
  check('The adopted full-map answer matches the independently searched candidate',adoptedPlan.best.id===realRescue.proposals[0].best.id&&adoptedPlan.best.id==='polar:32:95'&&adoptedPlan.counts.green===1&&adoptedPlan.best.sun_hours===72&&adoptedPlan.best.earth_hours===72)
  await main.getByTestId('adopted-alternative').waitFor()
  const banner=await main.getByTestId('adopted-alternative').innerText()
- check('The adoption banner distinguishes the original and proposed dates',banner.includes('01 dic')&&banner.includes('07 dic')&&banner.includes('10:00')&&banner.includes('12:00'))
+ check('The adoption banner distinguishes the original and proposed dates',banner.includes('01 dic')&&banner.includes('07 dic')&&banner.includes('09:00')&&banner.includes('11:00'))
  const appliedText=await main.getByLabel('Describe tu misión',{exact:true}).inputValue()
- check('The visible request now reflects the explicitly adopted date and requirements',appliedText!==REQUEST&&appliedText.includes('7 de diciembre de 2026')&&appliedText.includes('12:00')&&appliedText.includes('72 horas')&&appliedText.includes('10 grados'))
+ check('The visible request now reflects the explicitly adopted date and requirements',appliedText!==REQUEST&&appliedText.includes('7 de diciembre de 2026')&&appliedText.includes('11:00')&&appliedText.includes('72 horas')&&appliedText.includes('10 grados'))
  await main.getByTestId('operational-windows').waitFor()
  check('Operational cards describe both Sun and Earth clearance',await main.locator('.operation-card').count()===2&&/Despeje exigido/.test(await main.getByTestId('operational-windows').innerText()))
  const before=await main.locator('.conditions-readouts').innerText()
