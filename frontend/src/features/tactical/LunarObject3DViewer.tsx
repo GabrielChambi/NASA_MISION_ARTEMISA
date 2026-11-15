@@ -907,6 +907,7 @@ export default function LunarObject3DViewer({
           <span className="micro-title">{tr("ESTUDIO 3D DE VEHÍCULO · POLO SUR LUNAR")}</span>
           <h3>{tr(activeVehicle.lander_name)}</h3>
           <span className="studio-category-tag">{tr(activeVehicle.category ?? 'Vehículo')}</span>
+          <small className="studio-model-scope">{tr("Modelo visual y parámetros hipotéticos; no es una ficha técnica ni una validación de vuelo.")}</small>
         </div>
 
         <div className="studio-actions-bar">
@@ -975,7 +976,7 @@ export default function LunarObject3DViewer({
         <div className="hud-metric-row">
           <div className="hud-metric-icon warn"><ShieldAlert size={13} /></div>
           <div className="hud-metric-data">
-            <small>{tr("Inclinación límite")}</small>
+            <small>{tr("Umbral de pendiente configurado")}</small>
             <strong>{activeVehicle.center_of_gravity_tolerance}°</strong>
           </div>
         </div>
@@ -984,7 +985,7 @@ export default function LunarObject3DViewer({
           <div className="hud-metric-row rover-accent">
             <div className="hud-metric-icon rover"><Compass size={13} /></div>
             <div className="hud-metric-data">
-              <small>{tr("Radio de travesía")}</small>
+              <small>{tr("Radio geométrico declarado")}</small>
               <strong>{activeVehicle.nominal_range_km ?? 15} km</strong>
               <span>({activeVehicle.speed_km_h ?? 2.5} km/h)</span>
             </div>

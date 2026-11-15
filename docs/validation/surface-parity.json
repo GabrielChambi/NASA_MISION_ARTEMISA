@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "ok",
-  "generated_at": "2026-11-15T13:10:12.702Z",
+  "generated_at": "2026-11-15T20:56:23.227Z",
   "scope": "Implementation consistency for one prepared mission; not independent NASA validation, uncertainty propagation, or landing certification.",
   "request": {
     "departure_utc": "2026-12-25T12:00:00Z",
@@ -10,7 +10,17 @@
     "max_slope_deg": 10,
     "min_sun_hours": 12,
     "min_earth_hours": 12,
-    "observer_height_m": 2
+    "observer_height_m": 2,
+    "effective_max_slope_deg": 10,
+    "lander_name": "Perfil de referencia 2 m",
+    "solar_panel_height": 2,
+    "antenna_height": 2,
+    "vehicle_profile": {
+      "lander_name": "Perfil de referencia 2 m",
+      "solar_panel_height": 2,
+      "antenna_height": 2,
+      "center_of_gravity_tolerance": 10
+    }
   },
   "terrain_source_sha256": "82030dcbdd7c4bb0c7d858e9b4b293b9f2cda5a543ba31ec0f42784bd6beee5a",
   "horizon_source_sha256": "82030dcbdd7c4bb0c7d858e9b4b293b9f2cda5a543ba31ec0f42784bd6beee5a",

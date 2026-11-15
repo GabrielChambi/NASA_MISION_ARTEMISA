@@ -1,0 +1,90 @@
+{
+  "checked_at_utc": "2026-11-15T20:57:49.695255+00:00",
+  "reviewed_base_commit": "2d80b4142a9c837666c3cb5a42021814a7faad01",
+  "status": "bounded_review_passed_with_unvalidated_models_remaining",
+  "certified": false,
+  "operational_digital_twin_validated": false,
+  "no_fault_guarantee": false,
+  "verified_files_sha256": {
+    "api/app/operations.py": "0396f3e817478dbf4f5409506c639029d762840a220db4114c3cfbaf6a342964",
+    "api/app/solar/horizons.py": "3cdb7f3d8ccfc980897dd52710dae4c85adfa72e8706a50421ecf70126dc8032",
+    "api/app/energy_model.py": "8edcea0e437921e5103de290ed31cf93a06177d90ab6ee570c436d7e67a3722d",
+    "api/app/native_terrain.py": "58a72be37f4ab71bc32a907b9cf36814cfc1efb735c872337aa1cff42eea068d",
+    "api/app/automatic_plan.py": "956abb65d6f9ed9016d8164c35cc66d12c13014c63e5f3ffc3212917c6507af1",
+    "frontend/src/features/mission/descentPhysics.ts": "a27b0af447981f2fdc1156affe98670843a8a06be353ea1c87a6a000f2b8cfa7",
+    "api/tests/test_scientific_integrity.py": "921f5f23de04a42c4ca9b9cee1fb7a83c05d5ba5f63b9d8c059d42917d466f03"
+  },
+  "tests": {
+    "python_passed": 319,
+    "javascript_passed": 223,
+    "browser_suites": {
+      "operations_outage": {
+        "passed": true,
+        "checks": 28
+      },
+      "studio_scope": {
+        "passed": true,
+        "checks": 13
+      },
+      "automatic_mission": {
+        "passed": true,
+        "checks": 52
+      }
+    },
+    "browser_checks": 93
+  },
+  "regressions": {
+    "data_failure_matrix": {
+      "cases": 8,
+      "before": "failed",
+      "after": "passed",
+      "responses": "HTTP503, unavailable, no operational budget or local study or proposals"
+    },
+    "optional_cache_write": {
+      "before": "valid NASA response blocked by PermissionError",
+      "after": "original validated response preserved without a stored cache"
+    },
+    "missing_angles": {
+      "cases": 2,
+      "result": "unknown and infeasible; SOC not fabricated"
+    },
+    "energy_data_conservation": {
+      "deterministic_scenarios": 12,
+      "maximum_allowed_energy_residual_wh": 1e-07,
+      "data_ledger_absolute_tolerance_gb": 1e-10,
+      "scope": "numerical bookkeeping, not spacecraft calibration"
+    }
+  },
+  "jpl_regional_comparison": {
+    "cells": 3,
+    "samples": 18,
+    "maximum_angular_separation_deg": 3.52019892386405e-06,
+    "maximum_absolute_elevation_error_deg": 9.553445510235292e-07,
+    "scope": "Three selected real NASA DEM cells; three hourly epochs per cell and target; one departure date. This does not validate every location, epoch, lunar reference-frame realization, terrain horizon, or mission scenario.",
+    "source_report": "global-reference-validation.json"
+  },
+  "jpl_height_comparison": {
+    "samples": 10,
+    "maximum_angular_difference_deg": 2.0735498083013226e-06,
+    "scope": "Five epochs per body and one point. Direct JPL observer queries independently check the polar-reference translation and heights. This does not validate all dates, terrain, spacecraft or the lunar frame with SPICE.",
+    "source_report": "operations-observer-validation.json"
+  },
+  "regional_implementation_parity": {
+    "cells_compared": 12892,
+    "mismatch_count": 0,
+    "scope": "same inputs in Python/JavaScript; consistency, not independent physical validation"
+  },
+  "unvalidated_or_missing": [
+    "Actual flight hardware parameters and a connected physical spacecraft",
+    "Telemetry assimilation and calibration",
+    "Thermal state and temperature-dependent electrical performance",
+    "RF link budget and ground-station scheduling",
+    "Launch, multi-body flight trajectory, lunar insertion, return and lateral landing guidance",
+    "Terrain subpixel hazards, full joint uncertainty and global SPICE frame validation",
+    "Rover traversal, terrain mechanics, path energy and verified return capability"
+  ],
+  "standards_reference": {
+    "url": "https://standards.nasa.gov/sites/default/files/standards/NASA/B/1/NASA-STD-7009B-Final-3-5-2024.pdf",
+    "compliance_claim": false
+  }
+}

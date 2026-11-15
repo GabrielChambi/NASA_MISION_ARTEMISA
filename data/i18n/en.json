@@ -860,5 +860,14 @@
   "salir el": "depart on",
   "alunizar el": "land on",
   "Estancia declarada:": "Declared surface stay:",
-  "Centro regional:": "Regional center:"
+  "Centro regional:": "Regional center:",
+  "Radio geométrico:": "Geometric radius:",
+  "no es una ruta validada": "not a validated route",
+  "sin ruta calculada": "no computed route",
+  "Radio geométrico declarado": "Declared geometric radius",
+  "Radio geométrico declarado. No calcula rutas, pendientes, consumo ni retorno seguro.": "Declared geometric radius. It does not calculate paths, slopes, energy consumption or a safe return.",
+  "Modelo visual y parámetros hipotéticos; no es una ficha técnica ni una validación de vuelo.": "Visual model and hypothetical parameters; not a technical specification or a flight validation.",
+  "Umbral de pendiente configurado": "Configured slope threshold",
+  "Parámetros hipotéticos editables; no son especificaciones verificadas del fabricante.": "Editable hypothetical parameters; not verified manufacturer specifications.",
+  "Ejemplo hipotético editable. Los datos orbitales y el terreno provienen de NASA; batería, consumo, paneles y radio son valores declarados por ti. Elegir un modelo 3D no calibra esos parámetros. Orientación actual:": "Editable hypothetical example. Orbital data and terrain come from NASA; battery, loads, panels and radio are your declared values. Choosing a 3D model does not calibrate those parameters. Current orientation:"
 }

@@ -66,7 +66,7 @@ async def fetch_samples(site,start,end,step,height,target=10,include_range=False
                 if record['params']!=params: raise ValueError('Cache query mismatch')
                 samples=parse_result(record['response']['result'],start,end,step,target,include_range)
                 return samples,record,True
-            except (ValueError,KeyError,HorizonsUnavailable): continue
+            except (OSError,UnicodeError,ValueError,KeyError,HorizonsUnavailable): continue
     async with LOCK:
         try:
             async with httpx.AsyncClient(timeout=httpx.Timeout(45,connect=10),follow_redirects=False) as client:
@@ -77,10 +77,17 @@ async def fetch_samples(site,start,end,step,height,target=10,include_range=False
             if 'error' in payload: raise HorizonsUnavailable('JPL rejected the requested observer query.')
             samples=parse_result(payload.get('result',''),start,end,step,target,include_range)
             record={'params':params,'query_url':str(response.url),'retrieved_at':datetime.now(timezone.utc).isoformat(),'response':payload,'source':'JPL Horizons'}
-            runtime.parent.mkdir(parents=True,exist_ok=True)
-            fd,tmp=tempfile.mkstemp(dir=runtime.parent,suffix='.tmp')
-            with os.fdopen(fd,'w',encoding='utf-8') as out: json.dump(record,out)
-            os.replace(tmp,runtime)
+            # A cache is optional; a verified NASA response remains usable if disk storage fails.
+            tmp=None
+            try:
+                runtime.parent.mkdir(parents=True,exist_ok=True)
+                fd,tmp=tempfile.mkstemp(dir=runtime.parent,suffix='.tmp')
+                with os.fdopen(fd,'w',encoding='utf-8') as out: json.dump(record,out)
+                os.replace(tmp,runtime)
+            except OSError:
+                if tmp is not None:
+                    try:Path(tmp).unlink(missing_ok=True)
+                    except OSError:pass
             return samples,record,False
         except (httpx.HTTPError,ValueError,KeyError) as exc:
             raise HorizonsUnavailable('Scientific data unavailable: JPL Horizons did not return a valid response. Try again later or use a previously cached exact interval.') from exc

@@ -157,7 +157,7 @@ const CATALOG_EXAMPLES:Record<string,VehicleProfile>={
 
 export const LUNAR_OBJECTS:Record<string,VehicleProfile>={
   reference:{lander_name:'Referencia regional · 2 m',solar_panel_height:2,antenna_height:2,center_of_gravity_tolerance:10,category:'Referencia del modelo',description:'Observador de 2 m con perfiles de horizonte preparados.'},
-  ...Object.fromEntries(Object.entries(CATALOG_EXAMPLES).map(([key,value])=>[key,{...value,category:value.category,description:value.description}]))
+  ...Object.fromEntries(Object.entries(CATALOG_EXAMPLES).map(([key,value])=>[key,{...value,category:value.category,description:value.description+' Parámetros hipotéticos editables; no son especificaciones verificadas del fabricante.'}]))
 }
 
 const STRINGS={
@@ -1256,7 +1256,7 @@ export default function UnifiedMissionPlanner(){
           <div>
             <span className="micro-title">{tr("POLO SUR LUNAR · 80°S — 90°S")}</span>
             <h2>{tr(plan?'Toda la superficie. Una decisión informada.':'Una Luna. Todos los destinos.')}</h2>
-            {(vehicle.is_rover||vehicle.category==='Rover y Movilidad')&&<span className="rover-range-indicator"><Compass size={12}/>{" "}{tr("Radio de acción:")}{" "}<b>{vehicle.nominal_range_km??15} km</b>{" "}<small>({tr("ida y vuelta")})</small></span>}
+            {(vehicle.is_rover||vehicle.category==='Rover y Movilidad')&&<span className="rover-range-indicator"><Compass size={12}/>{" "}{tr("Radio geométrico:")}{" "}<b>{vehicle.nominal_range_km??15} km</b>{" "}<small>({tr("no es una ruta validada")})</small></span>}
           </div>
           <div className="one-map-actions">
             <button

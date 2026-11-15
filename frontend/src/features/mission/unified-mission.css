@@ -525,3 +525,5 @@ button:disabled{cursor:default;opacity:.43}
 /* Vehicle 3D Tab in map actions */
 .vehicle-3d-tab-btn{display:inline-flex;align-items:center;gap:6px;font-weight:500}
 .one-map-actions button.vehicle-3d-tab-btn[aria-pressed=true]{background:#0c2a3f;border-color:#38bdf8;color:#e0f2fe;box-shadow:0 0 10px #38bdf822}
+
+.studio-model-scope{display:block;max-width:340px;font-size:10px;line-height:1.6;color:#b6c9d5;margin-top:7px}

@@ -453,26 +453,26 @@ function RoverTraverseRange({
   const pos=surface.position.clone().addScaledVector(up,0.2)
   return (
     <group position={pos} quaternion={rotation} name="rover-traverse-range">
-      {/* Outer exploration boundary ring */}
+      {/* Declared geometric radius; no terrain traversal or energy calculation */}
       <mesh renderOrder={32} raycast={()=>null}>
         <ringGeometry args={[radiusKm*0.96, radiusKm, 80]}/>
         <meshBasicMaterial color="#38bdf8" transparent opacity={0.82} side={THREE.DoubleSide} depthTest={false} depthWrite={false}/>
       </mesh>
-      {/* Semi-transparent reachable area */}
+      {/* Illustrative disk; this does not identify traversable ground */}
       <mesh renderOrder={31} raycast={()=>null}>
         <circleGeometry args={[radiusKm*0.96, 64]}/>
         <meshBasicMaterial color="#0284c7" transparent opacity={0.12} side={THREE.DoubleSide} depthTest={false} depthWrite={false}/>
       </mesh>
-      {/* Mid-range safety checkpoint ring (50% distance for safe return) */}
+      {/* Half-radius reference, without a return-path or vehicle-energy guarantee */}
       <mesh renderOrder={32} raycast={()=>null}>
         <ringGeometry args={[radiusKm*0.48, radiusKm*0.50, 48]}/>
         <meshBasicMaterial color="#38bdf8" transparent opacity={0.38} side={THREE.DoubleSide} depthTest={false} depthWrite={false}/>
       </mesh>
       {/* Label hovering on the perimeter */}
       <Html position={[radiusKm*0.72, radiusKm*0.72, 0.5]} center zIndexRange={[45,30]}>
-        <div className="rover-range-badge" title={tr("Radio de desplazamiento seguro ida y vuelta")}>
-          <span className="rover-badge-title">🚗 {tr("Radio de acción:")} <b>{radiusKm.toFixed(1)} km</b></span>
-          <small>{tr(roverName??'Rover')}{roverSpeed ? ` · ${roverSpeed} km/h` : ''} · {tr("ida y vuelta")}</small>
+        <div className="rover-range-badge" title={tr("Radio geométrico declarado. No calcula rutas, pendientes, consumo ni retorno seguro.")}>
+          <span className="rover-badge-title">🚗 {tr("Radio geométrico:")} <b>{radiusKm.toFixed(1)} km</b></span>
+          <small>{tr(roverName??'Rover')}{roverSpeed ? ` · ${roverSpeed} km/h` : ''} · {tr("sin ruta calculada")}</small>
         </div>
       </Html>
     </group>

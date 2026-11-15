@@ -8,6 +8,12 @@ Escribe cuándo quieres viajar y el sistema calcula una **clasificación continu
 
 **Gemini interpreta la solicitud; el motor científico calcula con NASA LOLA y JPL Horizons.** Es un prototipo de planificación regional con hipótesis visibles, no un gemelo digital certificado ni una autorización de vuelo.
 
+## Estado de la validación científica
+
+El sistema es un modelo de planificación con NASA LOLA y JPL, **no un gemelo digital operacional validado**. Si faltan rasters o efemérides exactas, el estudio operativo informa la indisponibilidad: no sustituye el caso por una demostración. Los vehículos usan parámetros hipotéticos y los radios de rover son referencias geométricas, no rutas seguras.
+
+La [auditoría científica](docs/SCIENTIFIC_AUDIT.md) registra defectos corregidos, contrastes directos con JPL, pruebas de conservación y modelos físicos aún pendientes. Pasar pruebas no demuestra ausencia total de errores ni seguridad de vuelo.
+
 ## English-speaking reviewers
 
 Select **English** in the header. You can plan and revise a mission in English, inspect the whole south pole, and read the energy, terrain and visibility results in the same language. For example: “I want to travel on December 25, 2026 at 8am and stay 72 hours.” The default clock is Kennedy Space Center, America/New_York. Language changes preserve all calculated data.
