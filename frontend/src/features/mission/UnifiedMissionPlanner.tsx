@@ -286,7 +286,6 @@ export default function UnifiedMissionPlanner(){
   const [aiMode,setAiMode]=useState(''),[departureInput,setDepartureInput]=useState('')
   const [vehicle,setVehicle]=useState<VehicleProfile>(LUNAR_OBJECTS.reference)
   const [vehiclePulseKey,setVehiclePulseKey]=useState(0),[uploadNotice,setUploadNotice]=useState('')
-  const [operationsAutofill,setOperationsAutofill]=useState('')
   const [landerReview,setLanderReview]=useState<LanderReview|null>(null),[reviewBusy,setReviewBusy]=useState(false)
   const [catalogOpen,setCatalogOpen]=useState(false),[composerDrag,setComposerDrag]=useState(false)
   const [mapFullscreen,setMapFullscreen]=useState(false)
@@ -657,14 +656,6 @@ export default function UnifiedMissionPlanner(){
               sunHours:selected.sun_hours,
               earthHours:selected.earth_hours
             }:{status:'not_run',risk:'unknown',reasons:[]},
-            operations:plan&&selected?{
-              status:'not_configured',
-              siteId:selected.id,
-              interval:{startUtc:plan.mission.arrival_utc,endUtc:plan.mission.surface_end_utc},
-              operationalProfileProvided:false,
-              missing:['battery_capacity_wh','initial_battery_wh','minimum_battery_wh','memory_capacity_mb','initial_memory_mb','base_load_w','panel_area_m2','panel_efficiency','panel_azimuth_deg','panel_elevation_deg','activities_measured'],
-              referenceTool:'NAIF WebGeocalc 2 (JPL/NASA)'
-            }:null,
             alternatives:plan?.alternatives?.slice(0,4).map(a=>({
               id:a.id,
               name:`${num(Math.abs(a.latitude_deg),2)}°S ${longitude(a.longitude_deg,2)}`,
@@ -1342,7 +1333,6 @@ export default function UnifiedMissionPlanner(){
           <details className="rejected-destinations"><summary>{num(rejectedTotal,0)} zonas descartadas · ver ejemplos</summary>{plan.rejected.map(p=><button key={p.id} onClick={()=>choose(p.id)}><span className="reject-dot"/><div><strong>{num(Math.abs(p.latitude_deg),2)}°S · {longitude(p.longitude_deg,2)}</strong><small>{p.reasons?.[0]??'No cumple los criterios'}</small></div></button>)}</details>
           {selected&&<OperationalWindowsPanel samples={series} index={timeline}/>}
           <button className="download-plan" onClick={exportPlan}><Download size={14}/> Descargar plan y evidencia</button>
-          <OperationsPanel plan={plan} site={selected} vehicleProfile={plan.vehicle_profile??vehicle} onAskCopilot={askMissionQA} autofillText={operationsAutofill}/>
           <p className="decision-scope">Los colores describen sectores regionales, con condiciones calculadas en sus centros. Una zona verde puede contener pendientes locales mayores. Falta evaluar rocas pequeñas, huella de la nave, energía, temperatura y enlace de radio.</p>
         </>}
 
