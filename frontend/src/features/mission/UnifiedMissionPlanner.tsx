@@ -4,7 +4,7 @@ import { ArrowRight, Bot, Check, ChevronDown, CircleHelp, Clock3, Compass, Cpu, 
 import { Tactical3DScene,type PlanMapMarker } from '../tactical/Tactical3DScene'
 import { loadAtlas,type AtlasData } from '../sites/atlasGeometry'
 import { loadDetailTile } from '../sites/lunarDetail'
-import { validatePolarSurface,type PolarSurface } from '../tactical/polarScience'
+import { findPolarCell, validatePolarSurface, type PolarSurface } from '../tactical/polarScience'
 import { DEFAULT_DESCENT,descentAt,simulateDescent,type DescentRun } from './descentPhysics'
 import type { RaycastHit } from '../tactical/tacticalMath'
 import type { AutomaticPlan,LanderReview,MissionIntent,MissionPoint,VehicleProfile } from './automaticTypes'
@@ -268,6 +268,7 @@ export default function UnifiedMissionPlanner(){
   const [atlas,setAtlas]=useState<AtlasData|null>(null),[polar,setPolar]=useState<PolarSurface|null>(null)
   const [loadError,setLoadError]=useState(''),[retry,setRetry]=useState(0)
   const [message,setMessage]=useState(''),[sentHistory,setSentHistory]=useState<string[]>([]),[historyIndex,setHistoryIndex]=useState<number>(-1),[intent,setIntent]=useState<MissionIntent|null>(null),[assumptions,setAssumptions]=useState<string[]>([])
+  const [pinnedTarget,setPinnedTarget]=useState<{lat:number;lon:number;id:string;elevation_m?:number|null;regional_slope_deg?:number|null;label?:string}|null>(null)
   const [coverageVisible,setCoverageVisible]=useState(true),[hoveredId,setHoveredId]=useState<string|null>(null)
   const [cellDetail,setCellDetail]=useState<MissionPoint|null>(null),[cellLoading,setCellLoading]=useState(false),[cellError,setCellError]=useState('')
   const [inspectLat,setInspectLat]=useState(''),[inspectLon,setInspectLon]=useState(''),[coordinateError,setCoordinateError]=useState('')
@@ -285,6 +286,7 @@ export default function UnifiedMissionPlanner(){
   const [aiMode,setAiMode]=useState(''),[departureInput,setDepartureInput]=useState('')
   const [vehicle,setVehicle]=useState<VehicleProfile>(LUNAR_OBJECTS.reference)
   const [vehiclePulseKey,setVehiclePulseKey]=useState(0),[uploadNotice,setUploadNotice]=useState('')
+  const [operationsAutofill,setOperationsAutofill]=useState('')
   const [landerReview,setLanderReview]=useState<LanderReview|null>(null),[reviewBusy,setReviewBusy]=useState(false)
   const [catalogOpen,setCatalogOpen]=useState(false),[composerDrag,setComposerDrag]=useState(false)
   const [mapFullscreen,setMapFullscreen]=useState(false)
@@ -578,11 +580,11 @@ export default function UnifiedMissionPlanner(){
     return value?.affected?{scope:'Estudio operativo local, distinto del cribado regional',cell:value.affected.cell,status:value.affected.budget.status,feasible:value.affected.budget.feasible,summary:value.affected.budget.summary,planning_constraints:value.affected.planning_constraints,local_terrain:value.local_study?{resolution_m:value.local_study.source_resolution_m,center_footprint:value.local_study.center_footprint,footprint_resolved:value.local_study.footprint_resolved}:null}:null
   }
   async function askMissionQA(question:string){
-    if(!plan||!selected)return
+    if(!plan&&!pinnedTarget)return
     request.current?.abort();const ac=new AbortController(),id=++requestId.current;request.current=ac
     appendChatTurn('user',question,vehicle)
     setBusy('intent');setElapsed(0);startClock.current=performance.now()
-    const activeVeh=plan.vehicle_profile??vehicle
+    const activeVeh=plan?.vehicle_profile??vehicle
     try{
       const res=await fetch('/api/copilot/chat',{
         method:'POST',signal:ac.signal,
@@ -603,8 +605,16 @@ export default function UnifiedMissionPlanner(){
               antenna_height:activeVeh.antenna_height,
               center_of_gravity_tolerance:activeVeh.center_of_gravity_tolerance
             },
-            counts:plan.counts,
-            best:plan.best?{
+            pinned_target:pinnedTarget?{
+              id:pinnedTarget.id,
+              label:pinnedTarget.label,
+              lat:pinnedTarget.lat,
+              lon:pinnedTarget.lon,
+              elevation_m:pinnedTarget.elevation_m,
+              regional_slope_deg:pinnedTarget.regional_slope_deg
+            }:null,
+            counts:plan?.counts,
+            best:plan?.best?{
               id:plan.best.id,
               lat:plan.best.latitude_deg,
               lon:plan.best.longitude_deg,
@@ -612,7 +622,7 @@ export default function UnifiedMissionPlanner(){
               sunHours:plan.best.sun_hours,
               earthHours:plan.best.earth_hours
             }:null,
-            selected:{
+            selected:selected?{
               id:selected.id,
               name:`Sector ${selected.id.replace('polar:','')}`,
               lat:selected.latitude_deg,
@@ -622,22 +632,40 @@ export default function UnifiedMissionPlanner(){
               coverage:'regional',
               sunHours:selected.sun_hours,
               earthHours:selected.earth_hours
-            },
+            }:(pinnedTarget?{
+              id:pinnedTarget.id,
+              name:`Lugar fijado ${pinnedTarget.label}`,
+              lat:pinnedTarget.lat,
+              lon:pinnedTarget.lon,
+              slopeDeg:pinnedTarget.regional_slope_deg??0,
+              resolutionM:80,
+              coverage:'regional',
+              sunHours:null,
+              earthHours:null
+            }:null),
             regional:{
               scope:'Polo Sur Lunar (80°S — 90°S)',
               sourceResolutionM:80,
-              totalCells:plan.total_cells,
-              knownCells:((plan.counts?.green??0)+(plan.counts?.yellow??0)+(plan.counts?.red??0)),
-              evaluated:true
+              totalCells:plan?.total_cells??12892,
+              knownCells:plan?.counts?((plan.counts.green??0)+(plan.counts.yellow??0)+(plan.counts.red??0)):12800,
+              evaluated:Boolean(plan)
             },
-            simulation:{
+            simulation:selected?{
               status:selected.time_series?.length?'ready':'not_run',
               risk:selected.risk,
               reasons:selected.reasons??[],
               sunHours:selected.sun_hours,
               earthHours:selected.earth_hours
-            },
-            alternatives:plan.alternatives?.slice(0,4).map(a=>({
+            }:{status:'not_run',risk:'unknown',reasons:[]},
+            operations:plan&&selected?{
+              status:'not_configured',
+              siteId:selected.id,
+              interval:{startUtc:plan.mission.arrival_utc,endUtc:plan.mission.surface_end_utc},
+              operationalProfileProvided:false,
+              missing:['battery_capacity_wh','initial_battery_wh','minimum_battery_wh','memory_capacity_mb','initial_memory_mb','base_load_w','panel_area_m2','panel_efficiency','panel_azimuth_deg','panel_elevation_deg','activities_measured'],
+              referenceTool:'NAIF WebGeocalc 2 (JPL/NASA)'
+            }:null,
+            alternatives:plan?.alternatives?.slice(0,4).map(a=>({
               id:a.id,
               name:`${num(Math.abs(a.latitude_deg),2)}°S ${longitude(a.longitude_deg,2)}`,
               lat:a.latitude_deg,
@@ -735,11 +763,28 @@ export default function UnifiedMissionPlanner(){
   }
   function choose(id:string){if(!polarById.has(id))return;setSelectedId(id);setError('');setCoordinateError('')}
   function sampleMap(lat:number,lon:number){
-    if(!plan||!polar||!Number.isFinite(lat)||!Number.isFinite(lon)||lat< -90||lat> -80||lon< -180||lon>180)return
-    const rho=2*polar.radius_m*Math.tan((90+lat)*Math.PI/360),x=rho*Math.sin(lon*Math.PI/180),y=rho*Math.cos(lon*Math.PI/180)
-    const col=Math.floor((x-polar.grid.xmin)/polar.cell_spacing_m),row=Math.floor((polar.grid.ymax-y)/polar.cell_spacing_m)
-    const c=polar.cells[row*polar.grid_size+col]
-    if(c&&col>=0&&row>=0&&col<polar.grid_size&&row<polar.grid_size){choose(c.id);return c.id}
+    if(!polar||!Number.isFinite(lat)||!Number.isFinite(lon)||lat< -90||lat> -80||lon< -180||lon>180)return
+    const cell=findPolarCell(polar,lat,lon)
+    if(!cell)return
+    const latStr=`${num(Math.abs(cell.latitude_deg),2)}°S`
+    const lonStr=longitude(cell.longitude_deg,2)
+    const pin={
+      lat:cell.latitude_deg,
+      lon:cell.longitude_deg,
+      id:cell.id,
+      elevation_m:cell.elevation_m,
+      regional_slope_deg:cell.regional_slope_deg,
+      label:`${latStr}, ${lonStr}`
+    }
+    setPinnedTarget(pin)
+    appendChatTurn(
+      'assistant',
+      `📍 **Lugar fijado en el mapa lunar:** ${latStr}, ${lonStr} (Sector \`${cell.id}\`)\n* **Elevación LOLA:** ${cell.elevation_m!=null?Math.round(cell.elevation_m)+' m':'Desconocida'}\n* **Pendiente regional:** ${cell.regional_slope_deg!=null?cell.regional_slope_deg.toFixed(1)+'°':'Desconocida'}\n\n*Puedes preguntarme qué días se puede visitar este lugar, o escribir una fecha para simular tu viaje aquí.*`
+    )
+    if(plan&&polarById.has(cell.id)){
+      choose(cell.id)
+    }
+    return cell.id
   }
   function inspectCoordinates(){
     const lat=Number(inspectLat),lon=Number(inspectLon)
@@ -914,7 +959,8 @@ export default function UnifiedMissionPlanner(){
             setSentHistory(prev=>[txt,...prev.filter(m=>m!==txt)].slice(0,50))
             setHistoryIndex(-1)
             setMessage('')
-            if(plan&&selected&&!/(\d{1,2}\s+(?:de\s+)?(?:enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)|\d{4}-\d{2}-\d{2}|\d{1,2}[/.]\d{1,2}[/.]\d{4})/i.test(txt)){
+            const isConversational=!/(\d{1,2}\s+(?:de\s+)?(?:enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)|\d{4}-\d{2}-\d{2}|\d{1,2}[/.]\d{1,2}[/.]\d{4}|viaj|aluniz|salid)/i.test(txt)&&(Boolean(plan&&selected)||Boolean(pinnedTarget))
+            if(isConversational){
               void askMissionQA(txt)
             }else{
               void calculate(txt)
@@ -926,13 +972,19 @@ export default function UnifiedMissionPlanner(){
         >
           <input ref={fileInputRef} type="file" accept=".json,.gltf" hidden onChange={e=>{const f=e.target.files?.[0];if(f)void handleProfileFile(f);e.target.value=''}}/>
 
-          {/* Active Vehicle / Object Attachment Chip inside the composer box */}
+          {/* Active Vehicle and Pinned Target Chips inside the composer box */}
           <div className="composer-attachment-bar">
             <div className="composer-active-chip" title={vehicle.description??vehicle.lander_name}>
               <Rocket size={12}/>
               <strong>{vehicle.lander_name}</strong>
-              <span>Paneles {vehicle.solar_panel_height}m · Antena {vehicle.antenna_height}m · límite del perfil {vehicle.center_of_gravity_tolerance}°</span>
+              <span>Paneles {vehicle.solar_panel_height}m · Antena {vehicle.antenna_height}m · límite {vehicle.center_of_gravity_tolerance}°</span>
             </div>
+            {pinnedTarget&&<div className="composer-active-chip pin-target-chip" title="Lugar fijado en el mapa">
+              <MapPin size={11} className="pin-icon"/>
+              <strong>{pinnedTarget.label}</strong>
+              <span>Elevación {pinnedTarget.elevation_m!=null?Math.round(pinnedTarget.elevation_m):'—'}m · Pendiente {pinnedTarget.regional_slope_deg!=null?pinnedTarget.regional_slope_deg.toFixed(1)+'°':'—'}</span>
+              <button type="button" onClick={()=>setPinnedTarget(null)} aria-label="Quitar pin" className="pin-remove-btn"><X size={11}/></button>
+            </div>}
           </div>
 
           <label htmlFor="mission-request" className="sr-only-label">¿Qué misión quieres hacer?</label>
@@ -972,7 +1024,8 @@ export default function UnifiedMissionPlanner(){
                 setSentHistory(prev=>[txt,...prev.filter(m=>m!==txt)].slice(0,50))
                 setHistoryIndex(-1)
                 setMessage('')
-                if(plan&&selected&&!/(\d{1,2}\s+(?:de\s+)?(?:enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)|\d{4}-\d{2}-\d{2}|\d{1,2}[/.]\d{1,2}[/.]\d{4})/i.test(txt)){
+                const isConversational=!/(\d{1,2}\s+(?:de\s+)?(?:enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)|\d{4}-\d{2}-\d{2}|\d{1,2}[/.]\d{1,2}[/.]\d{4}|viaj|aluniz|salid)/i.test(txt)&&(Boolean(plan&&selected)||Boolean(pinnedTarget))
+                if(isConversational){
                   void askMissionQA(txt)
                 }else{
                   void calculate(txt)
@@ -1108,11 +1161,12 @@ export default function UnifiedMissionPlanner(){
           </div>
         </div>
         <div className="one-moon-map" data-testid="mission-map">
-          <Tactical3DScene latDeg={selected?.latitude_deg??-90} lonDeg={selected?.longitude_deg??0} observerHeightM={2} sunAzimuthDeg={current?.sun_azimuth_deg??0} sunElevationDeg={current?.sun_elevation_deg??0} earthAzimuthDeg={current?.earth_azimuth_deg??0} earthElevationDeg={current?.earth_elevation_deg??0} minSolarElevation={0} maxSlopeDeg={vehicle.center_of_gravity_tolerance} currentSlopeDeg={selected?.regional_slope_deg??NaN}
-            atlasData={atlas} focusTerrainData={detail} sunRaycast={ray(current?.sun_elevation_deg,current?.sun_horizon_deg)} earthRaycast={ray(current?.earth_elevation_deg,current?.earth_horizon_deg)} cameraView="polar" siteName={selected?`${vehicle.lander_name} · Destino`:'Polo sur'}
+          <Tactical3DScene latDeg={selected?.latitude_deg??pinnedTarget?.lat??-90} lonDeg={selected?.longitude_deg??pinnedTarget?.lon??0} observerHeightM={2} sunAzimuthDeg={current?.sun_azimuth_deg??0} sunElevationDeg={current?.sun_elevation_deg??0} earthAzimuthDeg={current?.earth_azimuth_deg??0} earthElevationDeg={current?.earth_elevation_deg??0} minSolarElevation={0} maxSlopeDeg={vehicle.center_of_gravity_tolerance} currentSlopeDeg={selected?.regional_slope_deg??pinnedTarget?.regional_slope_deg??NaN}
+            atlasData={atlas} focusTerrainData={detail} sunRaycast={ray(current?.sun_elevation_deg,current?.sun_horizon_deg)} earthRaycast={ray(current?.earth_elevation_deg,current?.earth_horizon_deg)} cameraView="polar" siteName={selected?`${vehicle.lander_name} · Destino`:pinnedTarget?`📍 ${pinnedTarget.label}`:'Polo sur'}
             overview focusZone={focus} onShadingStatus={setShadingStatus} cameraResetKey={cameraRevision+(focus?1:0)} missionMarkers={flight?[]:markers} onMarkerSelect={choose} polarSurface={polar} missionCoverage={coverageLayer} onCoverageSelect={choose} onCoverageHover={setHoveredId}
             onSurfacePlace={sampleMap} placementMode scienceReady={Boolean(current)} assessmentRisk={selected?.risk??'unknown'} showSurfaceVehicle={Boolean(flight)} altitudeM={telemetry?.altitudeM??0} landed={landed}
-            solarPanelHeightM={vehicle.solar_panel_height} antennaHeightM={vehicle.antenna_height} landerName={vehicle.lander_name} vehiclePulseKey={vehiclePulseKey}/>
+            solarPanelHeightM={vehicle.solar_panel_height} antennaHeightM={vehicle.antenna_height} landerName={vehicle.lander_name} vehiclePulseKey={vehiclePulseKey}
+            pinnedTarget={pinnedTarget}/>
           <div className="one-map-source"><span>{plan&&coverageVisible&&!flight?'Evaluación de toda la superficie':'NASA LOLA · relieve continuo'}</span><small>{focus&&detail?'Detalle visual ~396 m · fuente 80 m':shadingStatus.includes('no disponible')?'Sombreado no disponible; relieve conservado':'Vista regional · fuente de 80 m'}{visualStatus.includes('no disponible')?' · '+visualStatus:''}</small><small>Nave y astros en escala ilustrativa.</small></div>
 
           {/* Icon-only "Simular llegada a este destino" button inside the Moon map screen */}
@@ -1127,7 +1181,8 @@ export default function UnifiedMissionPlanner(){
             <Rocket size={16}/>
           </button>}
 
-          {!plan&&<div className="one-map-empty"><Orbit size={20}/><strong>{busy?'Estamos calculando tus destinos.':'Escribe tu viaje para ver dónde alunizar.'}</strong><span>{busy?'La recomendación aparecerá aquí con sus alternativas.':'Sin cambiar de pantalla ni elegir capas técnicas.'}</span></div>}
+          {!plan&&!pinnedTarget&&<div className="one-map-empty"><Orbit size={20}/><strong>{busy?'Estamos calculando tus destinos.':'Escribe tu viaje o haz clic en la Luna para fijar un punto.'}</strong><span>{busy?'La recomendación aparecerá aquí con sus alternativas.':'Haz clic en el mapa 3D para marcar un lugar y preguntarle a la IA qué días visitarlo.'}</span></div>}
+          {!plan&&pinnedTarget&&<div className="surface-inspection-hint"><MapPin size={12}/><b>Lugar fijado: {pinnedTarget.label}</b><span>Elevación {pinnedTarget.elevation_m!=null?Math.round(pinnedTarget.elevation_m)+' m':'—'} · Pendiente {pinnedTarget.regional_slope_deg!=null?pinnedTarget.regional_slope_deg.toFixed(1)+'°':'—'} · Pregunta en el chat qué días visitarlo</span></div>}
           {plan&&!flight&&<div className="surface-inspection-hint"><MapPin size={12}/>{hovered?<><b className={'risk-text '+hovered.risk}>{SURFACE_CLASS_LABELS[hovered.risk]}</b><span>{num(Math.abs(hovered.latitude_deg),2)}°S · {longitude(hovered.longitude_deg)} · pendiente P95 {num(hovered.regional_slope_deg)}°</span></>:<span>Haz clic en cualquier área para ver sus mediciones y motivos.</span>}</div>}
         </div>
         {plan&&!hideTimelinePanel&&<SurfaceCoverageSummary plan={plan} active={coverageVisible} onToggle={()=>setCoverageVisible(v=>!v)} onEvidence={()=>setEvidence(true)}/>}
@@ -1287,6 +1342,7 @@ export default function UnifiedMissionPlanner(){
           <details className="rejected-destinations"><summary>{num(rejectedTotal,0)} zonas descartadas · ver ejemplos</summary>{plan.rejected.map(p=><button key={p.id} onClick={()=>choose(p.id)}><span className="reject-dot"/><div><strong>{num(Math.abs(p.latitude_deg),2)}°S · {longitude(p.longitude_deg,2)}</strong><small>{p.reasons?.[0]??'No cumple los criterios'}</small></div></button>)}</details>
           {selected&&<OperationalWindowsPanel samples={series} index={timeline}/>}
           <button className="download-plan" onClick={exportPlan}><Download size={14}/> Descargar plan y evidencia</button>
+          <OperationsPanel plan={plan} site={selected} vehicleProfile={plan.vehicle_profile??vehicle} onAskCopilot={askMissionQA} autofillText={operationsAutofill}/>
           <p className="decision-scope">Los colores describen sectores regionales, con condiciones calculadas en sus centros. Una zona verde puede contener pendientes locales mayores. Falta evaluar rocas pequeñas, huella de la nave, energía, temperatura y enlace de radio.</p>
         </>}
 

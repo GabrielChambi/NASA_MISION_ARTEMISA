@@ -130,6 +130,26 @@ button:disabled{cursor:default;opacity:.43}
 .unified-mission .rejected-destinations button{display:flex;width:100%;text-align:left;justify-content:flex-start;font-size:11px;margin-top:7px}
 .rejected-destinations strong{font-weight:500;font-size:11px}.rejected-destinations small{display:block;margin-top:5px;color:var(--muted);font-size:10px}
 .unified-mission .download-plan{width:100%;margin-top:22px;font-size:12px}
+.operations-panel{margin-top:15px;border-top:1px solid var(--line);padding-top:16px}
+.operations-panel-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.operations-panel-heading strong{font:500 15px 'Barlow Condensed',sans-serif;color:#dce8ef}
+.operations-panel-heading span{font:9px 'IBM Plex Mono',monospace;color:#8fb39f;text-transform:uppercase;letter-spacing:.7px}
+.operations-context{display:grid;grid-template-columns:auto 1fr;gap:5px 9px;margin:12px 0;padding:10px;border:1px solid #273745;border-radius:7px;background:#0d151e;font-size:10px}
+.operations-context span{color:#7f93a5;font:9px 'IBM Plex Mono',monospace}
+.operations-context strong{font:10px 'IBM Plex Mono',monospace;color:#c7d9d2;overflow-wrap:anywhere}
+.operations-panel .field-help{font-size:10px;line-height:1.55}
+.operations-panel details{border-top:1px solid #25313d;padding:11px 0}
+.operations-panel details:last-of-type{border-bottom:1px solid #25313d}
+.operations-panel summary{cursor:pointer;color:#c6d8e4;font-size:11px;font-weight:500}
+.operations-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.operations-field{display:block;color:#9eb0bf;font-size:9px;line-height:1.35}
+.operations-field input,.operations-textarea{display:block;margin-top:4px;padding:8px;background:#0b131b;color:#d8e6ee;border:1px solid #344657;border-radius:4px;font-size:10px}
+.operations-textarea{width:100%;min-height:84px;resize:vertical;font:10px/1.45 'IBM Plex Mono',monospace}
+.operations-submit{width:100%;margin-top:9px;font-size:10px!important;padding:8px!important}
+.operations-assistant-link{width:100%;margin:7px 0 10px!important;padding:7px!important;background:transparent!important;color:#a8d7ba!important;border-color:#41614e!important;font-size:10px!important}
+.operations-result{max-height:260px;overflow:auto;white-space:pre-wrap;word-break:break-word;background:#090f16;border-radius:6px;padding:9px;font:9px/1.45 'IBM Plex Mono',monospace;color:#b8d5c3}
+.operations-panel a{color:#a8d7ba}
+@media(max-width:700px){.operations-fields{grid-template-columns:1fr}.operations-panel-heading strong{font-size:17px}}
 .no-fit-plan{border:1px solid #8d6d45;padding:14px;border-radius:9px;margin-top:20px}
 .no-fit-plan h2{font:500 24px 'Barlow Condensed',sans-serif}.no-fit-plan p{font-size:13px;color:#c4b29b;line-height:1.6}
 .mission-modal-backdrop{position:fixed;inset:0;background:#000a;z-index:200;display:flex;align-items:center;justify-content:center;padding:22px;backdrop-filter:blur(5px)}
@@ -208,10 +228,33 @@ button:disabled{cursor:default;opacity:.43}
 /* Fluid Gemini-style Composer Box */
 .chat-composer-box{position:relative;flex-shrink:0;border:1px solid #2b3948;background:#141b24;border-radius:18px;padding:10px 12px 9px;transition:border-color .15s,background .15s}
 .chat-composer-box:focus-within,.chat-composer-box.dragging{border-color:#53687e;background:#161f29}
-.composer-attachment-bar{display:flex;align-items:center;justify-content:space-between;gap:6px;padding-bottom:6px;margin-bottom:4px}
+.composer-attachment-bar{display:flex;align-items:center;justify-content:flex-start;gap:6px;padding-bottom:6px;margin-bottom:4px;flex-wrap:wrap}
 .composer-active-chip{display:inline-flex;align-items:center;gap:6px;min-width:0;padding:3px 9px;border-radius:999px;background:#1c2632;color:#d4e0ec;font-size:11px}
 .composer-active-chip strong{white-space:nowrap;font-weight:500}
 .composer-active-chip span{font:9px 'IBM Plex Mono',monospace;color:#8fa3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.composer-active-chip.pin-target-chip{background:#0e2235;border:1px solid #1c4b72;color:#7dd3fc}
+.composer-active-chip.pin-target-chip strong{color:#e0f2fe}
+.composer-active-chip.pin-target-chip span{color:#93c5fd}
+.composer-active-chip .pin-remove-btn{border:0;background:transparent;padding:1px 3px;margin-left:2px;color:#7dd3fc;cursor:pointer;display:inline-flex;align-items:center;border-radius:4px}
+.composer-active-chip .pin-remove-btn:hover{background:#163b5c;color:#ffffff}
+
+.tactical-pinned-flag{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  background:#091420f0;
+  border:1px solid #38bdf8;
+  border-radius:999px;
+  padding:3px 9px;
+  box-shadow:0 4px 16px rgba(0,0,0,0.65),0 0 10px rgba(56,189,248,0.4);
+  color:#f0f9ff;
+  font-size:11px;
+  pointer-events:none;
+  white-space:nowrap;
+  transform:translateY(-24px);
+}
+.tactical-pinned-flag strong{font-weight:600;letter-spacing:.2px}
+.pinned-flag-dot{width:6px;height:6px;border-radius:50%;background:#38bdf8;box-shadow:0 0 7px #38bdf8}
 .unified-mission .composer-json-btn{padding:3px 7px;font:9px 'IBM Plex Mono',monospace;border-radius:999px;background:transparent;border:1px solid #2b3948;color:#8fa3b8;flex-shrink:0}
 .chat-composer-box textarea{width:100%;resize:none;min-height:58px;border:0!important;background:transparent!important;color:#edf4f8;padding:4px 2px;font-size:13px;line-height:1.5;display:block;outline:none!important}
 .composer-toolbar{display:flex;align-items:center;justify-content:space-between;gap:6px;padding-top:6px;flex-wrap:wrap}

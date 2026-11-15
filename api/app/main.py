@@ -18,6 +18,7 @@ from .automatic_plan import router as automatic_plan_router
 from .mission_rescue import router as mission_rescue_router
 from .operations import router as operations_router
 from .mission_intent import router as mission_intent_router
+from .operations import router as operations_router
 
 app=FastAPI(title='Lunar Oracle scientific API',version='1.0.0',description='NASA LOLA catalog and JPL Horizons geometric visibility. No simulated science.')
 app.add_middleware(GZipMiddleware,minimum_size=1024,compresslevel=5)
@@ -86,3 +87,4 @@ app.include_router(copilot_router)
 app.include_router(landing_router)
 app.include_router(earth_router)
 app.include_router(compare_router)
+app.include_router(operations_router)

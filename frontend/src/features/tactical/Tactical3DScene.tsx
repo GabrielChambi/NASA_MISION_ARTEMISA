@@ -30,6 +30,7 @@ export interface Tactical3DSceneProps {
   active?:boolean;altitudeM?:number;landed?:boolean
   overview?:boolean;focusZone?:boolean;onShadingStatus?:(status:string)=>void;polarSurface?:PolarSurface|null;polarAssessments?:PolarAssessment[];polarSelection?:PolarCell|null
   solarPanelHeightM?:number;antennaHeightM?:number;landerName?:string;vehiclePulseKey?:number
+  pinnedTarget?:{lat:number;lon:number;label?:string}|null
 }
 const EXAGGERATION=1
 const COLORS:Record<Risk,string>={green:'#62e6a0',yellow:'#f5cb67',red:'#ff797f',unknown:'#788e9e'}
@@ -73,6 +74,7 @@ export function Tactical3DScene(props:Tactical3DSceneProps){
         </Html>)}
       </group>}
       {props.overview&&props.polarSelection&&props.atlasData&&<PolarSelection data={props.atlasData} cell={props.polarSelection}/>}
+      {props.atlasData&&props.pinnedTarget&&<PinnedPinMarker data={props.atlasData} pin={props.pinnedTarget}/>}
       {props.atlasData&&props.missionMarkers&&<MissionMarkers data={props.atlasData} markers={props.missionMarkers} onSelect={props.onMarkerSelect}/>}
       <Camera {...props} dragging={dragging}/>
     </Canvas>
@@ -185,7 +187,7 @@ function Terrain(props:Tactical3DSceneProps&{dragging:boolean;onHover:(v:[number
   const hasCoverage=Boolean(props.missionCoverage&&props.polarSurface&&!props.showSurfaceVehicle)
   function hit(e:ThreeEvent<PointerEvent|MouseEvent>,place:boolean){
     if(props.showSurfaceVehicle)return
-    if(!props.placementMode&&!props.dragging&&!place&&!hasCoverage)return
+    if(!place&&!props.placementMode&&!props.dragging&&!hasCoverage)return
     // Three.js raycasters do not apply shader clipping planes.
     const clip=e.object.name==='regional-lola-terrain'?planes:e.object.name==='local-context-terrain'?localPlanes:[]
     if(clip.length&&clip.every(p=>p.distanceToPoint(e.point)<0))return
@@ -193,14 +195,14 @@ function Terrain(props:Tactical3DSceneProps&{dragging:boolean;onHover:(v:[number
     const vector=e.point.clone().add(new THREE.Vector3(0,regional.manifest.radius_m/1000,0)).normalize()
     const lat=-Math.asin(THREE.MathUtils.clamp(vector.y,-1,1))*180/Math.PI,lon=Math.atan2(-vector.x,vector.z)*180/Math.PI
     if(!props.overview)props.onHover([lat,lon])
-    const cell=hasCoverage&&props.polarSurface?polarCellAtWorld(props.polarSurface,e.point):null
+    const cell=props.polarSurface?polarCellAtWorld(props.polarSurface,e.point):null
     if(coverageHovered.current!==(cell?.id??null)){coverageHovered.current=cell?.id??null;props.onCoverageHover?.(cell?.id??null)}
-    if(place&&cell&&props.onCoverageSelect)props.onCoverageSelect(cell.id)
-    else if(place||props.dragging)props.onSurfacePlace?.(lat,lon)
+    if(place&&cell&&hasCoverage&&props.onCoverageSelect)props.onCoverageSelect(cell.id)
+    if(place||props.dragging)props.onSurfacePlace?.(lat,lon)
   }
   const handlers=props.dragging
-    ?{onPointerMove:(e:ThreeEvent<PointerEvent>)=>hit(e,false),onClick:(e:ThreeEvent<MouseEvent>)=>{if((props.placementMode||hasCoverage)&&e.delta<=5)hit(e,true)},onDoubleClick:(e:ThreeEvent<MouseEvent>)=>hit(e,true),onPointerOut:()=>{props.onHover(null);if(coverageHovered.current!==null){coverageHovered.current=null;props.onCoverageHover?.(null)}}}
-    :{onClick:(e:ThreeEvent<MouseEvent>)=>{if((props.placementMode||hasCoverage)&&e.delta<=5)hit(e,true)},onDoubleClick:(e:ThreeEvent<MouseEvent>)=>hit(e,true),onPointerOut:()=>{if(coverageHovered.current!==null){coverageHovered.current=null;props.onCoverageHover?.(null)}}}
+    ?{onPointerMove:(e:ThreeEvent<PointerEvent>)=>hit(e,false),onClick:(e:ThreeEvent<MouseEvent>)=>{if(e.delta<=5)hit(e,true)},onDoubleClick:(e:ThreeEvent<MouseEvent>)=>hit(e,true),onPointerOut:()=>{props.onHover(null);if(coverageHovered.current!==null){coverageHovered.current=null;props.onCoverageHover?.(null)}}}
+    :{onClick:(e:ThreeEvent<MouseEvent>)=>{if(e.delta<=5)hit(e,true)},onDoubleClick:(e:ThreeEvent<MouseEvent>)=>hit(e,true),onPointerOut:()=>{if(coverageHovered.current!==null){coverageHovered.current=null;props.onCoverageHover?.(null)}}}
   return <group>
     <directionalLight position={direction.clone().multiplyScalar(300)} color="#fff1d4" intensity={props.scienceReady?2:1.4}/>
     <directionalLight position={[70,100,-90]} color="#809fac" intensity={0.35}/>
@@ -384,4 +386,37 @@ function MissionMarkers({data,markers,onSelect}:{data:AtlasData;markers:PlanMapM
       </group>
     })}
   </group>
+}
+
+function PinnedPinMarker({data,pin}:{data:AtlasData;pin:{lat:number;lon:number;label?:string}}){
+  const surface=surfacePoint(data,pin.lat,pin.lon)
+  if(!Number.isFinite(surface.position.y))return null
+  const up=bodyDirection({latitude_deg:pin.lat,longitude_deg:pin.lon} as never,0,90)
+  const rotation=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1),up)
+  return (
+    <group position={surface.position.clone().addScaledVector(up,.35)} quaternion={rotation}>
+      <mesh renderOrder={40} raycast={()=>null}>
+        <ringGeometry args={[5.5,7.2,48]}/>
+        <meshBasicMaterial color="#38bdf8" transparent opacity={0.92} side={THREE.DoubleSide} depthTest={false} depthWrite={false}/>
+      </mesh>
+      <mesh renderOrder={39} raycast={()=>null}>
+        <circleGeometry args={[5.5,36]}/>
+        <meshBasicMaterial color="#38bdf8" transparent opacity={0.25} side={THREE.DoubleSide} depthTest={false} depthWrite={false}/>
+      </mesh>
+      <mesh renderOrder={41} raycast={()=>null}>
+        <circleGeometry args={[1.8,24]}/>
+        <meshBasicMaterial color="#ffffff" side={THREE.DoubleSide} depthTest={false} depthWrite={false}/>
+      </mesh>
+      <mesh position={[0,0,3.5]} rotation={[Math.PI/2,0,0]} renderOrder={42} raycast={()=>null}>
+        <cylinderGeometry args={[0.2,0.3,7,12]}/>
+        <meshBasicMaterial color="#38bdf8" depthTest={false}/>
+      </mesh>
+      <Html center zIndexRange={[50,35]}>
+        <div className="tactical-pinned-flag">
+          <span className="pinned-flag-dot"/>
+          <strong>📍 {pin.label??'Lugar fijado'}</strong>
+        </div>
+      </Html>
+    </group>
+  )
 }
