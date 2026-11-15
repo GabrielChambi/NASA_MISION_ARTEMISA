@@ -11,6 +11,8 @@ from .solar.service import solar_result
 from .earth.router import router as earth_router
 from .compare.router import router as compare_router
 from .landing import router as landing_router
+from .polar import router as polar_router
+from .copilot import router as copilot_router
 
 app=FastAPI(title='Lunar Oracle scientific API',version='1.0.0',description='NASA LOLA catalog and JPL Horizons geometric visibility. No simulated science.')
 app.add_middleware(CORSMiddleware,allow_origins=['http://127.0.0.1:5173','http://localhost:5173'],allow_credentials=False,allow_methods=['GET','POST','OPTIONS'],allow_headers=['*'])
@@ -69,6 +71,8 @@ async def solar_endpoint(site_id:str='site04',start_utc:str='2026-12-01T00:00:00
         if isinstance(exc,HorizonUnavailable): raise
         return JSONResponse(status_code=422,content={'status':'unavailable','message':str(exc),'samples':[],'windows':[],'summary':None})
 
+app.include_router(polar_router)
+app.include_router(copilot_router)
 app.include_router(landing_router)
 app.include_router(earth_router)
 app.include_router(compare_router)

@@ -6,6 +6,7 @@ import { useMission } from '../mission/MissionContext'
 import { DEFAULT_DESCENT, descentAt, simulateDescent, type DescentRun } from '../mission/descentPhysics'
 import { assessCell, nearestCell, parseUtcInput, validateBody, validateSurface, windowMetrics, type BodyResult, type LandingRun, type LandingSurface, type Limits } from './landingScience'
 import type { RaycastHit } from './tacticalMath'
+import MissionCopilot,{type CopilotAction} from './MissionCopilot'
 import './tactical-cockpit.css'
 
 const format = (v: number | null | undefined, digits=1) => typeof v==='number'&&Number.isFinite(v)?v.toFixed(digits):'—'
@@ -14,7 +15,7 @@ const initialLimits = { maxSlope:'10',maxRelief:'5',sunMargin:'0.2',earthMargin:
 const riskLabel = { green:'Cumple el modelo',yellow:'Margen limitado',red:'No cumple criterios',unknown:'Sin evaluación' }
 const emptyRay:RaycastHit = {hit:true,hitDistanceM:NaN,hitPositionWorld:null,obstacleElevationDeg:NaN,marginDeg:NaN}
 
-export default function TacticalSurvivalCockpit({ onOpenScientific, active=true }: { onOpenScientific?:()=>void; active?:boolean }) {
+export default function TacticalSurvivalCockpit({ onOpenScientific, onBackToPolar, active=true }: { onOpenScientific?:()=>void; onBackToPolar?:()=>void; active?:boolean }) {
   const { mission, updateMission, updateRequirements } = useMission()
   const [surface,setSurface]=useState<LandingSurface|null>(null)
   const [atlas,setAtlas]=useState<AtlasData|null>(null)
@@ -194,24 +195,37 @@ export default function TacticalSurvivalCockpit({ onOpenScientific, active=true 
   const nextDark=current?rows.findIndex((s,i)=>i>index&&s.elevation_deg-s.horizon_deg<=current.limits.sunMargin):-1
   const darkLabel=!sample?'—':selected?.sunMargin!==null&&selected?.sunMargin!==undefined&&selected.sunMargin<=current!.limits.sunMargin?'Ahora':nextDark>=0?(nextDark-index)+' h':'No observado en el intervalo'
   const counts=assessments.reduce((out,a)=>({...out,[a.risk]:out[a.risk]+1}),{green:0,yellow:0,red:0,unknown:0})
+  const copilotContext={
+    selected:cell?{id:cell.id,name:region?.name,lat:cell.latitude_deg,lon:cell.longitude_deg,slopeDeg:cell.max_slope_deg,resolutionM:5,coverage:'local'}:null,
+    regional:{scope:'local',sourceResolutionM:5,totalCells:region?.cells.length??0,knownCells:region?.cells.filter(c=>c.known).length??0,evaluated:Boolean(current)},
+    simulation:{status:current?'ready':dirty?'stale':'not_run',risk:selected?.risk??'unknown',reasons:selected?.reasons??[],sunHours:totals?.sunHours??null,earthHours:totals?.earthHours??null},
+    alternatives:best?[{id:best.cell.id,name:'Celda que cumple el modelo',lat:best.cell.latitude_deg,lon:best.cell.longitude_deg,slopeDeg:best.cell.max_slope_deg,resolutionM:5}]:[]
+  }
+  function copilotAction(a:CopilotAction){
+    if(!a)return
+    if(a.type==='polar_view'){onBackToPolar?.();return}
+    if(a.type==='select_cell'&&a.target_id){chooseCell(a.target_id,true);return}
+    if(a.type==='run_simulation'){void simulate();return}
+    if(a.type==='details'){setView('top');setCameraKey(k=>k+1)}
+  }
   const status=current?riskLabel[selected?.risk??'unknown']:dirty?'Cambios sin simular':loading?'Consultando NASA':'Ejecuta la simulación'
   return <div ref={rootRef} className="science-cockpit" data-testid="tactical-cockpit">
     <header className="science-header">
       <div className="science-brand"><Orbit className="brand-orbit" size={34}/><div><strong>LUNAR ORACLE</strong><small>EXPLORACIÓN DEL POLO SUR · NASA SPACE APPS</small></div></div>
       <div className="science-header-meta"><span className={'data-indicator '+(current?'ready':'')}/>{current?'NASA · OBSERVADOR VERIFICADO':'NASA LOLA + JPL HORIZONS'}</div>
-      <nav aria-label="Herramientas de misión"><button onClick={()=>setEvidence(true)}><Database size={14}/> Evidencia NASA</button><button onClick={()=>{setPlaying(false);setFlightPlaying(false);onOpenScientific?.()}}>Comparar referencias</button></nav>
+      <nav aria-label="Herramientas de misión">{onBackToPolar&&<button onClick={onBackToPolar}>← Todo el polo sur</button>}<button onClick={()=>setEvidence(true)}><Database size={14}/> Evidencia NASA</button><button onClick={()=>{setPlaying(false);setFlightPlaying(false);onOpenScientific?.()}}>Comparar referencias</button></nav>
     </header>
     <div className="science-layout">
       <aside className="science-controls">
-        <div className="panel-heading"><span>01 / CONFIGURACIÓN</span><span className="live-label">UTC</span></div>
+        <div className="panel-heading"><span>ESTUDIO LOCAL · PASO 3</span><span className="live-label">UTC</span></div>
         <section>
-          <h2><MapPin size={15}/> Destino lunar</h2>
+          <h2><MapPin size={15}/> Elige un área de detalle</h2><p className="field-help local-scope-note">Aquí se estudia una zona de 1,05 km con datos de 5 m. Para explorar todo el polo, vuelve al mapa regional.</p>
           <label>Área con cobertura de 5 m<select aria-label="Área lunar" value={region?.id??'outside'} onChange={e=>{const r=surface?.regions.find(r=>r.id===e.target.value);if(r)chooseCell(r.center_cell_id,true)}}>
             {!region&&<option value="outside">Fuera de cobertura</option>}
             {(surface?.regions??[]).map(r=><option key={r.id} value={r.id}>{r.name}</option>)}
           </select></label>
-          <div className="field-pair"><label>Latitud °<input aria-label="Latitud" type="number" step="any" value={manualLat} onChange={e=>setManualLat(e.target.value)}/></label><label>Longitud este °<input aria-label="Longitud este" type="number" step="any" value={manualLon} onChange={e=>setManualLon(e.target.value)}/></label></div>
-          <button className="wide quiet" onClick={manualPlace}>Localizar en rejilla NASA</button>
+          <details className="coordinate-details"><summary>Introducir coordenadas exactas</summary><div className="field-pair"><label>Latitud °<input aria-label="Latitud" type="number" step="any" value={manualLat} onChange={e=>setManualLat(e.target.value)}/></label><label>Longitud este °<input aria-label="Longitud este" type="number" step="any" value={manualLon} onChange={e=>setManualLon(e.target.value)}/></label></div>
+          <button className="wide quiet" onClick={manualPlace}>Localizar en rejilla NASA</button></details>
           <p className="field-help">Clic en el terreno para elegir. El destino se ajusta a una celda de 50 m; las coordenadas confirmadas aparecen en el mapa.</p>
           <div className="measured-row"><span>Pendiente del píxel · 5 m</span><strong>{format(cell?.slope_deg)}°</strong></div>
           <div className="measured-row"><span>Máxima en celda + huella</span><strong>{format(cell?.max_slope_deg)}°</strong></div>
@@ -224,20 +238,20 @@ export default function TacticalSurvivalCockpit({ onOpenScientific, active=true 
           <div className="delay-actions"><button onClick={()=>delay(1)}>+1 día</button><button onClick={()=>delay(6)}>+6 días</button><button onClick={()=>delay(12)}>+12 días</button></div>
           <p className="field-help">Cada cambio consulta las fechas y el observador exactos. Cadencia de efemérides: 1 hora.</p>
         </section>
-        <details className="criteria-details" open>
+        <details className="criteria-details">
           <summary>Límites del vehículo · hipótesis editables</summary>
           <div className="field-pair"><label>Pendiente máx. °<input aria-label="Pendiente máxima" type="number" min="0" max="45" value={limits.maxSlope} onChange={e=>setLimits({...limits,maxSlope:e.target.value})}/></label><label>Relieve máx. m<input aria-label="Relieve máximo" type="number" min="0" max="50" step="0.5" value={limits.maxRelief} onChange={e=>setLimits({...limits,maxRelief:e.target.value})}/></label></div>
           <div className="field-pair"><label>Margen Sol °<input aria-label="Margen Sol" type="number" min="0" max="10" step="0.1" value={limits.sunMargin} onChange={e=>setLimits({...limits,sunMargin:e.target.value})}/></label><label>Margen Tierra °<input aria-label="Margen Tierra" type="number" min="0" max="10" step="0.1" value={limits.earthMargin} onChange={e=>setLimits({...limits,earthMargin:e.target.value})}/></label></div>
           <div className="field-pair"><label>Horas Sol mín.<input aria-label="Horas Sol mínimas" type="number" min="0" max={duration} value={limits.minSunHours} onChange={e=>setLimits({...limits,minSunHours:e.target.value})}/></label><label>Horas Tierra mín.<input aria-label="Horas Tierra mínimas" type="number" min="0" max={duration} value={limits.minEarthHours} onChange={e=>setLimits({...limits,minEarthHours:e.target.value})}/></label></div>
           <p className="field-help">Huella: radio de 15 m. Máximo de pendiente en cada celda más ese margen. Relieve: rango de alturas en 35 × 35 m centrales.</p>
         </details>
-        <button className="simulate-button" onClick={simulate} disabled={Boolean(loading)||!surface||!atlas||!cell?.known||!coordinatesConfirmed}><Play size={16}/>{loading?'CONSULTANDO NASA…':'EJECUTAR SIMULACIÓN'}</button>
+        <button className="simulate-button" onClick={simulate} disabled={Boolean(loading)||!surface||!atlas||!cell?.known||!coordinatesConfirmed}><Play size={16}/>{loading?'CONSULTANDO NASA…':'ANALIZAR SOL Y TIERRA'}</button>
         {loading&&<p className="request-status" role="status">{loading}</p>}
         {(error||loadError)&&<div className="science-error" role="alert">{error||loadError}{loadError&&<button onClick={()=>setAttempt(n=>n+1)}>Reintentar datos</button>}</div>}
         {!surface&&!loadError&&<p role="status" className="field-help">Cargando relieve y productos NASA verificados…</p>}
       </aside>
       <main className="science-main">
-        <div className="map-toolbar"><div><span className="panel-kicker">02 / GEMELO DE PLANIFICACIÓN</span><h1>La Luna, bajo tus criterios.</h1></div><div className="view-buttons" aria-label="Cámara">{(['orbit','top','mast','polar'] as const).map(v=><button key={v} aria-pressed={view===v} onClick={()=>setView(v)}>{v==='orbit'?'Relieve':v==='top'?'Mapa':v==='polar'?'Polo sur':'Superficie'}</button>)}<button title="Pantalla completa" onClick={toggleFullscreen}><Maximize2 size={14}/></button></div></div>
+        <div className="map-toolbar"><div><span className="panel-kicker">DETALLE LOCAL · NASA LOLA 5 M</span><h1>Comprueba las condiciones de tu misión.</h1></div><div className="view-buttons" aria-label="Cámara">{(['orbit','top','mast','polar'] as const).map(v=><button key={v} aria-pressed={view===v} onClick={()=>setView(v)}>{v==='orbit'?'Relieve':v==='top'?'Mapa':v==='polar'?'Contexto':'Superficie'}</button>)}<button title="Pantalla completa" onClick={toggleFullscreen}><Maximize2 size={14}/></button></div></div>
         <div className="science-map" data-testid="lunar-map">
           <Tactical3DScene latDeg={cell?.latitude_deg??(Number(manualLat)||-89.46315776)} lonDeg={cell?.longitude_deg??(Number(manualLon)||-137.50198491)}
             observerHeightM={2} sunAzimuthDeg={sample?.azimuth_deg??0} sunElevationDeg={sample?.elevation_deg??0}
@@ -260,7 +274,7 @@ export default function TacticalSurvivalCockpit({ onOpenScientific, active=true 
         </div>
       </main>
       <aside className="science-results">
-        <div className="panel-heading"><span>03 / RESULTADOS</span><span className="live-label">{current?'CALCULADO':'PENDIENTE'}</span></div>
+        <div className="panel-heading"><span>RESULTADOS DE TU MISIÓN</span><span className="live-label">{current?'CALCULADO':'PENDIENTE'}</span></div>
         <div className={'assessment-status risk-'+(selected?.risk??'unknown')} data-testid="assessment-status"><ShieldCheck size={25}/><strong>{status}</strong><small>{current?'Criterios geométricos evaluados · no certificación':'Sin datos calculados no se declara aptitud'}</small></div>
         <section><h2><Sun size={15}/> Condiciones del destino</h2>
           <div className="body-readout"><span>SOL</span><strong>{format(sample?.elevation_deg,2)}<small>° elevación</small></strong><div>Azimut {format(sample?.azimuth_deg,2)}°</div><div>Horizonte {format(sample?.horizon_deg,2)}°</div><div>Despeje {format(selected?.sunMargin,2)}°</div></div>
@@ -281,6 +295,7 @@ export default function TacticalSurvivalCockpit({ onOpenScientific, active=true 
           <p role="status" className="touchdown-status">{landed?(flight.outcome==='soft-touchdown'?'CONTACTO SUAVE · ':'IMPACTO / DESCENSO INCOMPLETO · ')+format(flight.impactSpeedMps,2)+' m/s · '+format(cell?.latitude_deg,6)+'°, '+format(cell?.longitude_deg,6)+'°':'Descendiendo · '+format(flightTime,0)+' / '+format(flight.durationS,0)+' s'}</p>
           {landed&&<p className="field-help">La velocidad de contacto y la aptitud ambiental son evaluaciones independientes. El marcador indica la celda seleccionada.</p>}</>}
         </section>
+        <MissionCopilot context={copilotContext} onAction={copilotAction}/>
         <div className="model-scope"><Database size={13}/><p>Modelo de planificación con datos NASA. Sin balance térmico, energía eléctrica, presupuesto RF, rocas menores de 5 m ni validación SPICE independiente. Verde expresa el cumplimiento del modelo.</p></div>
         <button className="wide quiet" disabled={!current} onClick={exportRun}>Descargar evidencia JSON</button>
       </aside>

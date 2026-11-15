@@ -1,3 +1,4 @@
+import {openLocalCockpit} from './browser-helpers.mjs'
 import { chromium } from 'playwright'
 import { mkdir,writeFile,readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
@@ -17,8 +18,9 @@ const shot=(page,name)=>page.screenshot({path:fileURLToPath(new URL(name,out)),f
 try{
   const page=await browser.newPage({viewport:{width:1440,height:1000},reducedMotion:'reduce'})
   watch(page)
-  await page.goto(base,{waitUntil:'networkidle'})
-  const simulate=page.getByRole('button',{name:'EJECUTAR SIMULACIÓN',exact:true})
+  await page.goto(base,{waitUntil:'networkidle'});await openLocalCockpit(page)
+  await page.locator('.criteria-details summary').click();await page.locator('.coordinate-details summary').click()
+  const simulate=page.getByRole('button',{name:'ANALIZAR SOL Y TIERRA',exact:true})
   await simulate.waitFor()
   await page.waitForFunction(()=>!document.querySelector('.simulate-button')?.disabled)
   assert.match(await page.getByTestId('assessment-status').innerText(),/Ejecuta/)
@@ -32,7 +34,7 @@ try{
   const legend=await page.getByLabel('Leyenda de aptitud').innerText();assert.ok(Number(legend.match(/Cumple · (\d+)/)[1])>0);assert.ok(Number(legend.match(/No cumple · (\d+)/)[1])>0)
   await page.getByRole('button',{name:'Mapa',exact:true}).click()
   await shot(page,'landing-contours-production.png')
-  await page.getByRole('button',{name:'Polo sur',exact:true}).click();await page.locator('.polar-feature-label').first().waitFor();await page.getByRole('button',{name:'Mapa',exact:true}).click()
+  await page.getByRole('button',{name:'Contexto',exact:true}).click();await page.locator('.science-map .polar-feature-label').first().waitFor();await page.getByRole('button',{name:'Mapa',exact:true}).click()
   const downloadEvent=page.waitForEvent('download')
   await page.getByRole('button',{name:'Descargar evidencia JSON',exact:true}).click()
   const download=await downloadEvent,path=fileURLToPath(new URL('landing-evidence.json',out))
@@ -84,14 +86,15 @@ try{
   await page.close()
   const mobile=await browser.newPage({viewport:{width:390,height:844},isMobile:true,deviceScaleFactor:1})
   watch(mobile)
-  await mobile.goto(base,{waitUntil:'networkidle'})
-  for(const name of ['Evidencia NASA','Comparar referencias','Relieve','Mapa','Superficie','Polo sur']){
+  await mobile.goto(base,{waitUntil:'networkidle'});await openLocalCockpit(mobile)
+  for(const name of ['Evidencia NASA','Comparar referencias','Relieve','Mapa','Superficie','Contexto']){
     const b=mobile.getByRole('button',{name,exact:true}),box=await b.boundingBox()
     assert.ok(box&&box.x>=0&&box.x+box.width<=390,name+' clipped')
   }
   assert.ok(await mobile.evaluate(()=>document.documentElement.scrollWidth<=innerWidth))
-  const mapBox=await mobile.getByTestId('lunar-map').boundingBox(),canvasBox=await mobile.locator('canvas').first().boundingBox();assert.ok(Math.abs(mapBox.height-canvasBox.height)<2,'Mobile canvas must fill its map')
-  await mobile.getByRole('button',{name:'EJECUTAR SIMULACIÓN',exact:true}).click()
+  await mobile.waitForFunction(()=>{const m=document.querySelector('.science-map'),c=m?.querySelector('canvas');return m&&c&&Math.abs(m.getBoundingClientRect().height-c.getBoundingClientRect().height)<2})
+  const mapBox=await mobile.getByTestId('lunar-map').boundingBox(),canvasBox=await mobile.locator('.science-map canvas').first().boundingBox();assert.ok(Math.abs(mapBox.height-canvasBox.height)<2,'Mobile canvas must fill its map')
+  await mobile.getByRole('button',{name:'ANALIZAR SOL Y TIERRA',exact:true}).click()
   await ready(mobile)
   await shot(mobile,'landing-mobile-production.png')
   log.push('390 px mobile: navigation, map controls and results usable without horizontal clipping')
@@ -100,8 +103,8 @@ try{
     const failed=await browser.newPage({viewport:{width:1280,height:900}})
     watch(failed)
     await failed.route(failPath,r=>r.fulfill({status:503,contentType:'application/json',body:JSON.stringify({status:'unavailable',message:'NASA unavailable regression'})}))
-    await failed.goto(base,{waitUntil:'networkidle'})
-    if(failPath.includes('ephemeris'))await failed.getByRole('button',{name:'EJECUTAR SIMULACIÓN',exact:true}).click()
+    await failed.goto(base,{waitUntil:'networkidle'});await openLocalCockpit(failed)
+    if(failPath.includes('ephemeris'))await failed.getByRole('button',{name:'ANALIZAR SOL Y TIERRA',exact:true}).click()
     await failed.getByRole('alert').waitFor()
     assert.doesNotMatch(await failed.getByTestId('assessment-status').innerText(),/Cumple el modelo/)
     assert.equal(await failed.getByRole('button',{name:'Descargar evidencia JSON',exact:true}).isDisabled(),true)

@@ -8,6 +8,7 @@ import { buildAtlasGeometry, projectedToWorld, bodyDirection, type AtlasData } f
 import { latLonToStereoM, sampleExactStereoMeshPoint, type RaycastHit } from './tacticalMath'
 import { LunarRocketLanderModel } from './LunarLanderModel'
 import type { CellAssessment, Risk } from './landingScience'
+import { findPolarCell,type PolarSurface,type PolarAssessment,type PolarCell } from './polarScience'
 
 export interface Tactical3DSceneProps {
   latDeg:number;lonDeg:number;observerHeightM:number
@@ -20,6 +21,7 @@ export interface Tactical3DSceneProps {
   onSurfacePlace?:(lat:number,lon:number)=>void;cameraResetKey?:number
   scienceReady?:boolean;assessmentRisk?:Risk;assessments?:CellAssessment[]
   active?:boolean;altitudeM?:number;landed?:boolean
+  overview?:boolean;focusZone?:boolean;polarSurface?:PolarSurface|null;polarAssessments?:PolarAssessment[];polarSelection?:PolarCell|null
 }
 const EXAGGERATION=1
 const COLORS:Record<Risk,string>={green:'#62e6a0',yellow:'#f5cb67',red:'#ff797f',unknown:'#788e9e'}
@@ -46,7 +48,7 @@ export function Tactical3DScene(props:Tactical3DSceneProps){
     return()=>window.removeEventListener('pointerup',up)
   },[])
   return <div className="tactical-canvas-container" style={{width:'100%',height:'100%',position:'relative',cursor:dragging?'grabbing':props.placementMode?'crosshair':'grab'}}>
-    <div className="surface-tools">
+    <div className="surface-tools" hidden={props.overview}>
       <button className="tactical-surface-place-btn" onClick={props.onTogglePlacementMode} aria-pressed={props.placementMode}>{props.placementMode?<Crosshair size={12}/>:<MapPin size={12}/>} {props.placementMode?'CLIC PARA ELEGIR DESTINO':'ELEGIR SOBRE LA SUPERFICIE'}</button>
       <span>{hover&&props.placementMode?hover[0].toFixed(5)+'°, '+hover[1].toFixed(5)+'°':'Arrastra para orbitar · rueda para acercar'}</span>
     </div>
@@ -55,16 +57,17 @@ export function Tactical3DScene(props:Tactical3DSceneProps){
       <ambientLight intensity={0.45}/>
       <Stars radius={1100} depth={200} count={2000} factor={2} fade/>
       {props.atlasData&&<Terrain {...props} dragging={dragging} onHover={setHover}/>}
-      {props.atlasData&&<Spacecraft {...props} onDrag={()=>setDragging(true)}/>}
+      {props.atlasData&&!props.overview&&<Spacecraft {...props} onDrag={()=>setDragging(true)}/>}
       {props.scienceReady&&props.detailAtlasData&&props.assessments?.length&&<LandingContours data={props.detailAtlasData} assessments={props.assessments}/>}
       {props.cameraView==='polar'&&props.atlasData&&<group>
         {props.atlasData.manifest.features.map(f=><Html key={f.name} position={projectedToWorld(f.x_m,f.y_m,f.elevation_m,1,props.atlasData!.manifest.radius_m)} center zIndexRange={[8,0]} style={{pointerEvents:'none'}}>
           <div className="polar-feature-label">{f.name}</div>
         </Html>)}
       </group>}
+      {props.overview&&props.polarSelection&&props.atlasData&&<PolarSelection data={props.atlasData} cell={props.polarSelection}/>}
       <Camera {...props} dragging={dragging}/>
     </Canvas>
-    {props.atlasData&&<div className="surface-destination" style={{borderColor:COLORS[props.assessmentRisk??'unknown']}}>
+    {props.atlasData&&!props.overview&&<div className="surface-destination" style={{borderColor:COLORS[props.assessmentRisk??'unknown']}}>
       <span className="destination-dot" style={{background:COLORS[props.assessmentRisk??'unknown']}}/>
       <div><strong>{props.landed?'CONTACTO · ':''}{props.siteName}</strong><small>{props.latDeg.toFixed(6)}°, {props.lonDeg.toFixed(6)}°{props.scienceReady?' · destino calculado':' · pendiente de simular'}</small></div>
     </div>}
@@ -81,7 +84,22 @@ function clipBox(data:AtlasData|null|undefined) {
 }
 function Terrain(props:Tactical3DSceneProps&{dragging:boolean;onHover:(v:[number,number]|null)=>void}){
   const regional=props.atlasData!,detail=props.detailAtlasData,context=props.contextAtlasData
-  const geometry=useMemo(()=>buildAtlasGeometry(regional,EXAGGERATION,'elevation',2),[regional])
+  const geometry=useMemo(()=>{
+    const g=buildAtlasGeometry(regional,EXAGGERATION,props.overview?'natural':'elevation',2)
+    if(props.overview&&props.polarSurface&&props.polarAssessments?.length){
+      const byId=new Map(props.polarAssessments.map(a=>[a.cell.id,a.risk]))
+      const positions=g.getAttribute('position'),colors=g.getAttribute('color'),colour=new THREE.Color()
+      for(let i=0;i<positions.count;i++){
+        const x=positions.getX(i),y=positions.getY(i)+regional.manifest.radius_m/1000,z=positions.getZ(i),length=Math.hypot(x,y,z)
+        if(!length)continue
+        const lat=-Math.asin(THREE.MathUtils.clamp(y/length,-1,1))*180/Math.PI,lon=Math.atan2(-x,z)*180/Math.PI
+        const cell=findPolarCell(props.polarSurface,lat,lon),risk=cell?byId.get(cell.id)??'unknown':'unknown'
+        colour.set(COLORS[risk]).multiplyScalar(.72)
+        colors.setXYZ(i,colour.r,colour.g,colour.b)
+      }
+    }
+    return g
+  },[regional,props.overview,props.polarSurface,props.polarAssessments])
   const local=useMemo(()=>detail?buildAtlasGeometry(detail,EXAGGERATION,'natural',1):null,[detail])
   const middle=useMemo(()=>context?buildAtlasGeometry(context,EXAGGERATION,'natural',1):null,[context])
   useEffect(()=>()=>geometry.dispose(),[geometry])
@@ -101,7 +119,7 @@ function Terrain(props:Tactical3DSceneProps&{dragging:boolean;onHover:(v:[number
     props.onHover([lat,lon])
     if(place||props.dragging)props.onSurfacePlace?.(lat,lon)
   }
-  const handlers={onPointerMove:(e:ThreeEvent<PointerEvent>)=>hit(e,false),onClick:(e:ThreeEvent<MouseEvent>)=>{if(props.placementMode)hit(e,true)},onDoubleClick:(e:ThreeEvent<MouseEvent>)=>hit(e,true),onPointerOut:()=>props.onHover(null)}
+  const handlers={onPointerMove:(e:ThreeEvent<PointerEvent>)=>hit(e,false),onClick:(e:ThreeEvent<MouseEvent>)=>{if(props.placementMode&&e.delta<=5)hit(e,true)},onDoubleClick:(e:ThreeEvent<MouseEvent>)=>hit(e,true),onPointerOut:()=>props.onHover(null)}
   return <group>
     <directionalLight position={direction.clone().multiplyScalar(300)} color="#fff1d4" intensity={props.scienceReady?2:1.4}/>
     <directionalLight position={[70,100,-90]} color="#809fac" intensity={0.35}/>
@@ -185,7 +203,8 @@ function Camera(props:Tactical3DSceneProps&{dragging:boolean}){
   const target=useMemo(()=>data?surfacePoint(data,props.latDeg,props.lonDeg).position:new THREE.Vector3(),[data,props.latDeg,props.lonDeg])
   useEffect(()=>{
     if(!data||!controls.current||!Number.isFinite(target.y))return
-    if(props.cameraView==='polar'){camera.position.set(185,140,225);controls.current.target.set(0,-8,0)}
+    if(props.cameraView==='polar'&&props.focusZone){camera.position.copy(target).add(new THREE.Vector3(16,20,26));controls.current.target.copy(target)}
+    else if(props.cameraView==='polar'){const fit=props.overview?Math.max(850,760/(size.width/Math.max(size.height,1))):400;camera.position.copy(new THREE.Vector3(.6,.7,.65).normalize().multiplyScalar(fit));controls.current.target.set(0,-8,0)}
     else if(props.cameraView==='top'){const height=Math.max(1.7,1.4/(2*Math.tan(Math.PI/8)*(size.width/Math.max(size.height,1))));camera.position.copy(target).add(new THREE.Vector3(.05,height,.01));controls.current.target.copy(target)}
     else if(props.cameraView==='mast'){
       const direction=bodyDirection({latitude_deg:props.latDeg,longitude_deg:props.lonDeg} as never,props.sunAzimuthDeg,props.sunElevationDeg)
@@ -194,7 +213,7 @@ function Camera(props:Tactical3DSceneProps&{dragging:boolean}){
     controls.current.update()
     // Keep the user's orbit when placing a different cell manually.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[props.cameraView,props.cameraResetKey,Boolean(data),data?.manifest.sample_extent_m.xmin,Boolean((props.altitudeM??0)>0),size.width,size.height])
+  },[props.cameraView,props.cameraResetKey,Boolean(data),data?.manifest.sample_extent_m.xmin,Boolean((props.altitudeM??0)>0),props.overview,props.focusZone,props.focusZone?props.latDeg:0,props.focusZone?props.lonDeg:0,size.width,size.height])
   useFrame(()=>{
     const region=props.atlasData
     if(!region)return
@@ -204,5 +223,15 @@ function Camera(props:Tactical3DSceneProps&{dragging:boolean}){
     const h=surfacePoint(terrain,lat,lon).position.y
     if(Number.isFinite(h)&&camera.position.y<h+.003)camera.position.y=h+.003
   })
-  return <OrbitControls ref={controls} enabled={!props.dragging} enableRotate={!props.placementMode} enableDamping dampingFactor={.08} minDistance={.025} maxDistance={400} maxPolarAngle={Math.PI*.51}/>
+  return <OrbitControls ref={controls} enabled={!props.dragging} enableRotate={props.overview||!props.placementMode} enableDamping dampingFactor={.08} minDistance={.025} maxDistance={props.overview?1800:800} maxPolarAngle={Math.PI*.51}/>
+}
+
+function PolarSelection({data,cell}:{data:AtlasData;cell:PolarCell}){
+  const position=surfacePoint(data,cell.latitude_deg,cell.longitude_deg).position.clone()
+  if(!Number.isFinite(position.y))return null
+  position.y+=1
+  return <group position={position}>
+    <mesh rotation={[-Math.PI/2,0,0]} raycast={()=>null}><ringGeometry args={[2.3,2.8,48]}/><meshBasicMaterial color="#ffffff" depthTest={false}/></mesh>
+    <mesh position={[0,3,0]} raycast={()=>null}><cylinderGeometry args={[.12,.12,6,8]}/><meshBasicMaterial color="#ffffff" depthTest={false}/></mesh>
+  </group>
 }

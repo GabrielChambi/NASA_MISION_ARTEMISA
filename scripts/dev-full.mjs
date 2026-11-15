@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
+try { process.loadEnvFile(path.join(root,'.env')) } catch(error) { if(error.code!=='ENOENT') throw error }
 const python = path.join(root, 'api', '.venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python')
 if (!existsSync(python)) {
   console.error('Set up the API first: python -m venv api/.venv, then api/.venv/Scripts/python.exe -m pip install -r api/requirements.txt (Windows). See README for Linux/macOS.')
