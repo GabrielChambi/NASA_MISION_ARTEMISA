@@ -49,3 +49,22 @@ def test_launch_location_comes_from_the_authoritative_catalogue():
  value=context();value['message']='¿Desde dónde lanzamos?';value['context']['launch_site']={'id':'ksc-39b','name':'Invented facility'};value['context']['mission_time_zone']='UTC'
  out=baseline_chat(validate_chat(value))
  assert 'Kennedy Space Center' in out and 'Invented facility' not in out and 'UTC' in out
+
+@pytest.mark.parametrize('slope',[None,15.2])
+def test_pinned_location_does_not_invent_a_season_or_a_temporal_result(slope):
+ value={'message':'¿Qué días puedo visitar este lugar?','context':{'pinned_target':{'id':'polar:5:56','lat':-80.78,'lon':-7.3,'slopeDeg':slope}}}
+ parsed=validate_chat(value);out=baseline_chat(parsed)
+ assert parsed['facts']['total_cells'] is None and parsed['facts']['candidate_count']==0
+ assert 'Indica una fecha' in out and 'no hay condiciones temporales calculadas' in out
+ assert not any(word in out.lower() for word in ('noviembre','febrero','2026','2027','ventana recomendada'))
+ assert ('sin determinar' in out) is (slope is None)
+
+def test_operations_routes_are_registered_once():
+ from api.app.main import app
+ import warnings
+ app.openapi_schema=None
+ with warnings.catch_warnings(record=True) as caught:
+  warnings.simplefilter('always')
+  schema=app.openapi()
+ assert '/api/operations/analyze' in schema['paths'] and '/api/operations/replan' in schema['paths']
+ assert not any('Duplicate Operation ID' in str(w.message) for w in caught)

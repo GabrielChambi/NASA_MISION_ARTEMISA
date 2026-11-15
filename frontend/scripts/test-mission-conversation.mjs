@@ -100,6 +100,26 @@ try{
  await send('2026 a las10am')
  const completedPlan=await (await completed).json()
  check('Answering just the missing year completes the pending request automatically',completedPlan.mission.requested_utc==='2026-12-01T15:00:00Z')
+ await page.close()
+ page=await open()
+ const canvas=page.getByTestId('mission-map').locator('canvas')
+ await canvas.waitFor();await page.waitForTimeout(800)
+ for(const [x,y] of [[.5,.6],[.5,.7],[.4,.65],[.6,.65]]){
+  if(await page.locator('.pin-target-chip').count())break
+  const box=await canvas.boundingBox();await page.mouse.click(box.x+box.width*x,box.y+box.height*y);await page.waitForTimeout(250)
+ }
+ check('A place can be pinned on the actual 3D lunar surface before planning',await page.locator('.pin-target-chip').count()===1&&await page.locator('.tactical-pinned-flag').count()===1)
+ const qaResponse=waitApi('/api/copilot/chat')
+ await send('¿Qué días puedo visitar este lugar?')
+ const qa=await qaResponse,pinAnswer=await qa.json(),pin=pinAnswer.evidence.pinned_target
+ check('Pinned-site questions use its real coordinates with no fabricated temporal coverage',qa.status()===200&&pin?.id?.startsWith('polar:')&&pin.slopeDeg!==null&&pinAnswer.evidence.total_cells===null&&pinAnswer.evidence.candidate_count===0)
+ check('An uncomputed pin is not assigned a canned favorable season',!/ventana recomendada|verano austral lunar|noviembre a febrero/i.test(pinAnswer.explanation)&&/fecha|calcul|evalu/i.test(pinAnswer.explanation))
+ const pinPlan=waitApi('/api/automatic-plan'),pinStudy=waitApi('/api/operations/analyze')
+ await send('Viajar el25de diciembrede2026 a las8am')
+ const pinnedPlan=await (await pinPlan).json(),studyResponse=await pinStudy,studiedPin=await studyResponse.json()
+ check('A pinned destination keeps the full-cap comparison and receives its own scientific study',pinnedPlan.total_cells===12892&&studyResponse.request().postDataJSON().cell_id===pin.id&&studiedPin.affected.cell.id===pin.id)
+ await page.locator('.pin-target-chip').getByRole('button',{name:'Quitar pin'}).click()
+ check('The pinned reference can be removed without erasing the computed mission',await page.locator('.pin-target-chip').count()===0&&await page.getByTestId('recognized-mission').count()===1)
  check('The browser has no uncaught application errors',errors.length===0)
  await writeFile(path('conversation-browser-report.json'),JSON.stringify({status:'ok',checks,errors,failures,screenshot_case:parsed.intent,first_rescue:rescued.proposals[0].proposed_request,solar_fault:solar.affected.budget.fault},null,2))
  console.log(JSON.stringify({status:'ok',checks:checks.length,parsed_utc:parsed.intent.departure_utc,errors}))

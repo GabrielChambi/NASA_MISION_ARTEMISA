@@ -43,6 +43,10 @@ Las preguntas explicativas y las órdenes negativas como «No cambies la baterí
 
 El endpoint semántico no garantiza comprender cualquier frase. Una reformulación validada todavía requiere la validación de los parámetros y la ejecución científica. No se atribuyen a NASA las especificaciones hipotéticas del vehículo, el consumo ni las prestaciones de radio.
 
+## Lugar fijado y condiciones temporales
+
+Puedes fijar un lugar sobre el mapa antes de planificar. Su pin conserva la coordenada regional seleccionada y se usa como destino para estudiar cuando se calcula una fecha; el análisis sigue comparando todo el casquete. Las franjas del borde sin un centro evaluado se pueden inspeccionar y permanecen desconocidas; no se ajustan a un centro interior. Sin fecha ni resultados temporales, el copiloto pide una referencia y mantiene las condiciones como desconocidas. No recomienda una estación ni meses fijos por una coordenada. NASA muestra cómo cambian las sombras con la fecha y el relieve en [Shadows near the Moon’s South Pole](https://svs.gsfc.nasa.gov/4893/) y [Illumination to 80°S, 2025–2028](https://svs.gsfc.nasa.gov/5027/).
+
 ## Una decisión comprensible y auditable
 
 El resumen principal separa tres estados:
@@ -53,7 +57,7 @@ El resumen principal separa tres estados:
 
 Un sector verde regional no implica presupuesto energético suficiente ni huella segura. Los datos de 80 m no resuelven una huella pequeña de la nave. Los estados pendientes permanecen explícitos.
 
-Las mediciones detalladas del copiloto se pueden desplegar. El JSON descargado conserva conversación, fechas interpretadas, centro de lanzamiento, parámetros, fuentes, estudios y propuestas aplicadas. Ese registro permite revisar qué se pidió, qué se cambió y qué se calculó.
+Las mediciones detalladas del copiloto se pueden desplegar. El JSON descargado conserva el historial reciente de conversación, fechas interpretadas, centro de lanzamiento, parámetros, fuentes, estudios y propuestas aplicadas. Ese registro permite revisar qué se pidió, qué se cambió y qué se calculó.
 
 ## Reproducir
 
@@ -70,3 +74,5 @@ node frontend/scripts/test-mission-operations.mjs
 ~~~
 
 El navegador usa la API y el motor reales, comprueba el texto literal de la captura, la búsqueda de fechas, experimentos encadenados, negación, aclaraciones, preferencias, exportación y móvil. Las pruebas unitarias verifican además respuestas controladas del proveedor, entradas imposibles y rechazo de cifras inventadas.
+
+La [evidencia de esta comprobación local](validation/conversation-controls.json) registra el caso literal, las suites verificadas y el ensayo real de Gemini.

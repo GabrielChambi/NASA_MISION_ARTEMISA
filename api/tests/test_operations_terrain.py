@@ -78,6 +78,7 @@ def test_a_resolved_local_footprint_supersedes_the_coarse_regional_slope_proxy(s
  # A nominal local pass does not assert that all dispersion centers pass.
  assert 'all_dispersion_centers_meet_nominal_model' not in result
 
+@pytest.mark.skipif(not (ROOT/'data/raw/site01.tif').exists(),reason='Original NASA rasters must be acquired locally')
 def test_bundled_nasa_operations_example_reproduces_without_network(monkeypatch,tmp_path):
  import asyncio,shutil
  from api.app.operations import analyze

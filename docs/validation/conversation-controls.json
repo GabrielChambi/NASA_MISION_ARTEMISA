@@ -1,0 +1,55 @@
+{
+  "checked_at_utc": "2026-11-15T17:21:29.687900+00:00",
+  "scope": "Local Python API and real Chrome, including merged interactive pin and complete south-pole coverage",
+  "base_url": "http://127.0.0.1:5173/",
+  "unit_tests": {
+    "python_passed": 277,
+    "javascript_passed": 193
+  },
+  "browser_suites": {
+    "conversation": {
+      "checks": 32,
+      "status": "passed"
+    },
+    "automatic_mission": {
+      "checks": 52,
+      "status": "passed"
+    },
+    "date_rescue": {
+      "checks": 32,
+      "status": "passed"
+    },
+    "operations": {
+      "checks": 25,
+      "status": "passed"
+    },
+    "vehicle_integrity": {
+      "checks": 56,
+      "status": "passed"
+    },
+    "surface_coverage": {
+      "checks": 34,
+      "status": "passed"
+    }
+  },
+  "browser_checks": 231,
+  "exact_screenshot": {
+    "message": "QUIERO HACER UN VIAJE EL 1DE DICIEMBREDE 2026 A LAS 10AM",
+    "clock": "America/New_York",
+    "departure_utc": "2026-12-01T15:00:00Z",
+    "regional_centers": 12892
+  },
+  "gemini_live_probe": {
+    "connection_and_generation": "passed",
+    "command": "Quiero probar un acumulador de mil Wh",
+    "validated_capacity_wh": 1000,
+    "scientific_quantities_calculated_by": "Scientific API, not the language model"
+  },
+  "build_hosted": "passed; no deployment performed",
+  "limitations": [
+    "Regional screening does not certify landing safety.",
+    "Native operations require local NASA rasters.",
+    "Unknown coverage remains unknown.",
+    "Transit and vehicle characteristics remain declared model assumptions."
+  ]
+}
