@@ -869,5 +869,13 @@
   "Modelo visual y parámetros hipotéticos; no es una ficha técnica ni una validación de vuelo.": "Visual model and hypothetical parameters; not a technical specification or a flight validation.",
   "Umbral de pendiente configurado": "Configured slope threshold",
   "Parámetros hipotéticos editables; no son especificaciones verificadas del fabricante.": "Editable hypothetical parameters; not verified manufacturer specifications.",
-  "Ejemplo hipotético editable. Los datos orbitales y el terreno provienen de NASA; batería, consumo, paneles y radio son valores declarados por ti. Elegir un modelo 3D no calibra esos parámetros. Orientación actual:": "Editable hypothetical example. Orbital data and terrain come from NASA; battery, loads, panels and radio are your declared values. Choosing a 3D model does not calibrate those parameters. Current orientation:"
+  "Ejemplo hipotético editable. Los datos orbitales y el terreno provienen de NASA; batería, consumo, paneles y radio son valores declarados por ti. Elegir un modelo 3D no calibra esos parámetros. Orientación actual:": "Editable hypothetical example. Orbital data and terrain come from NASA; battery, loads, panels and radio are your declared values. Choosing a 3D model does not calibrate those parameters. Current orientation:",
+  "Compruebo temperatura y comunicaciones.": "Checking temperature and communications.",
+  "El estudio físico requiere revisar condiciones.": "The physics study needs a review of conditions.",
+  "Los presupuestos calculados cumplen; falta resolver la huella local.": "Computed budgets meet the model; the local footprint remains unresolved.",
+  "Temperatura y radio": "Temperature and radio",
+  "Cálculo físico automático pendiente": "Automatic physics calculation pending",
+  "Presupuesto acoplado compatible; falta calibración": "Coupled budget meets the model; calibration is pending",
+  "Revisa calefacción, batería y contactos con estaciones": "Review heating, battery and station contacts",
+  ". Declara aquí los equipos críticos sin el calefactor independiente. El estudio físico añade su consumo y puede cambiar la conclusión del presupuesto básico.": ". Enter critical equipment loads without the independent heater. The physics study adds its consumption and may change the basic budget conclusion."
 }

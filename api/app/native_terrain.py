@@ -154,7 +154,7 @@ def _native_footprint(lat,lon,settings):
   'max_height_uncertainty_m':float(np.max(maxerr[selected&np.isfinite(maxerr)])) if np.any(selected&np.isfinite(maxerr)) else None,
   'all_dispersion_centers_meet_nominal_model':bool(total>0 and counts['1']+counts['2']==total and resolved),'recommended_local_center':recommendation,
   'grid':{'width':shape[1],'height':shape[0],'xmin':tr.c,'ymax':tr.f,'spacing_m':spacing,'risk':risk.ravel().tolist(),'inside_ellipse':target.astype(np.uint8).ravel().tolist(),
-   'elevation_min_m':float(np.nanmin(dem)),'elevation_max_m':float(np.nanmax(dem)),'elevations_m':[round(float(v),2) if np.isfinite(v) else None for v in dem.ravel()]},
+   'elevation_min_m':float(np.nanmin(dem)),'elevation_max_m':float(np.nanmax(dem)),'elevations_m':[float(v) if np.isfinite(v) else None for v in dem.ravel()]},
   'sources':[{'name':file,'url':REGIONAL_URL if not fine else SOURCES_URL,'sha256':verified_path(file)[1]} for file in ([name,source+'-slp.tif',source+'-toterr.tif'] if fine else [name])],
   'limitations':['Cada color corresponde a centros de píxel nativo y su huella circular; no a rocas subpíxel ni a una certificación de aterrizaje.',
    'La elipse es una región de dispersión declarada, no una distribución estadística ni una probabilidad de éxito.',

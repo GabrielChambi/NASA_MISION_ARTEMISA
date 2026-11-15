@@ -1,0 +1,1088 @@
+{
+  "status": "pass",
+  "created_utc": "2026-11-15T21:32:19.027674+00:00",
+  "acceptance_deg": 0.01,
+  "maximum_angular_separation_deg": 9.227425737317603e-07,
+  "source_record_count": 40,
+  "comparison_count": 111,
+  "records": [
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-171.89280908%2C-89.76674148%2C0.769979000%27&START_TIME=%272026-12-14+00%3A00%3A00%27&STOP_TIME=%272026-12-17+00%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "75dbc6edc39a8c9a501457f337cfa1186760fc3a251f6369174795b4e8552707",
+      "observer": {
+        "latitude_deg": -89.76674148,
+        "longitude_deg": -171.89280908,
+        "height_above_lunar_reference_m": 769.9789999999999
+      },
+      "target": 10,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-14T00:00:00Z",
+          "angular_separation_deg": 1.4860072771071073e-07,
+          "range_difference_km": 0.001830369234085083
+        },
+        {
+          "t_utc": "2026-12-15T12:00:00Z",
+          "angular_separation_deg": 1.7191855293949232e-07,
+          "range_difference_km": 0.0021506547927856445
+        },
+        {
+          "t_utc": "2026-12-17T00:00:00Z",
+          "angular_separation_deg": 6.163086231425606e-07,
+          "range_difference_km": 0.0022911131381988525
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-137.50198491%2C-89.46315776%2C1.946767000%27&START_TIME=%272026-12-14+12%3A00%3A00%27&STOP_TIME=%272026-12-17+12%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "192856954d1b6f7447b3da4704d8a98d9e7aac8387489f64484a0bff7fb310bd",
+      "observer": {
+        "latitude_deg": -89.46315776,
+        "longitude_deg": -137.50198491,
+        "height_above_lunar_reference_m": 1946.7669999999998
+      },
+      "target": 399,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-14T12:00:00Z",
+          "angular_separation_deg": 5.429271751731465e-07,
+          "range_difference_km": 8.949288167059422e-05
+        },
+        {
+          "t_utc": "2026-12-16T00:00:00Z",
+          "angular_separation_deg": 4.1664134650971824e-07,
+          "range_difference_km": 0.00013099698117002845
+        },
+        {
+          "t_utc": "2026-12-17T12:00:00Z",
+          "angular_separation_deg": 4.359200667642419e-07,
+          "range_difference_km": 0.0001648466568440199
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-137.16853217174196%2C-89.44228359269788%2C1.957757900%27&START_TIME=%272026-12-14+00%3A00%3A00%27&STOP_TIME=%272026-12-17+00%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "8074baebdb1458d50cfdf20ad695ddc1d19b3940c075623d4b2c761741064655",
+      "observer": {
+        "latitude_deg": -89.44228359269788,
+        "longitude_deg": -137.16853217174196,
+        "height_above_lunar_reference_m": 1957.7579
+      },
+      "target": 10,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-14T00:00:00Z",
+          "angular_separation_deg": 4.699406995194348e-07,
+          "range_difference_km": 0.00183144211769104
+        },
+        {
+          "t_utc": "2026-12-15T12:00:00Z",
+          "angular_separation_deg": 5.130916894193701e-07,
+          "range_difference_km": 0.0021501481533050537
+        },
+        {
+          "t_utc": "2026-12-17T00:00:00Z",
+          "angular_separation_deg": 3.830581110920168e-07,
+          "range_difference_km": 0.0022905170917510986
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-25+12%3A00%3A00%27&STOP_TIME=%272026-12-25+13%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "d2dc488b6a0c00aa46901f4bcf3ce014f7d1d96f6e312a7d5359aff8a9af8549",
+      "observer": {
+        "latitude_deg": -90.0,
+        "longitude_deg": 0.0,
+        "height_above_lunar_reference_m": 2.0
+      },
+      "target": 399,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-25T12:00:00Z",
+          "angular_separation_deg": 5.868191958092561e-07,
+          "range_difference_km": 7.142632966861129e-05
+        },
+        {
+          "t_utc": "2026-12-25T13:00:00Z",
+          "angular_separation_deg": 4.1384271735903955e-07,
+          "range_difference_km": 7.323286263272166e-05
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-13+00%3A00%3A00%27&STOP_TIME=%272026-12-16+00%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "2064a25b42e1fcdb571fbbb123972ef2d66679e3e6718c8d5be220f8394defe7",
+      "observer": {
+        "latitude_deg": -90.0,
+        "longitude_deg": 0.0,
+        "height_above_lunar_reference_m": 2.0
+      },
+      "target": 399,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-13T00:00:00Z",
+          "angular_separation_deg": 5.867803267530593e-07,
+          "range_difference_km": 4.764978075399995e-05
+        },
+        {
+          "t_utc": "2026-12-14T12:00:00Z",
+          "angular_separation_deg": 4.4785346109207527e-07,
+          "range_difference_km": 8.902250556275249e-05
+        },
+        {
+          "t_utc": "2026-12-16T00:00:00Z",
+          "angular_separation_deg": 2.1154133224277228e-07,
+          "range_difference_km": 0.000130427535623312
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-137.50198491%2C-89.46315776%2C1.946767000%27&START_TIME=%272026-12-14+00%3A00%3A00%27&STOP_TIME=%272026-12-17+00%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "af9821673399ee524c6925e3ece27da688da64c5ade724d49db8c4bb0fbcca7d",
+      "observer": {
+        "latitude_deg": -89.46315776,
+        "longitude_deg": -137.50198491,
+        "height_above_lunar_reference_m": 1946.7669999999998
+      },
+      "target": 10,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-14T00:00:00Z",
+          "angular_separation_deg": 4.580708674381104e-07,
+          "range_difference_km": 0.0018306374549865723
+        },
+        {
+          "t_utc": "2026-12-15T12:00:00Z",
+          "angular_separation_deg": 2.5282072806893483e-07,
+          "range_difference_km": 0.0021502673625946045
+        },
+        {
+          "t_utc": "2026-12-17T00:00:00Z",
+          "angular_separation_deg": 4.997298634216644e-07,
+          "range_difference_km": 0.002290785312652588
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-01+14%3A00%3A00%27&STOP_TIME=%272026-12-15+15%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "6ea9cb005dfdfba73c2d5884d184dabea6ef68575bc62e4eb162908dd08bc792",
+      "observer": {
+        "latitude_deg": -90.0,
+        "longitude_deg": 0.0,
+        "height_above_lunar_reference_m": 2.0
+      },
+      "target": 399,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-01T14:00:00Z",
+          "angular_separation_deg": 6.377742896106496e-07,
+          "range_difference_km": 0.00014149839989840984
+        },
+        {
+          "t_utc": "2026-12-08T15:00:00Z",
+          "angular_separation_deg": 6.910621924847929e-07,
+          "range_difference_km": 3.896153066307306e-05
+        },
+        {
+          "t_utc": "2026-12-15T15:00:00Z",
+          "angular_separation_deg": 6.320331667147632e-07,
+          "range_difference_km": 0.00012122909538447857
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-08+16%3A00%3A00%27&STOP_TIME=%272026-12-11+16%3A00%3A00%27&STEP_SIZE=%2715+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "d054e3342d80f5db8778a2c5e95e8774f57d1d1ea36354152e5224c6e828306b",
+      "observer": {
+        "latitude_deg": -90.0,
+        "longitude_deg": 0.0,
+        "height_above_lunar_reference_m": 2.0
+      },
+      "target": 399,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-08T16:00:00Z",
+          "angular_separation_deg": 3.4189001689215175e-07,
+          "range_difference_km": 3.938976442441344e-05
+        },
+        {
+          "t_utc": "2026-12-10T04:00:00Z",
+          "angular_separation_deg": 2.461699133119392e-07,
+          "range_difference_km": 1.3578799553215504e-05
+        },
+        {
+          "t_utc": "2026-12-11T16:00:00Z",
+          "angular_separation_deg": 4.295263733592643e-07,
+          "range_difference_km": 1.5442317817360163e-05
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-06+13%3A00%3A00%27&STOP_TIME=%272026-12-08+13%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "eba6fee6a408f1592eadfc16e25a71648238b2e380e370bf6197eca4fb8e9ef4",
+      "observer": {
+        "latitude_deg": -90.0,
+        "longitude_deg": 0.0,
+        "height_above_lunar_reference_m": 2.0
+      },
+      "target": 10,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-06T13:00:00Z",
+          "angular_separation_deg": 4.825212724058436e-07,
+          "range_difference_km": 0.001107931137084961
+        },
+        {
+          "t_utc": "2026-12-07T13:00:00Z",
+          "angular_separation_deg": 2.7539796491473726e-07,
+          "range_difference_km": 0.0006929636001586914
+        },
+        {
+          "t_utc": "2026-12-08T13:00:00Z",
+          "angular_separation_deg": 6.532996407271285e-07,
+          "range_difference_km": 0.0002599656581878662
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-13.92096036%2C-80.58024797%2C0.127757000%27&START_TIME=%272026-12-30+00%3A00%3A00%27&STOP_TIME=%272026-12-30+02%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "f509f7d8746c32834982c72bf52f489dec692ff663a51b03eb362d44f0f41b95",
+      "observer": {
+        "latitude_deg": -80.58024797,
+        "longitude_deg": -13.92096036,
+        "height_above_lunar_reference_m": 127.757
+      },
+      "target": 399,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-30T00:00:00Z",
+          "angular_separation_deg": 5.521233655333657e-07,
+          "range_difference_km": 0.00017184932949021459
+        },
+        {
+          "t_utc": "2026-12-30T01:00:00Z",
+          "angular_separation_deg": 4.711321824193716e-07,
+          "range_difference_km": 0.0001718714484013617
+        },
+        {
+          "t_utc": "2026-12-30T02:00:00Z",
+          "angular_separation_deg": 4.535503249426262e-07,
+          "range_difference_km": 0.00017122202552855015
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-27+12%3A00%3A00%27&STOP_TIME=%272026-12-27+13%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "5c5308b79e1162f85f472b4868c0df95bf02d8a0bccceffc3e66ec3a6c45c6a2",
+      "observer": {
+        "latitude_deg": -90.0,
+        "longitude_deg": 0.0,
+        "height_above_lunar_reference_m": 2.0
+      },
+      "target": 399,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-27T12:00:00Z",
+          "angular_separation_deg": 3.071787789799787e-07,
+          "range_difference_km": 0.00015085499035194516
+        },
+        {
+          "t_utc": "2026-12-27T13:00:00Z",
+          "angular_separation_deg": 4.788270747640945e-07,
+          "range_difference_km": 0.00015207473188638687
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-08+15%3A00%3A00%27&STOP_TIME=%272026-12-11+15%3A00%3A00%27&STEP_SIZE=%2715+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "0d797917b69ab3445ffa7e149c3c0b6f9a173170d928c07a3f61117f4893931a",
+      "observer": {
+        "latitude_deg": -90.0,
+        "longitude_deg": 0.0,
+        "height_above_lunar_reference_m": 2.0
+      },
+      "target": 10,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-08T15:00:00Z",
+          "angular_separation_deg": 3.552873288910575e-07,
+          "range_difference_km": 0.00022286176681518555
+        },
+        {
+          "t_utc": "2026-12-10T03:00:00Z",
+          "angular_separation_deg": 3.3258468589360634e-07,
+          "range_difference_km": 0.0004316866397857666
+        },
+        {
+          "t_utc": "2026-12-11T15:00:00Z",
+          "angular_separation_deg": 5.317285358102154e-07,
+          "range_difference_km": 0.001045316457748413
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-31+01%3A00%3A00%27&STOP_TIME=%272027-01-03+01%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "94f056a830c5588d02f873c0dfa28eb9fde62147a54e58ab7ae21a8090e637dd",
+      "observer": {
+        "latitude_deg": -90.0,
+        "longitude_deg": 0.0,
+        "height_above_lunar_reference_m": 2.0
+      },
+      "target": 10,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-31T01:00:00Z",
+          "angular_separation_deg": 3.4376875313400664e-07,
+          "range_difference_km": 0.002299189567565918
+        },
+        {
+          "t_utc": "2027-01-01T13:00:00Z",
+          "angular_separation_deg": 1.7382945624226244e-07,
+          "range_difference_km": 0.002151280641555786
+        },
+        {
+          "t_utc": "2027-01-03T01:00:00Z",
+          "angular_separation_deg": 5.210381216018249e-07,
+          "range_difference_km": 0.0018186569213867188
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-02+13%3A00%3A00%27&STOP_TIME=%272026-12-02+14%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "21fc8762eac66faba18181fd86e6461e456315ad6522f88f16221fcd886c1a73",
+      "observer": {
+        "latitude_deg": -90.0,
+        "longitude_deg": 0.0,
+        "height_above_lunar_reference_m": 2.0
+      },
+      "target": 399,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-02T13:00:00Z",
+          "angular_separation_deg": 5.488119468432536e-07,
+          "range_difference_km": 0.00013211672194302082
+        },
+        {
+          "t_utc": "2026-12-02T14:00:00Z",
+          "angular_separation_deg": 7.851295829512277e-07,
+          "range_difference_km": 0.00013199396198615432
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-26+15%3A00%3A00%27&STOP_TIME=%272026-12-26+16%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "cee604438ebfb109db6cd400df0f6ac90e3d2cac48aaeb62cf8c1e2e76591bbb",
+      "observer": {
+        "latitude_deg": -90.0,
+        "longitude_deg": 0.0,
+        "height_above_lunar_reference_m": 2.0
+      },
+      "target": 399,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-26T15:00:00Z",
+          "angular_separation_deg": 9.73980724493061e-08,
+          "range_difference_km": 0.0001225025043822825
+        },
+        {
+          "t_utc": "2026-12-26T16:00:00Z",
+          "angular_separation_deg": 6.706232078916305e-07,
+          "range_difference_km": 0.00012425228487700224
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-06+13%3A00%3A00%27&STOP_TIME=%272026-12-22+21%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "0602a07a135d7c11a28cc1bda25a30005185949bbf345f6aedf6c1a57b25d3c7",
+      "observer": {
+        "latitude_deg": -90.0,
+        "longitude_deg": 0.0,
+        "height_above_lunar_reference_m": 2.0
+      },
+      "target": 399,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-06T13:00:00Z",
+          "angular_separation_deg": 9.227425737317603e-07,
+          "range_difference_km": 7.146404823288321e-05
+        },
+        {
+          "t_utc": "2026-12-14T17:00:00Z",
+          "angular_separation_deg": 5.411876384579503e-07,
+          "range_difference_km": 9.417935507372022e-05
+        },
+        {
+          "t_utc": "2026-12-22T21:00:00Z",
+          "angular_separation_deg": 5.233824244908955e-07,
+          "range_difference_km": 7.604522397741675e-05
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%27-7.30575953%2C-80.78120657%2C3.178865000%27&START_TIME=%272026-12-30+00%3A00%3A00%27&STOP_TIME=%272026-12-30+02%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "aa952a93e3b0be89b6eb359f0b8fb669c4f411abe076f5630455ff48a1ffbb34",
+      "observer": {
+        "latitude_deg": -80.78120657,
+        "longitude_deg": -7.30575953,
+        "height_above_lunar_reference_m": 3178.8650000000002
+      },
+      "target": 10,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-30T00:00:00Z",
+          "angular_separation_deg": 5.943158179475466e-07,
+          "range_difference_km": 0.002273082733154297
+        },
+        {
+          "t_utc": "2026-12-30T01:00:00Z",
+          "angular_separation_deg": 2.856933335419649e-07,
+          "range_difference_km": 0.0022753775119781494
+        },
+        {
+          "t_utc": "2026-12-30T02:00:00Z",
+          "angular_separation_deg": 5.484658260740138e-07,
+          "range_difference_km": 0.0022795498371124268
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-03+15%3A00%3A00%27&STOP_TIME=%272026-12-03+16%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "46a3e293fff4f53a49a93d575da8ec245e7fcd7503ac303690eb0e9e4e3f210e",
+      "observer": {
+        "latitude_deg": -90.0,
+        "longitude_deg": 0.0,
+        "height_above_lunar_reference_m": 2.0
+      },
+      "target": 399,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-03T15:00:00Z",
+          "angular_separation_deg": 7.470014393943364e-07,
+          "range_difference_km": 0.0001169632887467742
+        },
+        {
+          "t_utc": "2026-12-03T16:00:00Z",
+          "angular_separation_deg": 8.596720079580909e-07,
+          "range_difference_km": 0.00011658103903755546
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-07+15%3A00%3A00%27&STOP_TIME=%272026-12-10+15%3A00%3A00%27&STEP_SIZE=%2715+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "325ab1f7a17b0af0713a826797a5ca220b3fe72c9bc63d9ef200ebdb9a29a6e8",
+      "observer": {
+        "latitude_deg": -90.0,
+        "longitude_deg": 0.0,
+        "height_above_lunar_reference_m": 2.0
+      },
+      "target": 10,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-07T15:00:00Z",
+          "angular_separation_deg": 5.016185465588139e-07,
+          "range_difference_km": 0.0006572902202606201
+        },
+        {
+          "t_utc": "2026-12-09T03:00:00Z",
+          "angular_separation_deg": 4.135453437861197e-07,
+          "range_difference_km": 3.159046173095703e-06
+        },
+        {
+          "t_utc": "2026-12-10T15:00:00Z",
+          "angular_separation_deg": 4.808051405164621e-07,
+          "range_difference_km": 0.0006431043148040771
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272027-01-01+05%3A00%3A00%27&STOP_TIME=%272027-01-04+05%3A00%3A00%27&STEP_SIZE=%2715+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "de4a56b78228affb40fbfa3c349d2ae10f94013ffae2a2f937d66843fd8db91d",
+      "observer": {
+        "latitude_deg": -90.0,
+        "longitude_deg": 0.0,
+        "height_above_lunar_reference_m": 2.0
+      },
+      "target": 10,
+      "comparisons": [
+        {
+          "t_utc": "2027-01-01T05:00:00Z",
+          "angular_separation_deg": 1.7493830840697226e-07,
+          "range_difference_km": 0.002200871706008911
+        },
+        {
+          "t_utc": "2027-01-02T17:00:00Z",
+          "angular_separation_deg": 4.5569792284057243e-07,
+          "range_difference_km": 0.0019067823886871338
+        },
+        {
+          "t_utc": "2027-01-04T05:00:00Z",
+          "angular_separation_deg": 5.324973213554031e-07,
+          "range_difference_km": 0.001458883285522461
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-07+14%3A00%3A00%27&STOP_TIME=%272026-12-10+14%3A00%3A00%27&STEP_SIZE=%2715+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "d91c305c7467e4bc4cebe509d88f24aef89ac862bf97c3c1eee166d0bc44a05c",
+      "observer": {
+        "latitude_deg": -90.0,
+        "longitude_deg": 0.0,
+        "height_above_lunar_reference_m": 2.0
+      },
+      "target": 399,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-07T14:00:00Z",
+          "angular_separation_deg": 3.312037124703389e-07,
+          "range_difference_km": 5.488097667694092e-05
+        },
+        {
+          "t_utc": "2026-12-09T02:00:00Z",
+          "angular_separation_deg": 1.6661339067310084e-07,
+          "range_difference_km": 3.2241165172308683e-05
+        },
+        {
+          "t_utc": "2026-12-10T14:00:00Z",
+          "angular_separation_deg": 2.3029191246791572e-07,
+          "range_difference_km": 6.454589311033487e-06
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-06+11%3A00%3A00%27&STOP_TIME=%272026-12-09+11%3A00%3A00%27&STEP_SIZE=%2715+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "6278ede0c71328a999ae70471138ae687eef2e33b97c88549e21f8aa4e882338",
+      "observer": {
+        "latitude_deg": -90.0,
+        "longitude_deg": 0.0,
+        "height_above_lunar_reference_m": 2.0
+      },
+      "target": 399,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-06T11:00:00Z",
+          "angular_separation_deg": 8.790719057891077e-07,
+          "range_difference_km": 7.221248233690858e-05
+        },
+        {
+          "t_utc": "2026-12-07T23:00:00Z",
+          "angular_separation_deg": 3.627710088378683e-07,
+          "range_difference_km": 4.937738412991166e-05
+        },
+        {
+          "t_utc": "2026-12-09T11:00:00Z",
+          "angular_separation_deg": 2.2085393648202372e-07,
+          "range_difference_km": 2.6225228793919086e-05
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-16+01%3A00%3A00%27&STOP_TIME=%272026-12-19+01%3A00%3A00%27&STEP_SIZE=%2715+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "b40c2100ae7f4987549bc440526ce19d8fb2e54b32d55af0c9cdece3bac242b0",
+      "observer": {
+        "latitude_deg": -90.0,
+        "longitude_deg": 0.0,
+        "height_above_lunar_reference_m": 2.0
+      },
+      "target": 399,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-16T01:00:00Z",
+          "angular_separation_deg": 7.494368166953305e-07,
+          "range_difference_km": 0.0001314065302722156
+        },
+        {
+          "t_utc": "2026-12-17T13:00:00Z",
+          "angular_separation_deg": 7.127502513409351e-07,
+          "range_difference_km": 0.00016480509657412767
+        },
+        {
+          "t_utc": "2026-12-19T01:00:00Z",
+          "angular_separation_deg": 1.4888796762985544e-07,
+          "range_difference_km": 0.00017880002269521356
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-31+03%3A00%3A00%27&STOP_TIME=%272027-01-03+03%3A00%3A00%27&STEP_SIZE=%2715+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "0026556fceabacfe0a6aab5c1fe4a6ab16be532226f1dd448b3ca78edcabe4be",
+      "observer": {
+        "latitude_deg": -90.0,
+        "longitude_deg": 0.0,
+        "height_above_lunar_reference_m": 2.0
+      },
+      "target": 10,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-31T03:00:00Z",
+          "angular_separation_deg": 6.225237166552086e-07,
+          "range_difference_km": 0.0022953152656555176
+        },
+        {
+          "t_utc": "2027-01-01T15:00:00Z",
+          "angular_separation_deg": 1.2841110638316593e-07,
+          "range_difference_km": 0.002136826515197754
+        },
+        {
+          "t_utc": "2027-01-03T03:00:00Z",
+          "angular_separation_deg": 5.159834667498202e-07,
+          "range_difference_km": 0.0017953217029571533
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-30+01%3A00%3A00%27&STOP_TIME=%272027-01-02+01%3A00%3A00%27&STEP_SIZE=%2715+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "e4364fbc670e271fe9ff20626680c6ea88cfab73e7e2c0419478c907e2b3b2a8",
+      "observer": {
+        "latitude_deg": -90.0,
+        "longitude_deg": 0.0,
+        "height_above_lunar_reference_m": 2.0
+      },
+      "target": 10,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-30T01:00:00Z",
+          "angular_separation_deg": 5.461538055020831e-07,
+          "range_difference_km": 0.0022750794887542725
+        },
+        {
+          "t_utc": "2026-12-31T13:00:00Z",
+          "angular_separation_deg": 5.454025793623834e-07,
+          "range_difference_km": 0.0022715628147125244
+        },
+        {
+          "t_utc": "2027-01-02T01:00:00Z",
+          "angular_separation_deg": 1.6335648950701957e-07,
+          "range_difference_km": 0.002058267593383789
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-03+14%3A00%3A00%27&STOP_TIME=%272026-12-03+15%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "0dc743e82c9d3c6f99b9a8b4a13f889ace315c5f07583064015c0f702d10264e",
+      "observer": {
+        "latitude_deg": -90.0,
+        "longitude_deg": 0.0,
+        "height_above_lunar_reference_m": 2.0
+      },
+      "target": 399,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-03T14:00:00Z",
+          "angular_separation_deg": 4.5662207921736114e-07,
+          "range_difference_km": 0.00011768826516345143
+        },
+        {
+          "t_utc": "2026-12-03T15:00:00Z",
+          "angular_separation_deg": 7.470014393943364e-07,
+          "range_difference_km": 0.0001169632887467742
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-16+23%3A00%3A00%27&STOP_TIME=%272026-12-19+23%3A00%3A00%27&STEP_SIZE=%2715+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "0813f9328e8508e365f383a37069b7b9688fa83f9da2160ff46323e7c95f0f9c",
+      "observer": {
+        "latitude_deg": -90.0,
+        "longitude_deg": 0.0,
+        "height_above_lunar_reference_m": 2.0
+      },
+      "target": 10,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-16T23:00:00Z",
+          "angular_separation_deg": 5.663032901796081e-07,
+          "range_difference_km": 0.0022901594638824463
+        },
+        {
+          "t_utc": "2026-12-18T11:00:00Z",
+          "angular_separation_deg": 2.6392598074348798e-08,
+          "range_difference_km": 0.0022236108779907227
+        },
+        {
+          "t_utc": "2026-12-19T23:00:00Z",
+          "angular_separation_deg": 1.8712967494722627e-07,
+          "range_difference_km": 0.0019181370735168457
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-06+13%3A00%3A00%27&STOP_TIME=%272026-12-09+13%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "6d8775335fc76a0fb77365eb267762d56efc9f876018ed5bf41c362da22694f1",
+      "observer": {
+        "latitude_deg": -90.0,
+        "longitude_deg": 0.0,
+        "height_above_lunar_reference_m": 2.0
+      },
+      "target": 10,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-06T13:00:00Z",
+          "angular_separation_deg": 4.825212724058436e-07,
+          "range_difference_km": 0.001107931137084961
+        },
+        {
+          "t_utc": "2026-12-08T01:00:00Z",
+          "angular_separation_deg": 5.52269262090819e-07,
+          "range_difference_km": 0.0004779696464538574
+        },
+        {
+          "t_utc": "2026-12-09T13:00:00Z",
+          "angular_separation_deg": 3.444497740210198e-07,
+          "range_difference_km": 0.0001793205738067627
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-31+01%3A00%3A00%27&STOP_TIME=%272027-01-03+01%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "c6febef65d39880ed8e1064c950977595a5f5cb6bf123683feff55fba396f3fe",
+      "observer": {
+        "latitude_deg": -90.0,
+        "longitude_deg": 0.0,
+        "height_above_lunar_reference_m": 2.0
+      },
+      "target": 399,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-31T01:00:00Z",
+          "angular_separation_deg": 4.312014222342643e-07,
+          "range_difference_km": 0.00015756144421175122
+        },
+        {
+          "t_utc": "2027-01-01T13:00:00Z",
+          "angular_separation_deg": 3.5162206169270797e-07,
+          "range_difference_km": 0.00012467359192669392
+        },
+        {
+          "t_utc": "2027-01-03T01:00:00Z",
+          "angular_separation_deg": 3.5176599711740937e-07,
+          "range_difference_km": 8.583534508943558e-05
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-30+14%3A00%3A00%27&STOP_TIME=%272027-01-02+14%3A00%3A00%27&STEP_SIZE=%2715+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "37a66d46553f2ea59ff5b5b21d2bb34d9b3b67bac9da1a132660061c06c28a86",
+      "observer": {
+        "latitude_deg": -90.0,
+        "longitude_deg": 0.0,
+        "height_above_lunar_reference_m": 2.0
+      },
+      "target": 10,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-30T14:00:00Z",
+          "angular_separation_deg": 2.3596600204292222e-07,
+          "range_difference_km": 0.0023007988929748535
+        },
+        {
+          "t_utc": "2027-01-01T02:00:00Z",
+          "angular_separation_deg": 5.108424702516656e-07,
+          "range_difference_km": 0.002217322587966919
+        },
+        {
+          "t_utc": "2027-01-02T14:00:00Z",
+          "angular_separation_deg": 1.668540802444197e-07,
+          "range_difference_km": 0.0019379258155822754
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-10+12%3A00%3A00%27&STOP_TIME=%272026-12-10+13%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "7e97ae7a57b3b30ebe400bb55238eb062520d0bf7b48f3c0c3c7829b4987179f",
+      "observer": {
+        "latitude_deg": -90.0,
+        "longitude_deg": 0.0,
+        "height_above_lunar_reference_m": 2.0
+      },
+      "target": 399,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-10T12:00:00Z",
+          "angular_separation_deg": 3.384739700791705e-07,
+          "range_difference_km": 8.629343938082457e-06
+        },
+        {
+          "t_utc": "2026-12-10T13:00:00Z",
+          "angular_separation_deg": 7.96045738116215e-07,
+          "range_difference_km": 7.521884981542826e-06
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-16+23%3A00%3A00%27&STOP_TIME=%272026-12-19+23%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "f75a1546e66760a9bb36624487aa1e1992535d23f37969d313a958bcaf9f0b4e",
+      "observer": {
+        "latitude_deg": -90.0,
+        "longitude_deg": 0.0,
+        "height_above_lunar_reference_m": 2.0
+      },
+      "target": 10,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-16T23:00:00Z",
+          "angular_separation_deg": 5.663032901796081e-07,
+          "range_difference_km": 0.0022901594638824463
+        },
+        {
+          "t_utc": "2026-12-18T11:00:00Z",
+          "angular_separation_deg": 2.6392598074348798e-08,
+          "range_difference_km": 0.0022236108779907227
+        },
+        {
+          "t_utc": "2026-12-19T23:00:00Z",
+          "angular_separation_deg": 1.8712967494722627e-07,
+          "range_difference_km": 0.0019181370735168457
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-30+03%3A00%3A00%27&STOP_TIME=%272027-01-02+03%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "04373296443dd72150488d7f93dc8e0cd0aff7526efb60aa8b96be10aff909e1",
+      "observer": {
+        "latitude_deg": -90.0,
+        "longitude_deg": 0.0,
+        "height_above_lunar_reference_m": 2.0
+      },
+      "target": 10,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-30T03:00:00Z",
+          "angular_separation_deg": 4.5023581743812494e-07,
+          "range_difference_km": 0.002281278371810913
+        },
+        {
+          "t_utc": "2026-12-31T15:00:00Z",
+          "angular_separation_deg": 5.553748484885067e-07,
+          "range_difference_km": 0.0022656023502349854
+        },
+        {
+          "t_utc": "2027-01-02T03:00:00Z",
+          "angular_separation_deg": 3.234088067375346e-07,
+          "range_difference_km": 0.002040952444076538
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-06+13%3A00%3A00%27&STOP_TIME=%272026-12-08+13%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "751183f83216a78164286e4af6044b5a61bf1618b65f56ae883309b3e099b888",
+      "observer": {
+        "latitude_deg": -90.0,
+        "longitude_deg": 0.0,
+        "height_above_lunar_reference_m": 2.0
+      },
+      "target": 399,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-06T13:00:00Z",
+          "angular_separation_deg": 9.227425737317603e-07,
+          "range_difference_km": 7.146404823288321e-05
+        },
+        {
+          "t_utc": "2026-12-07T13:00:00Z",
+          "angular_separation_deg": 7.298580206521253e-07,
+          "range_difference_km": 5.6394434068351984e-05
+        },
+        {
+          "t_utc": "2026-12-08T13:00:00Z",
+          "angular_separation_deg": 8.286106677862012e-07,
+          "range_difference_km": 4.101509694010019e-05
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-30+14%3A00%3A00%27&STOP_TIME=%272027-01-02+14%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "eab8ead99f34b4f4e83c1f415e51b45dea1e15cf5ae983325ff349226bea5393",
+      "observer": {
+        "latitude_deg": -90.0,
+        "longitude_deg": 0.0,
+        "height_above_lunar_reference_m": 2.0
+      },
+      "target": 399,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-30T14:00:00Z",
+          "angular_separation_deg": 7.605925872987775e-07,
+          "range_difference_km": 0.00016471551498398185
+        },
+        {
+          "t_utc": "2027-01-01T02:00:00Z",
+          "angular_separation_deg": 3.461286002223964e-07,
+          "range_difference_km": 0.00013551086885854602
+        },
+        {
+          "t_utc": "2027-01-02T14:00:00Z",
+          "angular_separation_deg": 9.055836828822182e-07,
+          "range_difference_km": 9.8113261628896e-05
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-03+13%3A00%3A00%27&STOP_TIME=%272026-12-03+14%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "c26c319025e6366855316db50b036a12b50a8d5793199fa005f0bdc83f47d23a",
+      "observer": {
+        "latitude_deg": -90.0,
+        "longitude_deg": 0.0,
+        "height_above_lunar_reference_m": 2.0
+      },
+      "target": 399,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-03T13:00:00Z",
+          "angular_separation_deg": 7.347782210567366e-07,
+          "range_difference_km": 0.00011964724399149418
+        },
+        {
+          "t_utc": "2026-12-03T14:00:00Z",
+          "angular_separation_deg": 4.5662207921736114e-07,
+          "range_difference_km": 0.00011768826516345143
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-31+01%3A00%3A00%27&STOP_TIME=%272027-01-03+01%3A00%3A00%27&STEP_SIZE=%2715+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "e71f97d1f82a20ac606c6e1a74fe16ff3b3cc1f40e892f4f4111aa3fdd5dfd3a",
+      "observer": {
+        "latitude_deg": -90.0,
+        "longitude_deg": 0.0,
+        "height_above_lunar_reference_m": 2.0
+      },
+      "target": 10,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-31T01:00:00Z",
+          "angular_separation_deg": 3.4376875313400664e-07,
+          "range_difference_km": 0.002299189567565918
+        },
+        {
+          "t_utc": "2027-01-01T13:00:00Z",
+          "angular_separation_deg": 1.7382945624226244e-07,
+          "range_difference_km": 0.002151280641555786
+        },
+        {
+          "t_utc": "2027-01-03T01:00:00Z",
+          "angular_separation_deg": 5.210381216018249e-07,
+          "range_difference_km": 0.0018186569213867188
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-06+12%3A00%3A00%27&STOP_TIME=%272026-12-09+12%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "ade834b23eb97d5a52e0b2e8e372995398ab6e7a4f58bf367700cf6881ebea61",
+      "observer": {
+        "latitude_deg": -90.0,
+        "longitude_deg": 0.0,
+        "height_above_lunar_reference_m": 2.0
+      },
+      "target": 399,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-06T12:00:00Z",
+          "angular_separation_deg": 3.5827398258457596e-07,
+          "range_difference_km": 7.195794023573399e-05
+        },
+        {
+          "t_utc": "2026-12-08T00:00:00Z",
+          "angular_separation_deg": 1.0849020320664488e-07,
+          "range_difference_km": 4.866236122325063e-05
+        },
+        {
+          "t_utc": "2026-12-09T12:00:00Z",
+          "angular_separation_deg": 3.8932078902107254e-07,
+          "range_difference_km": 2.599565777927637e-05
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-15+22%3A00%3A00%27&STOP_TIME=%272026-12-18+22%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "9ccc8e66bdffdb84f1b0e880353bc45922947c79cca85bb3383312c8c43ed50d",
+      "observer": {
+        "latitude_deg": -90.0,
+        "longitude_deg": 0.0,
+        "height_above_lunar_reference_m": 2.0
+      },
+      "target": 399,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-15T22:00:00Z",
+          "angular_separation_deg": 3.016449900497566e-07,
+          "range_difference_km": 0.00012807257007807493
+        },
+        {
+          "t_utc": "2026-12-17T10:00:00Z",
+          "angular_separation_deg": 1.5649898989343822e-07,
+          "range_difference_km": 0.0001623795833438635
+        },
+        {
+          "t_utc": "2026-12-18T22:00:00Z",
+          "angular_separation_deg": 3.4124640206758575e-07,
+          "range_difference_km": 0.00017866521375253797
+        }
+      ]
+    },
+    {
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-12+12%3A00%3A00%27&STOP_TIME=%272026-12-12+13%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "record_sha256": "9ebe7b9fcc8b604fcc25eeb101f77b2e19cf051943f4956608b8fe7cfcf0ef73",
+      "observer": {
+        "latitude_deg": -90.0,
+        "longitude_deg": 0.0,
+        "height_above_lunar_reference_m": 2.0
+      },
+      "target": 399,
+      "comparisons": [
+        {
+          "t_utc": "2026-12-12T12:00:00Z",
+          "angular_separation_deg": 2.5007976743242496e-07,
+          "range_difference_km": 3.487360663712025e-05
+        },
+        {
+          "t_utc": "2026-12-12T13:00:00Z",
+          "angular_separation_deg": 3.219439552022736e-07,
+          "range_difference_km": 3.6496203392744064e-05
+        }
+      ]
+    }
+  ],
+  "kernel_manifest": {
+    "source": "NASA/JPL NAIF",
+    "retrieved_at": "2026-11-15T21:27:28.305754+00:00",
+    "kernels": [
+      {
+        "name": "naif0012.tls",
+        "url": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/lsk/naif0012.tls",
+        "sha256": "678e32bdb5a744117a467cd9601cd6b373f0e9bc9bbde1371d5eee39600a039b",
+        "bytes": 5257
+      },
+      {
+        "name": "de440s.bsp",
+        "url": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de440s.bsp",
+        "sha256": "c1c7feeab882263fc493a9d5a5b2ddd71b54826cdf65d8d17a76126b260a49f2",
+        "bytes": 32726016
+      },
+      {
+        "name": "moon_pa_de440_200625.bpc",
+        "url": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/moon_pa_de440_200625.bpc",
+        "sha256": "60cd55aa401ea2ea97360636f567554bfe4e37bb829f901b4460a455dfaf783f",
+        "bytes": 12863488
+      },
+      {
+        "name": "moon_de440_250416.tf",
+        "url": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/fk/satellites/moon_de440_250416.tf",
+        "sha256": "a47c71e9c9f33796bdafb2c9d69a7ee447b6016ecad80f71cd6f3e479f9cf768",
+        "bytes": 19478
+      },
+      {
+        "name": "pck00011.tpc",
+        "url": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/pck00011.tpc",
+        "sha256": "3dff7b1dbeceaa01f25467767d3fa25816051c85d162d1edf04acb310ee28bb1",
+        "bytes": 131226
+      },
+      {
+        "name": "earth_000101_270210_261114.bpc",
+        "url": "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/earth_000101_270210_261114.bpc",
+        "sha256": "46ee76c01900da82d6c789ff5e28b66383a18846b8fa3dda3e6b66dbb055c865",
+        "bytes": 5164032
+      }
+    ]
+  },
+  "scope": "Original JPL observer records versus separate NAIF DE440 CN+S mean-Earth software path. Covers only enumerated observers and epochs; shared JPL ephemeris heritage is not independent physical evidence."
+}

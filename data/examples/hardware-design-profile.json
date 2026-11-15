@@ -1,0 +1,33 @@
+{
+  "hardware": {
+    "asset_id": "DESIGN-REFERENCE",
+    "name": "Uncalibrated design reference, not a NASA spacecraft specification",
+    "revision": "design-1",
+    "references": [
+      {"kind": "design_assumption", "url": "https://www.nasa.gov/smallsat-institute/sst-soa/thermal-control/"}
+    ]
+  },
+  "thermal": {
+    "initial_k": 293.15, "capacity_j_k": 40000, "radiating_area_m2": 0.8,
+    "absorbing_area_m2": 1, "absorptivity": 0.1, "emissivity": 0.8,
+    "ground_view_factor": 0.35, "ground_temperature_k": 100,
+    "heater_w": 150, "heater_on_k": 273.15, "heater_off_k": 278.15
+  },
+  "rf": {
+    "frequency_hz": 8400000000, "tx_power_w": 5, "tx_gain_dbi": 12,
+    "rx_gain_dbi": 68.2, "system_noise_k": 30, "loss_db": 4,
+    "required_ebn0_db": 6, "required_margin_db": 3, "rate_bps": 100000,
+    "pa_efficiency": 0.4, "electronics_w": 2
+  },
+  "battery_curve": [
+    {"temperature_k": 253.15, "capacity_factor": 0.6, "charge_factor": 0, "discharge_factor": 0.4},
+    {"temperature_k": 273.15, "capacity_factor": 0.9, "charge_factor": 0.4, "discharge_factor": 0.8},
+    {"temperature_k": 293.15, "capacity_factor": 1, "charge_factor": 1, "discharge_factor": 1},
+    {"temperature_k": 313.15, "capacity_factor": 0.9, "charge_factor": 0.5, "discharge_factor": 0.8},
+    {"temperature_k": 333.15, "capacity_factor": 0.5, "charge_factor": 0, "discharge_factor": 0.3}
+  ],
+  "rover": {
+    "mass_kg": 50, "speed_m_s": 0.05, "rolling_coefficient": 0.15,
+    "drive_efficiency": 0.5, "auxiliary_w": 15, "battery_wh": 500
+  }
+}

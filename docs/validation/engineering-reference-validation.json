@@ -1,0 +1,354 @@
+{
+  "status": "pass",
+  "created_utc": "2026-11-15T21:55:00.830319+00:00",
+  "model_version": "engineering-1",
+  "cases": [
+    {
+      "id": "reference_design_insufficient_thermal_energy",
+      "request": {
+        "mission": {
+          "departure_utc": "2026-12-25T12:00:00Z",
+          "surface_hours": 72
+        },
+        "cell_id": "polar:5:56",
+        "launch_site_id": "ksc-39b",
+        "energy": {},
+        "engineering": {}
+      },
+      "status": "unknown",
+      "reason": "Temperature leaves the declared battery curve; no extrapolation is performed.",
+      "thermal": {
+        "minimum_k": 250.03056857278753,
+        "maximum_k": 294.5346863795163,
+        "outside_declared_battery_limits_hours": 0.9416666666666658,
+        "heater_demand_wh": 1875.0
+      },
+      "budget": null,
+      "budget_pass": false,
+      "dsn_station_hours": {
+        "DSS-24": 27.75,
+        "DSS-34": 32.25,
+        "DSS-54": 27.5
+      },
+      "spice_maximum_angular_error_deg": 1.344215121691076e-06,
+      "sensitivity": {
+        "status": "not_requested",
+        "probability_of_success": null,
+        "cases": []
+      },
+      "sources": [
+        {
+          "source": "JPL Horizons",
+          "source_url": "https://ssd-api.jpl.nasa.gov/doc/horizons.html",
+          "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-25+12%3A00%3A00%27&STOP_TIME=%272026-12-25+13%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+          "retrieved_at": "2026-11-15T11:29:22.953362+00:00",
+          "cache_hit": true,
+          "start_utc": "2026-12-25T12:00:00Z",
+          "end_utc": "2026-12-25T13:00:00Z",
+          "latitude_deg": -90,
+          "longitude_deg": 0,
+          "observer_height_m": 2
+        },
+        {
+          "source": "JPL Horizons",
+          "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-30+00%3A00%3A00%27&STOP_TIME=%272027-01-02+00%3A00%3A00%27&STEP_SIZE=%2715+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+          "retrieved_at": "2026-11-15T15:34:14.628998+00:00",
+          "cache_hit": true,
+          "latitude_deg": -90,
+          "longitude_deg": 0,
+          "step_minutes": 15
+        },
+        {
+          "source": "JPL Horizons",
+          "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-30+00%3A00%3A00%27&STOP_TIME=%272027-01-02+00%3A00%3A00%27&STEP_SIZE=%2715+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+          "retrieved_at": "2026-11-15T15:34:15.503735+00:00",
+          "cache_hit": true,
+          "latitude_deg": -90,
+          "longitude_deg": 0,
+          "step_minutes": 15
+        },
+        {
+          "name": "regional80m.tif",
+          "url": "https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/LDEM_80S_80MPP_ADJ.TIF",
+          "sha256": "82030dcbdd7c4bb0c7d858e9b4b293b9f2cda5a543ba31ec0f42784bd6beee5a"
+        }
+      ],
+      "seconds": 0.7960000000020955
+    },
+    {
+      "id": "larger_declared_battery",
+      "request": {
+        "mission": {
+          "departure_utc": "2026-12-25T12:00:00Z",
+          "surface_hours": 72
+        },
+        "cell_id": "polar:5:56",
+        "launch_site_id": "ksc-39b",
+        "energy": {
+          "battery_capacity_wh": 100000.0
+        },
+        "engineering": {
+          "sensitivity": true
+        }
+      },
+      "status": "ok",
+      "reason": null,
+      "thermal": {
+        "minimum_k": 271.1296125208075,
+        "maximum_k": 294.5346863795163,
+        "outside_declared_battery_limits_hours": 0.0,
+        "heater_demand_wh": 3450.0,
+        "stored_heat_change_j": -686046.2337966897
+      },
+      "budget": {
+        "minimum_usable_soc": 0.85,
+        "heater_served_wh": 3450.0,
+        "minimum_soc": 0.85,
+        "final_soc": 0.9349999999999979,
+        "reserve_crossing_hour": null,
+        "battery_empty_hour": null,
+        "solar_generated_wh": 59969.053318532075,
+        "load_served_wh": 11040.0,
+        "battery_charge_wh": 15000.000000000062,
+        "battery_discharge_wh": 6500.000000000009,
+        "charge_loss_wh": 789.4736842105303,
+        "discharge_loss_wh": 325.0000000000001,
+        "curtailed_wh": 39314.57963432148,
+        "unserved_wh": 0.0,
+        "essential_unserved_wh": 0.0,
+        "science_completed_hours": 6.0,
+        "science_required_hours": 6.0,
+        "data_generated_gb": 0.054000000000000034,
+        "data_sent_gb": 0.054000000000000034,
+        "buffer_final_gb": 0.0,
+        "data_lost_gb": 0.0,
+        "energy_balance_residual_wh": 2.6193447411060333e-10
+      },
+      "budget_pass": true,
+      "dsn_station_hours": {
+        "DSS-24": 27.75,
+        "DSS-34": 32.25,
+        "DSS-54": 27.5
+      },
+      "spice_maximum_angular_error_deg": 1.344215121691076e-06,
+      "sensitivity": {
+        "status": "evaluated",
+        "cases": [
+          {
+            "id": "solar_minus_10_percent",
+            "status": "ok",
+            "minimum_usable_soc": 0.85,
+            "minimum_temperature_k": 271.1296125208075,
+            "link_hours": 71.5,
+            "budget_pass": true
+          },
+          {
+            "id": "cold_initial_minus_5_k",
+            "status": "ok",
+            "minimum_usable_soc": 0.8461538461538461,
+            "minimum_temperature_k": 271.12960497753966,
+            "link_hours": 71.5,
+            "budget_pass": true
+          },
+          {
+            "id": "radio_losses_plus_3_db",
+            "status": "ok",
+            "minimum_usable_soc": 0.85,
+            "minimum_temperature_k": 271.1296125208075,
+            "link_hours": 71.5,
+            "budget_pass": true
+          },
+          {
+            "id": "combined_declared_perturbations",
+            "status": "ok",
+            "minimum_usable_soc": 0.8461538461538461,
+            "minimum_temperature_k": 271.12960497753966,
+            "link_hours": 71.5,
+            "budget_pass": true
+          }
+        ],
+        "probability_of_success": null,
+        "scope": "Three one-at-a-time declared design perturbations plus their joint scenario. Not exhaustive joint uncertainty bounds or a statistical success probability."
+      },
+      "sources": [
+        {
+          "source": "JPL Horizons",
+          "source_url": "https://ssd-api.jpl.nasa.gov/doc/horizons.html",
+          "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-25+12%3A00%3A00%27&STOP_TIME=%272026-12-25+13%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+          "retrieved_at": "2026-11-15T11:29:22.953362+00:00",
+          "cache_hit": true,
+          "start_utc": "2026-12-25T12:00:00Z",
+          "end_utc": "2026-12-25T13:00:00Z",
+          "latitude_deg": -90,
+          "longitude_deg": 0,
+          "observer_height_m": 2
+        },
+        {
+          "source": "JPL Horizons",
+          "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-30+00%3A00%3A00%27&STOP_TIME=%272027-01-02+00%3A00%3A00%27&STEP_SIZE=%2715+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+          "retrieved_at": "2026-11-15T15:34:14.628998+00:00",
+          "cache_hit": true,
+          "latitude_deg": -90,
+          "longitude_deg": 0,
+          "step_minutes": 15
+        },
+        {
+          "source": "JPL Horizons",
+          "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-30+00%3A00%3A00%27&STOP_TIME=%272027-01-02+00%3A00%3A00%27&STEP_SIZE=%2715+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+          "retrieved_at": "2026-11-15T15:34:15.503735+00:00",
+          "cache_hit": true,
+          "latitude_deg": -90,
+          "longitude_deg": 0,
+          "step_minutes": 15
+        },
+        {
+          "name": "regional80m.tif",
+          "url": "https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/LDEM_80S_80MPP_ADJ.TIF",
+          "sha256": "82030dcbdd7c4bb0c7d858e9b4b293b9f2cda5a543ba31ec0f42784bd6beee5a"
+        }
+      ],
+      "seconds": 4.25
+    },
+    {
+      "id": "weak_declared_radio",
+      "request": {
+        "mission": {
+          "departure_utc": "2026-12-25T12:00:00Z",
+          "surface_hours": 72
+        },
+        "cell_id": "polar:5:56",
+        "launch_site_id": "ksc-39b",
+        "energy": {
+          "battery_capacity_wh": 100000.0
+        },
+        "engineering": {
+          "rf": {
+            "loss_db": 90.0
+          }
+        }
+      },
+      "status": "ok",
+      "reason": null,
+      "thermal": {
+        "minimum_k": 271.1296023629614,
+        "maximum_k": 293.5978402694104,
+        "outside_declared_battery_limits_hours": 0.0,
+        "heater_demand_wh": 3450.0,
+        "stored_heat_change_j": -686046.234085752
+      },
+      "budget": {
+        "minimum_usable_soc": 0.85,
+        "heater_served_wh": 3450.0,
+        "minimum_soc": 0.85,
+        "final_soc": 0.9349999999999979,
+        "reserve_crossing_hour": null,
+        "battery_empty_hour": null,
+        "solar_generated_wh": 59969.053318532075,
+        "load_served_wh": 11010.0,
+        "battery_charge_wh": 14999.999999999995,
+        "battery_discharge_wh": 6500.000000000009,
+        "charge_loss_wh": 789.4736842105268,
+        "discharge_loss_wh": 325.0000000000001,
+        "curtailed_wh": 39344.579634321555,
+        "unserved_wh": 0.0,
+        "essential_unserved_wh": 0.0,
+        "science_completed_hours": 6.0,
+        "science_required_hours": 6.0,
+        "data_generated_gb": 0.054000000000000034,
+        "data_sent_gb": 0.0,
+        "buffer_final_gb": 0.054000000000000034,
+        "data_lost_gb": 0.0,
+        "energy_balance_residual_wh": 1.7462298274040222e-10
+      },
+      "budget_pass": false,
+      "dsn_station_hours": {
+        "DSS-24": 0.0,
+        "DSS-34": 0.0,
+        "DSS-54": 0.0
+      },
+      "spice_maximum_angular_error_deg": 1.344215121691076e-06,
+      "sensitivity": {
+        "status": "not_requested",
+        "probability_of_success": null,
+        "cases": []
+      },
+      "sources": [
+        {
+          "source": "JPL Horizons",
+          "source_url": "https://ssd-api.jpl.nasa.gov/doc/horizons.html",
+          "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-25+12%3A00%3A00%27&STOP_TIME=%272026-12-25+13%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+          "retrieved_at": "2026-11-15T11:29:22.953362+00:00",
+          "cache_hit": true,
+          "start_utc": "2026-12-25T12:00:00Z",
+          "end_utc": "2026-12-25T13:00:00Z",
+          "latitude_deg": -90,
+          "longitude_deg": 0,
+          "observer_height_m": 2
+        },
+        {
+          "source": "JPL Horizons",
+          "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-30+00%3A00%3A00%27&STOP_TIME=%272027-01-02+00%3A00%3A00%27&STEP_SIZE=%2715+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+          "retrieved_at": "2026-11-15T15:34:14.628998+00:00",
+          "cache_hit": true,
+          "latitude_deg": -90,
+          "longitude_deg": 0,
+          "step_minutes": 15
+        },
+        {
+          "source": "JPL Horizons",
+          "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-30+00%3A00%3A00%27&STOP_TIME=%272027-01-02+00%3A00%3A00%27&STEP_SIZE=%2715+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+          "retrieved_at": "2026-11-15T15:34:15.503735+00:00",
+          "cache_hit": true,
+          "latitude_deg": -90,
+          "longitude_deg": 0,
+          "step_minutes": 15
+        },
+        {
+          "name": "regional80m.tif",
+          "url": "https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/LDEM_80S_80MPP_ADJ.TIF",
+          "sha256": "82030dcbdd7c4bb0c7d858e9b4b293b9f2cda5a543ba31ec0f42784bd6beee5a"
+        }
+      ],
+      "seconds": 0.8600000000005821
+    }
+  ],
+  "trajectory": {
+    "status": "closed",
+    "checks": [
+      {
+        "status": "closed",
+        "start_utc": "2026-12-25T12:00:00Z",
+        "end_utc": "2026-12-30T00:00:00Z",
+        "terminal_error_km": 0.0001376587024895983,
+        "departure_impulse_km_s": 3.5761022849009194,
+        "lunar_capture_impulse_km_s": 3.2850190115502973,
+        "collision_detected": false,
+        "minimum_sampled_earth_radius_km": 6578.136599999999,
+        "minimum_sampled_moon_radius_km": 1837.400063079741,
+        "tight_tolerance_endpoint_difference_km": 5.7569738579167346e-05
+      },
+      {
+        "status": "closed",
+        "start_utc": "2027-01-02T00:00:00Z",
+        "end_utc": "2027-01-06T11:33:53Z",
+        "terminal_error_km": 2.044798498465357e-05,
+        "departure_impulse_km_s": 3.665964521349319,
+        "lunar_capture_impulse_km_s": null,
+        "collision_detected": false,
+        "minimum_sampled_earth_radius_km": 6498.136581417341,
+        "minimum_sampled_moon_radius_km": 1837.4,
+        "tight_tolerance_endpoint_difference_km": 1.5527900152039142e-06
+      }
+    ],
+    "seconds": 26.297000000005937,
+    "model": "Earth central gravity plus direct-minus-indirect Moon and Sun point masses, geometric J2000; DOP853; Lambert seed and differential correction.",
+    "limitations": [
+      "Notional parking-orbit phase and plane; the actual launch site is not targeted.",
+      "Impulsive burns; no ascent, finite-thrust guidance, mass/fuel sizing, lunar descent/ascent or atmospheric entry validation.",
+      "Arrival and return durations are declared design boundaries; they are solved separately, not a proven launch opportunity.",
+      "Integrator surface-crossing events stop detected collisions; finite temporal resolution and spherical bodies are not collision-safety certification. The landing coordinates orient a 100 km lunar-orbit target, not a surface intercept.",
+      "A small terminal residual verifies boundary closure only; it does not prove an operationally flyable mission."
+    ]
+  },
+  "scope": "Enumerated deterministic design scenarios and numerical closure checks. No authenticated hardware telemetry, full joint covariance propagation, independent physical calibration, flight qualification or NASA endorsement."
+}

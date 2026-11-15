@@ -532,6 +532,7 @@ async def copilot_chat(request:Request):
             if len(body)>32768:raise CopilotError('La pregunta y su contexto superan el tamaño permitido.',413)
         try:value=validate_chat(json.loads(body))
         except (ValueError,TypeError):raise CopilotError('Revisa la pregunta y el contexto científico.')
+        value['language']=language
         baseline=baseline_chat(value);config=configuration()
         if config and config['provider']=='gemini':
             try:

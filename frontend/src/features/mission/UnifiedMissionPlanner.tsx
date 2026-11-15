@@ -1,3 +1,4 @@
+import {compactPhysicsEvidence} from './EngineeringPanel'
 import MissionVisibilityPanel from './MissionVisibilityPanel'
 import {useI18n} from '../../i18n/LanguageContext'
 import {assessVisibility} from '../../../worker/visibility.mjs'
@@ -686,8 +687,8 @@ export default function UnifiedMissionPlanner(){
     }
   }
   function compactOperationsEvidence(){
-    const value=operationsEvidence.current as {affected?:{cell:unknown;budget:{status:string;feasible:boolean;summary:unknown};planning_constraints:unknown;horizon:unknown};local_study?:{source_resolution_m:number;center_footprint:unknown;footprint_resolved:boolean}}|null
-    return value?.affected?{scope:'Estudio operativo local, distinto del cribado regional',cell:value.affected.cell,status:value.affected.budget.status,feasible:value.affected.budget.feasible,summary:value.affected.budget.summary,planning_constraints:value.affected.planning_constraints,local_terrain:value.local_study?{resolution_m:value.local_study.source_resolution_m,center_footprint:value.local_study.center_footprint,footprint_resolved:value.local_study.footprint_resolved}:null}:null
+    const value=operationsEvidence.current as {engineering?:unknown;affected?:{cell:unknown;budget:{status:string;feasible:boolean;summary:unknown};planning_constraints:unknown;horizon:unknown};local_study?:{source_resolution_m:number;center_footprint:unknown;footprint_resolved:boolean}}|null
+    return value?.affected?{engineering:compactPhysicsEvidence(value.engineering),scope:'Estudio operativo local, distinto del cribado regional',cell:value.affected.cell,status:value.affected.budget.status,feasible:value.affected.budget.feasible,summary:value.affected.budget.summary,planning_constraints:value.affected.planning_constraints,local_terrain:value.local_study?{resolution_m:value.local_study.source_resolution_m,center_footprint:value.local_study.center_footprint,footprint_resolved:value.local_study.footprint_resolved}:null}:null
   }
   async function askMissionQA(question:string){
     if(!plan&&!pinnedTarget)return

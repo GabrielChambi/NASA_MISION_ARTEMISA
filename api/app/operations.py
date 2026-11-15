@@ -118,7 +118,7 @@ async def analyze(payload):
   'scope':'Local native-DEM analysis; full-cap map remains regional. Electric/data feasibility and local terrain checks are separate.',
   'limitations':['Análisis local con rasters NASA verificados; requiere la API científica local, no usa mallas visuales.',
    'El centro espacial fija el contexto y su zona horaria. El tránsito sigue siendo una estimación desde órbita terrestre de 200 km; no se resuelve ascenso ni una ventana de lanzamiento.',
-   'Los datos orbitales son JPL con cadencia de 15 min y traslación del observador lunar; validación independiente completa con SPICE pendiente.',
+   'Los datos orbitales son JPL con cadencia de 15 min y traslación del observador lunar; comparación por escenario con SPICE disponible en el estudio físico.',
    'La energía y el enlace son modelos de diseño. Ninguna propuesta demuestra supervivencia térmica, estabilidad de la nave o ausencia de rocas subpíxel.']}
 
 async def replan(payload):

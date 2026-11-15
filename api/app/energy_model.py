@@ -28,6 +28,7 @@ LIMITATIONS=[
  'Modelo eléctrico concentrado, sin degradación térmica de batería ni temperaturas. Energía suficiente no demuestra supervivencia.',
  'Transmisión con tasa configurada durante ventanas geométricas; no calcula un presupuesto RF ni garantiza una estación disponible.',
  'Cada muestra representa el intervalo hasta la siguiente; la última no añade duración. Se dividen eventos configurados dentro de un intervalo.',
+ 'La radio usa potencia media por fracción de transmisión; la carga opcional respeta la potencia pico de radio. No se resuelven transitorios eléctricos dentro de cada fracción.',
  'El controlador prioriza carga esencial, ciencia, radio y carga opcional; una carga científica sin potencia suficiente se suspende y queda pendiente.',
 ]
 
@@ -91,19 +92,30 @@ def sample_hours(samples):
  if any(not 0<hours[i+1]-hours[i]<=1 for i in range(len(hours)-1)) or hours[-1]>336:raise ValueError('La serie tiene huecos o supera el intervalo máximo.')
  return hours
 
-def simulate_energy(samples,config=None,fault=None,science_slots=None,optional_enabled=True):
+def simulate_energy(samples,config=None,fault=None,science_slots=None,optional_enabled=True,interval_conditions=None):
  hours=sample_hours(samples);q=validate_energy(config,hours[-1]);f=validate_fault(fault,hours[-1])
  if science_slots is not None and (not isinstance(science_slots,list) or any(not isinstance(i,int) or isinstance(i,bool) or i<0 or i>=len(samples)-1 for i in science_slots) or len(set(science_slots))!=len(science_slots)):raise ValueError('Horario de ciencia inválido.')
+ if interval_conditions is not None:
+  if not isinstance(interval_conditions,list) or len(interval_conditions)!=len(samples)-1:raise ValueError('Coupled conditions do not match the NASA time grid.')
+  for row in interval_conditions:
+   if not isinstance(row,dict) or any(not number(row.get(k),0,1) for k in ('capacity_factor','charge_factor','discharge_factor')) or not number(row.get('heater_w'),0,1e5) or not number(row.get('rf_rate_bps'),0,1e10):raise ValueError('Invalid coupled conditions.')
  slots=set(science_slots) if science_slots is not None else None
  capacity=q['battery_capacity_wh'];energy=capacity*q['initial_soc'];minimum=energy;reserve=capacity*q['reserve_soc']
  produced=load=charged=discharged=charge_loss=discharge_loss=curtailed=0.
  essential_unserved=unserved=completed=sent=generated=buffer=overflow=0.
  first_reserve=0. if energy<reserve else None;first_empty=0. if energy<=0 else None
+ minimum_usable=q['initial_soc'];heater_used=0.
  states=[{'hour':0.,'t_utc':samples[0]['t_utc'],'soc':energy/capacity,'battery_wh':energy,'buffer_gb':0.}];events=[];unknown=False
  for i in range(len(samples)-1):
   a,b=hours[i],hours[i+1]
   cuts=sorted(set([a,b]+[x for x in (f['solar_fault_start_hour'],f['earth_outage_start_hour'],f['earth_outage_start_hour']+f['earth_outage_hours'],q['science_start_hour'],q['science_start_hour']+q['science_duration_hours']) if a<x<b]))
   sample=samples[i]
+  conditions=interval_conditions[i] if interval_conditions is not None else {'capacity_factor':1.,'charge_factor':1.,'discharge_factor':1.,'heater_w':0.,'rf_rate_bps':q['downlink_mbps']*1e6}
+  usable_capacity=capacity*conditions['capacity_factor'];locked=capacity-usable_capacity
+  minimum_usable=min(minimum_usable,max(0.,energy-locked)/usable_capacity if usable_capacity>0 else 0.)
+  effective_reserve=locked+usable_capacity*q['reserve_soc']
+  if first_reserve is None and energy<effective_reserve-1e-9:
+   first_reserve=a;events.append({'hour':a,'type':'reserve','message':'La capacidad utilizable por temperatura cae por debajo de la reserva.'})
   segments=list(zip(cuts,cuts[1:]))
   while segments:
    start,end=segments.pop(0)
@@ -113,27 +125,32 @@ def simulate_energy(samples,config=None,fault=None,science_slots=None,optional_e
     unknown=True;events.append({'hour':start,'type':'unknown','message':'Faltan geometría o distancias; no se propaga una batería inventada.'});break
    earth_clear=sample['earth_elevation_deg']-sample['earth_horizon_deg']>.3 and not(f['earth_outage_start_hour']<=mid<f['earth_outage_start_hour']+f['earth_outage_hours'])
    planned=(i in slots) if slots is not None else q['science_start_hour']<=mid<q['science_start_hour']+q['science_duration_hours']
-   available=pv+(q['max_discharge_w'] if energy>1e-9 else 0.)
-   essential=min(q['essential_load_w'],available);available-=essential
+   available=pv+(q['max_discharge_w']*conditions['discharge_factor'] if energy>locked+1e-9 else 0.)
+   essential_request=q['essential_load_w']+conditions['heater_w']
+   essential=min(essential_request,available);available-=essential
+   served_heater=max(0.,essential-q['essential_load_w'])
    science=q['science_load_w'] if planned and available+1e-9>=q['science_load_w'] else 0.
    performed=planned and (q['science_load_w']==0 or science>0)
    available-=science
    new_data=q['science_data_mbps']*.45*dt if performed else 0.
-   possible=min(buffer+new_data,q['downlink_mbps']*.45*dt) if earth_clear else 0.
-   radio_duty=possible/(q['downlink_mbps']*.45*dt) if q['downlink_mbps']>0 else 0.
+   effective_rate=min(q['downlink_mbps'],conditions['rf_rate_bps']/1e6)
+   possible=min(buffer+new_data,effective_rate*.45*dt) if earth_clear else 0.
+   radio_duty=possible/(effective_rate*.45*dt) if effective_rate>0 else 0.
    radio=q['radio_load_w']*radio_duty
-   if possible>0 and available+1e-9<q['radio_load_w']:possible=0.;radio=0.
+   if possible>0 and available+1e-9<q['radio_load_w']:possible=0.;radio=0.;radio_duty=0.
+   # Optional equipment must also fit during the full-power transmitting fraction.
+   optional=((1-radio_duty)*min(q['optional_load_w'],max(0.,available))+radio_duty*min(q['optional_load_w'],max(0.,available-q['radio_load_w']))) if optional_enabled else 0.
    available-=radio
-   optional=min(q['optional_load_w'],max(0.,available)) if optional_enabled else 0.
    demand=essential+science+radio+optional
-   requested=q['essential_load_w']+(q['science_load_w'] if planned else 0)+radio+(q['optional_load_w'] if optional_enabled else 0)
+   requested=essential_request+(q['science_load_w'] if planned else 0)+radio+(q['optional_load_w'] if optional_enabled else 0)
    deficit=max(0.,demand-pv)
-   if deficit>0 and energy>1e-9 and deficit*dt/q['discharge_efficiency']>energy+1e-8:
-    split=start+energy*q['discharge_efficiency']/deficit
+   if deficit>0 and energy>locked+1e-9 and deficit*dt/q['discharge_efficiency']>energy-locked+1e-8:
+    split=start+(energy-locked)*q['discharge_efficiency']/deficit
     if start+1e-10<split<end-1e-10:
      segments.insert(0,(split,end));segments.insert(0,(start,split));continue
-   shortage=max(0.,requested-demand)*dt;unserved+=shortage;essential_unserved+=(q['essential_load_w']-essential)*dt
-   if q['essential_load_w']-essential>1e-8:events.append({'hour':start,'type':'essential_unserved','duration_hours':dt,'message':'La potencia disponible no cubre la carga esencial.'})
+   shortage=max(0.,requested-demand)*dt;unserved+=shortage;essential_unserved+=(essential_request-essential)*dt
+   heater_used+=served_heater*dt
+   if essential_request-essential>1e-8:events.append({'hour':start,'type':'essential_unserved','duration_hours':dt,'message':'La potencia disponible no cubre la carga esencial.'})
    if optional_enabled and q['optional_load_w']-optional>1e-8:events.append({'hour':start,'type':'optional_suspended','duration_hours':dt,'message':'Carga opcional suspendida o reducida por falta de potencia.'})
    if planned and not performed:events.append({'hour':start,'type':'science_suspended','duration_hours':dt,'message':'Actividad científica suspendida por falta de potencia.'})
    if performed:completed+=dt;generated+=new_data
@@ -141,30 +158,31 @@ def simulate_energy(samples,config=None,fault=None,science_slots=None,optional_e
    if buffer>q['storage_gb']:overflow+=buffer-q['storage_gb'];buffer=q['storage_gb']
    before=energy;net=pv-demand
    if net>=0:
-    incoming=min(net,q['max_charge_w'],(capacity-energy)/(q['charge_efficiency']*dt))
+    incoming=min(net,q['max_charge_w']*conditions['charge_factor'],(capacity-energy)/(q['charge_efficiency']*dt))
     incoming=max(0.,incoming);gain=incoming*q['charge_efficiency']*dt
     energy+=gain;charged+=gain;charge_loss+=incoming*dt-gain;curtailed+=(net-incoming)*dt
    else:
     output=-net*dt;removed=output/q['discharge_efficiency'];energy-=removed;discharged+=removed;discharge_loss+=removed-output
    energy=max(0.,min(capacity,energy));minimum=min(minimum,energy)
-   if first_reserve is None and before>=reserve and energy<reserve:
-    first_reserve=start+dt*(before-reserve)/(before-energy);events.append({'hour':first_reserve,'type':'reserve','message':'Se cruza la reserva configurada.'})
+   minimum_usable=min(minimum_usable,max(0.,energy-locked)/usable_capacity if usable_capacity>0 else 0.)
+   if first_reserve is None and before>=effective_reserve and energy<effective_reserve:
+    first_reserve=start+dt*(before-effective_reserve)/(before-energy);events.append({'hour':first_reserve,'type':'reserve','message':'Se cruza la reserva configurada.'})
    if first_empty is None and energy<=1e-8:
     first_empty=end if before>0 else start;events.append({'hour':first_empty,'type':'empty','message':'Batería agotada en el modelo eléctrico.'})
    produced+=pv*dt;load+=demand*dt
-   states.append({'hour':end,'t_utc':datetime.fromtimestamp(datetime.fromisoformat(samples[0]['t_utc'].replace('Z','+00:00')).timestamp()+end*3600,datetime.fromisoformat(samples[0]['t_utc'].replace('Z','+00:00')).tzinfo).isoformat().replace('+00:00','Z'),'soc':energy/capacity,'battery_wh':energy,'buffer_gb':buffer,'solar_w':pv,'load_w':demand,'science_active':performed,'earth_clear':earth_clear})
+   states.append({'hour':end,'t_utc':datetime.fromtimestamp(datetime.fromisoformat(samples[0]['t_utc'].replace('Z','+00:00')).timestamp()+end*3600,datetime.fromisoformat(samples[0]['t_utc'].replace('Z','+00:00')).tzinfo).isoformat().replace('+00:00','Z'),'soc':energy/capacity,'battery_wh':energy,'buffer_gb':buffer,'solar_w':pv,'load_w':demand,'heater_w':served_heater,'science_active':performed,'earth_clear':earth_clear})
   if unknown:break
  residual=capacity*q['initial_soc']+produced-load-curtailed-charge_loss-discharge_loss-energy
- feasible=not unknown and essential_unserved<1e-6 and completed+1e-8>=q['science_duration_hours'] and minimum+1e-6>=reserve and overflow<1e-9 and (not q['require_all_data'] or buffer<1e-8)
+ feasible=not unknown and essential_unserved<1e-6 and completed+1e-8>=q['science_duration_hours'] and minimum_usable+1e-6>=q['reserve_soc'] and overflow<1e-9 and (not q['require_all_data'] or buffer<1e-8)
  reasons=[]
  if unknown:reasons.append('Geometría incompleta; presupuesto sin resolver.')
  if essential_unserved>1e-6:reasons.append('No se suministra toda la carga esencial.')
- if minimum+1e-6<reserve:reasons.append('La batería cae por debajo de la reserva solicitada.')
+ if minimum_usable+1e-6<q['reserve_soc']:reasons.append('La batería cae por debajo de la reserva solicitada.')
  if completed+1e-8<q['science_duration_hours']:reasons.append('No se completan las horas científicas solicitadas.')
  if overflow>1e-9:reasons.append('Se supera la memoria configurada y se pierden datos.')
  if q['require_all_data'] and buffer>1e-8:reasons.append('Quedan datos sin transmitir al finalizar.')
  return {'status':'unknown' if unknown else 'ok','feasible':feasible,'config':q,'fault':f,'optional_enabled':optional_enabled,'science_slots':science_slots,
-  'summary':{'minimum_soc':None if unknown else minimum/capacity,'final_soc':None if unknown else energy/capacity,'reserve_crossing_hour':first_reserve,'battery_empty_hour':first_empty,
+  'summary':{'minimum_usable_soc':None if unknown else minimum_usable,'heater_served_wh':heater_used,'minimum_soc':None if unknown else minimum/capacity,'final_soc':None if unknown else energy/capacity,'reserve_crossing_hour':first_reserve,'battery_empty_hour':first_empty,
    'solar_generated_wh':produced,'load_served_wh':load,'battery_charge_wh':charged,'battery_discharge_wh':discharged,'charge_loss_wh':charge_loss,'discharge_loss_wh':discharge_loss,'curtailed_wh':curtailed,
    'unserved_wh':unserved,'essential_unserved_wh':essential_unserved,'science_completed_hours':completed,'science_required_hours':q['science_duration_hours'],'data_generated_gb':generated,'data_sent_gb':sent,'buffer_final_gb':buffer,'data_lost_gb':overflow,'energy_balance_residual_wh':residual},
   'states':states,'events':events[:400],'reasons':reasons,'sources':SOURCES,'limitations':LIMITATIONS}

@@ -10,9 +10,15 @@ Escribe cuándo quieres viajar y el sistema calcula una **clasificación continu
 
 ## Estado de la validación científica
 
-El sistema es un modelo de planificación con NASA LOLA y JPL, **no un gemelo digital operacional validado**. Si faltan rasters o efemérides exactas, el estudio operativo informa la indisponibilidad: no sustituye el caso por una demostración. Los vehículos usan parámetros hipotéticos y los radios de rover son referencias geométricas, no rutas seguras.
+El sistema es un modelo de planificación con NASA LOLA y JPL, **no un gemelo digital operacional validado**. Si faltan rasters o efemérides exactas, el estudio operativo informa la indisponibilidad: no sustituye el caso por una demostración. Los vehículos usan parámetros hipotéticos. El estudio físico calcula rutas nativas con regreso y presupuesto; los discos del visor siguen siendo referencias geométricas y ninguna ruta certifica seguridad.
 
 La [auditoría científica](docs/SCIENTIFIC_AUDIT.md) registra defectos corregidos, contrastes directos con JPL, pruebas de conservación y modelos físicos aún pendientes. Pasar pruebas no demuestra ausencia total de errores ni seguridad de vuelo.
+
+## Estudio físico ampliado
+
+El resumen incorpora temperatura y radio. El estudio automático acopla calefacción, energía, curva térmica de batería y contactos con estaciones DSN. Contrasta efemérides con SPICE, calcula rutas de rover con regreso y permite importar perfiles y telemetría trazable. Las trayectorias de ida y vuelta se resuelven bajo condiciones de diseño explícitas.
+
+Adquiere los kernels una vez con **api/.venv/Scripts/python.exe api/scripts/acquire_spice.py**, además de los rasters NASA. Consulta [ecuaciones, uso y límites](docs/ENGINEERING_MODELS.md). Los equipos y curvas de ejemplo no se atribuyen a una nave real. No hay conexión física autenticada ni validación operacional.
 
 ## English-speaking reviewers
 
