@@ -22,6 +22,34 @@ import './unified-mission.css'
 
 const EXAMPLE='Quiero hacer un viaje el 25 de diciembre de 2026 a las 8 am. ¿Dónde sería mejor alunizar y cuánto tardaría la misión?'
 
+function FriendlyBotIcon({size=54}:{size?:number}){
+  return (
+    <svg width={size} height={size} viewBox="0 0 54 54" fill="none" xmlns="http://www.w3.org/2000/svg" className="copilot-robot-avatar" aria-hidden="true">
+      <defs>
+        <filter id="robot-glow" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="2" result="blur" />
+          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        </filter>
+      </defs>
+      {/* Antenna */}
+      <circle cx="27" cy="7.5" r="3.5" fill="#94edbb" filter="url(#robot-glow)" />
+      <line x1="27" y1="11" x2="27" y2="18" stroke="#94edbb" strokeWidth="2.5" strokeLinecap="round" />
+      {/* Ear nodes */}
+      <rect x="6.5" y="24" width="4" height="10" rx="2" fill="#52708a" />
+      <rect x="43.5" y="24" width="4" height="10" rx="2" fill="#52708a" />
+      {/* Round head */}
+      <rect x="9.5" y="16" width="35" height="27" rx="13.5" fill="#131d27" stroke="#3d556c" strokeWidth="2.2" />
+      {/* Visor display */}
+      <rect x="14.5" y="22" width="25" height="13" rx="6.5" fill="#091118" stroke="#223647" strokeWidth="1.2" />
+      {/* Glowing round eyes */}
+      <circle cx="21.5" cy="28.5" r="2.8" fill="#94edbb" filter="url(#robot-glow)" />
+      <circle cx="32.5" cy="28.5" r="2.8" fill="#94edbb" filter="url(#robot-glow)" />
+      {/* Little smile */}
+      <path d="M24 37 Q27 39.5 30 37" stroke="#6b88a3" strokeWidth="1.6" strokeLinecap="round" fill="none" />
+    </svg>
+  )
+}
+
 const CATALOG_EXAMPLES:Record<string,VehicleProfile>={
   blue_moon:{
     lander_name:'Blue Moon MK2',
@@ -931,7 +959,7 @@ export default function UnifiedMissionPlanner(){
       {!hideLeftPanel&&<aside className="trip-panel chat-linked-panel">
         <div className="chat-panel-top">
           <div className="chat-panel-top-bar">
-            <span className="micro-title">COPILOTO DE MISIÓN</span>
+            <span className="sr-only">Copiloto de misión</span>
             <button
               type="button"
               className={'chat-settings-gear-btn'+(preferences?' active':'')}
@@ -945,7 +973,6 @@ export default function UnifiedMissionPlanner(){
               <Settings2 size={16}/>
             </button>
           </div>
-          <h1>Dinos cuándo y <em>encontramos dónde.</em></h1>
         </div>
 
         {preferences&&(
@@ -984,13 +1011,18 @@ export default function UnifiedMissionPlanner(){
         {/* Fluid Gemini-style Conversational Thread */}
 
         <div className="mission-chat-thread" aria-live="polite">
-          {chatTurns.length===0&&!plan&&!busy&&<div className="gemini-msg assistant">
-            <div className="gemini-msg-head"><Bot size={15}/><span>Copiloto de misión</span></div>
-            <div className="gemini-msg-content">
-              <p>{t.chatGreeting}</p>
-              <button type="button" className="example-trip" onClick={()=>{setMessage(EXAMPLE);void calculate(EXAMPLE)}} disabled={!atlas||!polar}>{t.exampleBtn} <ArrowRight size={12}/></button>
+          <div className="chat-thread-hero">
+            <div className="chat-hero-avatar-wrap">
+              <FriendlyBotIcon size={54}/>
             </div>
-          </div>}
+            <span className="micro-title">COPILOTO DE MISIÓN</span>
+            <h1 className="chat-hero-title">Dime cuándo y <em>encuentro dónde.</em></h1>
+            {chatTurns.length===0&&!plan&&!busy&&(
+              <button type="button" className="example-trip" onClick={()=>{setMessage(EXAMPLE);void calculate(EXAMPLE)}} disabled={!atlas||!polar}>
+                {t.exampleBtn} <ArrowRight size={12}/>
+              </button>
+            )}
+          </div>
 
           {chatTurns.map((turn,turnIdx)=>{
             if(turn.role==='user'){
