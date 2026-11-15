@@ -1,11 +1,12 @@
-import {useState} from 'react'
+import {useEffect,useState} from 'react'
 import {Globe2,Sun} from 'lucide-react'
 import {useI18n} from '../../i18n/LanguageContext'
 import {assessVisibility,visibilityColor} from '../../../worker/visibility.mjs'
 import type {MissionTimeSample} from './automaticTypes'
-export default function MissionVisibilityPanel({sample,sunHeightM=2,earthHeightM=2}:{sample:MissionTimeSample|undefined;sunHeightM?:number;earthHeightM?:number}){
+export default function MissionVisibilityPanel({sample,sunHeightM=2,earthHeightM=2,initialTarget='earth'}:{sample:MissionTimeSample|undefined;sunHeightM?:number;earthHeightM?:number;initialTarget?:'earth'|'sun'}){
  const {language,number}=useI18n(),en=language==='en'
- const [target,setTarget]=useState<'earth'|'sun'>('earth')
+ const [target,setTarget]=useState<'earth'|'sun'>(initialTarget)
+ useEffect(()=>{setTarget(initialTarget)},[initialTarget])
  const elevation=sample?.[target==='earth'?'earth_elevation_deg':'sun_elevation_deg'],horizon=sample?.[target==='earth'?'earth_horizon_deg':'sun_horizon_deg']
  const azimuth=sample?.[target==='earth'?'earth_azimuth_deg':'sun_azimuth_deg']
  const height=target==='earth'?earthHeightM:sunHeightM

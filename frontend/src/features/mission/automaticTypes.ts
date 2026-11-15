@@ -5,6 +5,9 @@ export type VehicleProfile = {
   center_of_gravity_tolerance:number
   category?:string
   description?:string
+  is_rover?:boolean
+  speed_km_h?:number
+  nominal_range_km?:number
 }
 export type LanderReview = {
   status:string

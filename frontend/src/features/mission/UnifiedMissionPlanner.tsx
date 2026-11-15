@@ -108,7 +108,10 @@ const CATALOG_EXAMPLES:Record<string,VehicleProfile>={
     antenna_height:3,
     center_of_gravity_tolerance:15,
     category:'Rover y Movilidad',
-    description:'Ejemplo hipotético editable; parámetros sin ficha de fabricante verificada.'
+    is_rover:true,
+    speed_km_h:2.5,
+    nominal_range_km:15.0,
+    description:'Rover de exploración tripulado no presurizado; radio de acción nominal de 15 km a 2.5 km/h.'
   },
   lunar_cruiser:{
     lander_name:'Rover Presurizado (JAXA/Toyota)',
@@ -116,7 +119,10 @@ const CATALOG_EXAMPLES:Record<string,VehicleProfile>={
     antenna_height:5.5,
     center_of_gravity_tolerance:12,
     category:'Rover y Movilidad',
-    description:'Ejemplo hipotético editable; parámetros sin ficha de fabricante verificada.'
+    is_rover:true,
+    speed_km_h:5.0,
+    nominal_range_km:25.0,
+    description:'Rover presurizado de largo alcance; autonomía de 25 km a 5 km/h con cabina cerrada.'
   },
   viper:{
     lander_name:'Rover VIPER (NASA)',
@@ -124,7 +130,10 @@ const CATALOG_EXAMPLES:Record<string,VehicleProfile>={
     antenna_height:2.8,
     center_of_gravity_tolerance:14,
     category:'Rover y Movilidad',
-    description:'Ejemplo hipotético editable; parámetros sin ficha de fabricante verificada.'
+    is_rover:true,
+    speed_km_h:1.5,
+    nominal_range_km:10.0,
+    description:'Rover robótico prospector de hielo en cráteres y PSRs; radio nominal de 10 km a 1.5 km/h.'
   },
   artemis_habitat:{
     lander_name:'Hábitat Base Artemis (SHH)',
@@ -313,6 +322,7 @@ export default function UnifiedMissionPlanner(){
   const [vehiclePulseKey,setVehiclePulseKey]=useState(0),[uploadNotice,setUploadNotice]=useState('')
   const [landerReview,setLanderReview]=useState<LanderReview|null>(null),[reviewBusy,setReviewBusy]=useState(false)
   const [catalogOpen,setCatalogOpen]=useState(false),[composerDrag,setComposerDrag]=useState(false)
+  const [visibilityModalTarget,setVisibilityModalTarget]=useState<'sun'|'earth'|null>(null)
   const [mapFullscreen,setMapFullscreen]=useState(false)
   const [hideLeftPanel,setHideLeftPanel]=useState(false),[hideRightPanel,setHideRightPanel]=useState(false),[hideTimelinePanel,setHideTimelinePanel]=useState(false)
   const [chatTurns,setChatTurns]=useState<ChatTurn[]>([])
@@ -1181,7 +1191,7 @@ export default function UnifiedMissionPlanner(){
                       >
                         <div className="catalog-item-main">
                           <strong>{tr(item.lander_name)}</strong>
-                          <span>{tr("Paneles")} {item.solar_panel_height}{tr("m · Antena")}{" "}{item.antenna_height}{tr("m · límite del perfil")}{" "}{item.center_of_gravity_tolerance}°</span>
+                          <span>{tr("Paneles")} {item.solar_panel_height}{tr("m · Antena")}{" "}{item.antenna_height}{tr("m")}{item.is_rover?` · ${tr("Radio")} ${item.nominal_range_km}km (${item.speed_km_h}km/h)`:''}{" "}{tr("· límite")}{" "}{item.center_of_gravity_tolerance}°</span>
                         </div>
                         <small>{tr(item.description)}</small>
                       </button>
@@ -1237,7 +1247,11 @@ export default function UnifiedMissionPlanner(){
 
       <main className="one-moon-panel">
         <div className="one-map-heading">
-          <div><span className="micro-title">{tr("POLO SUR LUNAR · 80°S — 90°S")}</span><h2>{tr(plan?'Toda la superficie. Una decisión informada.':'Una Luna. Todos los destinos.')}</h2></div>
+          <div>
+            <span className="micro-title">{tr("POLO SUR LUNAR · 80°S — 90°S")}</span>
+            <h2>{tr(plan?'Toda la superficie. Una decisión informada.':'Una Luna. Todos los destinos.')}</h2>
+            {(vehicle.is_rover||vehicle.category==='Rover y Movilidad')&&<span className="rover-range-indicator"><Compass size={12}/>{" "}{tr("Radio de acción:")}{" "}<b>{vehicle.nominal_range_km??15} km</b>{" "}<small>({tr("ida y vuelta")})</small></span>}
+          </div>
           <div className="one-map-actions">
             <button onClick={()=>{setFocus(false);setFlight(null);setFlying(false);setCameraRevision(r=>r+1)}} aria-pressed={!focus}>{tr("Todo el polo")}</button>
             <button disabled={!selected||selected.latitude_deg> -80||selected.elevation_m==null} onClick={()=>{setFocus(true);setCameraRevision(r=>r+1)}} aria-pressed={focus}>{tr("Acercar destino")}</button>
@@ -1286,7 +1300,9 @@ export default function UnifiedMissionPlanner(){
             overview focusZone={focus} onShadingStatus={setShadingStatus} cameraResetKey={cameraRevision+(focus?1:0)} missionMarkers={flight?[]:markers} onMarkerSelect={choose} polarSurface={polar} missionCoverage={coverageLayer} onCoverageSelect={choose} onCoverageHover={setHoveredId}
             onSurfacePlace={sampleMap} placementMode scienceReady={Boolean(current)} assessmentRisk={selected?.risk??'unknown'} showSurfaceVehicle={Boolean(flight)} altitudeM={telemetry?.altitudeM??0} landed={landed}
             solarPanelHeightM={vehicle.solar_panel_height} antennaHeightM={vehicle.antenna_height} landerName={vehicle.lander_name} vehiclePulseKey={vehiclePulseKey}
-            pinnedTarget={pinnedTarget}/>
+            pinnedTarget={pinnedTarget}
+            traverseRadiusKm={vehicle.is_rover||vehicle.category==='Rover y Movilidad'?(vehicle.nominal_range_km??15):null}
+            roverName={vehicle.lander_name} roverSpeed={vehicle.speed_km_h}/>
           <div className="one-map-source"><span>{tr(plan&&coverageVisible&&!flight?'Evaluación de toda la superficie':'NASA LOLA · relieve continuo')}</span><small>{tr(focus&&detail?'Detalle visual ~396 m · fuente 80 m':shadingStatus.includes('no disponible')?'Sombreado no disponible; relieve conservado':'Vista regional · fuente de 80 m')}{tr(visualStatus.includes('no disponible')?' · '+visualStatus:'')}</small><small>{tr("Nave y astros en escala ilustrativa.")}</small></div>
 
           {/* Icon-only "Simular llegada a este destino" button inside the Moon map screen */}
@@ -1310,8 +1326,14 @@ export default function UnifiedMissionPlanner(){
           <div className="conditions-heading">
             <strong><Globe2 size={14}/>{" "}{tr("Línea de tiempo unificada ·")}{" "}{tr(vehicle.lander_name)}</strong>
             <div className="conditions-legend-inline">
-              <span className="legend-sun"><Sun size={11}/>{" "}{tr("Sol (")}{vehicle.solar_panel_height}m): <b>{tr(num(selected?.sun_hours,0))}h</b>/{plan.mission.surface_hours}h</span>
-              <span className="legend-earth"><Globe2 size={11}/>{" "}{tr("Tierra (")}{vehicle.antenna_height}m): <b>{tr(num(selected?.earth_hours,0))}h</b>/{plan.mission.surface_hours}h</span>
+              <button type="button" className="legend-sun legend-pill-btn" onClick={()=>setVisibilityModalTarget('sun')} title={tr("Ver especificaciones de elevación y horizonte DEM del Sol")}>
+                <Sun size={11}/>{" "}{tr("Sol (")}{vehicle.solar_panel_height}m): <b>{tr(num(selected?.sun_hours,0))}h</b>/{plan.mission.surface_hours}h
+                <span className="pill-action">{tr("DEM >")}</span>
+              </button>
+              <button type="button" className="legend-earth legend-pill-btn" onClick={()=>setVisibilityModalTarget('earth')} title={tr("Ver especificaciones de elevación y horizonte DEM de la Tierra")}>
+                <Globe2 size={11}/>{" "}{tr("Tierra (")}{vehicle.antenna_height}m): <b>{tr(num(selected?.earth_hours,0))}h</b>/{plan.mission.surface_hours}h
+                <span className="pill-action">{tr("DEM >")}</span>
+              </button>
               <time>{tr(current?localDate(current.t_utc):localDate(plan.mission.arrival_utc))} · {tr(localTimeZoneLabel())} ({tr(!current?'Datos no disponibles':currentBothOk?'Sol y Tierra visibles':!currentSunOk&&!currentEarthOk?'Sin despeje de Sol ni Tierra':!currentSunOk?'Sol sin despeje':'Tierra sin despeje')})</time>
             </div>
 
@@ -1415,12 +1437,15 @@ export default function UnifiedMissionPlanner(){
           </div>
 
           <div className="conditions-readouts">
-            <span><Sun size={12}/>{" "}{tr("Sol sobre el horizonte (")}{vehicle.solar_panel_height} m): <b className={current?(currentSunOk?'kpi-ok':'kpi-warn'):undefined}>{tr(num(current?current.sun_elevation_deg-current.sun_horizon_deg:null,2))}°</b></span>
-            <span><Globe2 size={12}/>{" "}{tr("Tierra sobre el horizonte (")}{vehicle.antenna_height} m): <b className={current?(currentEarthOk?'kpi-ok':'kpi-warn'):undefined}>{tr(num(current?current.earth_elevation_deg-current.earth_horizon_deg:null,2))}°</b></span>
-            <span>{tr("Pendiente P95:")}{" "}<b className={selected?.regional_slope_deg==null?undefined:selected.regional_slope_deg<=Math.min(intent?.max_slope_deg??slope,vehicle.center_of_gravity_tolerance)?'kpi-ok':'kpi-warn'}>{tr(num(selected?.regional_slope_deg,2))}°</b>{" "}{tr("· límite del escenario")}{" "}{tr(num(Math.min(intent?.max_slope_deg??slope,vehicle.center_of_gravity_tolerance),2))}°</span>
+            <button type="button" className="readout-interactive-btn" onClick={()=>setVisibilityModalTarget('sun')} title={tr("Ver especificaciones y DEM del Sol")} data-testid="open-visibility-sun">
+              <Sun size={12}/>{" "}<span>{tr("Sol sobre el horizonte (")}{vehicle.solar_panel_height} m):</span>{" "}<b className={current?(currentSunOk?'kpi-ok':'kpi-warn'):undefined}>{tr(num(current?current.sun_elevation_deg-current.sun_horizon_deg:null,2))}°</b>{" "}<span className="kpi-tag">{tr("Ver DEM")}</span>
+            </button>
+            <button type="button" className="readout-interactive-btn" onClick={()=>setVisibilityModalTarget('earth')} title={tr("Ver especificaciones y DEM de la Tierra")} data-testid="open-visibility-earth">
+              <Globe2 size={12}/>{" "}<span>{tr("Tierra sobre el horizonte (")}{vehicle.antenna_height} m):</span>{" "}<b className={current?(currentEarthOk?'kpi-ok':'kpi-warn'):undefined}>{tr(num(current?current.earth_elevation_deg-current.earth_horizon_deg:null,2))}°</b>{" "}<span className="kpi-tag">{tr("Ver DEM")}</span>
+            </button>
+            <span className="condition-metric-plain">{tr("Pendiente P95:")}{" "}<b className={selected?.regional_slope_deg==null?undefined:selected.regional_slope_deg<=Math.min(intent?.max_slope_deg??slope,vehicle.center_of_gravity_tolerance)?'kpi-ok':'kpi-warn'}>{tr(num(selected?.regional_slope_deg,2))}°</b>{" "}{tr("· límite del escenario")}{" "}{tr(num(Math.min(intent?.max_slope_deg??slope,vehicle.center_of_gravity_tolerance),2))}°</span>
           </div>
         </div>}
-        {plan&&<MissionVisibilityPanel sample={current} sunHeightM={vehicle.solar_panel_height} earthHeightM={vehicle.antenna_height}/>}
       </main>
 
       {!hideRightPanel&&<aside className="mission-decisions">
@@ -1429,7 +1454,7 @@ export default function UnifiedMissionPlanner(){
         {!plan?<div className="decision-welcome"><MapPin size={28}/><h2>{tr("Aquí encontrarás tu mejor opción.")}</h2><p>{tr("El sistema relacionará la fecha de tu viaje y el objeto lunar elegido con el terreno, la luz y la visibilidad de la Tierra.")}</p><ul><li><Check size={13}/>{" "}{tr("Un destino recomendado y sus razones")}</li><li><Check size={13}/>{" "}{tr("Clasificación de toda la superficie")}</li><li><Check size={13}/>{" "}{tr("Diagnóstico conversacional en el chat izquierdo")}</li></ul><small>{tr("Los resultados corresponden a un modelo regional de planificación, no a una autorización de vuelo.")}</small></div>:<>
           {!plan.best&&<><div className="decision-title"><span className="micro-title">{tr(plan.best?'RECOMENDACIÓN CALCULADA':plan.counts.unknown===plan.total_cells?'FALTAN DATOS PARA EVALUAR ESTE PERFIL':'NINGUNA ZONA CUMPLE TODOS LOS CRITERIOS')}</span>{aiMode&&<small>{tr(aiMode)}</small>}</div><MissionRescuePanel timezone={TIMEZONE} report={rescueReport} busy={rescueBusy} error={rescueError} elapsed={rescueElapsed} onApply={applyAlternative} onRetry={()=>setRescueAttempt(a=>a+1)} onCancel={cancelRescue} onEvidence={()=>setEvidence(true)}/></>}
           {/* Selected sector, followed by the compact candidate list. */}
-          {selected&&<section className="selected-destination top-selected-destination"><div className="selected-destination-title"><span className={'selected-color '+selected.risk}/><h3>{tr(selectedLabel)}</h3></div><span className="selected-sector-id">{tr("Sector")}{" "}{tr(selected.id.replace('polar:',''))} · {tr(num(selected.area_km2,2))}{" "}{tr("km² regionales")}</span><p>{tr(reasonPoint(selected))}</p><dl><div><dt>{tr("Perfil del escenario")}</dt><dd>{tr(vehicle.lander_name)}</dd></div><div><dt>{tr("Centro del sector")}</dt><dd>{tr(num(selected.latitude_deg,5))}°, {tr(num(selected.longitude_deg,5))}°</dd></div><div><dt>{tr("Elevación")}</dt><dd>{tr(num(selected.elevation_m??selectedCell?.elevation_m,0))} m</dd></div><div><dt>{tr("Pendiente P95 · fuente de 80 m")}</dt><dd>{tr(num(selected.regional_slope_deg,2))}°</dd></div><div><dt>{tr("Máxima pendiente nativa")}</dt><dd>{tr(num(selected.max_slope_deg??selectedCell?.max_slope_deg))}°</dd></div><div><dt>{tr("Sol visible (")}{vehicle.solar_panel_height}m)</dt><dd>{tr(num(selected.sun_hours,0))} h</dd></div><div><dt>{tr("Tierra visible (")}{vehicle.antenna_height}m)</dt><dd>{tr(num(selected.earth_hours,0))} h</dd></div></dl>
+          {selected&&<section className="selected-destination top-selected-destination"><div className="selected-destination-title"><span className={'selected-color '+selected.risk}/><h3>{tr(selectedLabel)}</h3></div><span className="selected-sector-id">{tr("Sector")}{" "}{tr(selected.id.replace('polar:',''))} · {tr(num(selected.area_km2,2))}{" "}{tr("km² regionales")}</span><p>{tr(reasonPoint(selected))}</p><dl><div><dt>{tr("Perfil del escenario")}</dt><dd>{tr(vehicle.lander_name)}</dd></div><div><dt>{tr("Centro del sector")}</dt><dd>{tr(num(selected.latitude_deg,5))}°, {tr(num(selected.longitude_deg,5))}°</dd></div><div><dt>{tr("Elevación")}</dt><dd>{tr(num(selected.elevation_m??selectedCell?.elevation_m,0))} m</dd></div><div><dt>{tr("Pendiente P95 · fuente de 80 m")}</dt><dd>{tr(num(selected.regional_slope_deg,2))}°</dd></div><div><dt>{tr("Máxima pendiente nativa")}</dt><dd>{tr(num(selected.max_slope_deg??selectedCell?.max_slope_deg))}°</dd></div><div><dt>{tr("Sol visible (")}{vehicle.solar_panel_height}m)</dt><dd>{tr(num(selected.sun_hours,0))} h</dd></div><div><dt>{tr("Tierra visible (")}{vehicle.antenna_height}m)</dt><dd>{tr(num(selected.earth_hours,0))} h</dd></div>{(vehicle.is_rover||vehicle.category==='Rover y Movilidad')&&<div><dt>{tr("Radio de acción rover")}</dt><dd className="kpi-ok">{vehicle.nominal_range_km??15} km {vehicle.speed_km_h?`(${vehicle.speed_km_h} km/h)`:''}</dd></div>}</dl>
 
             {selected.sun_hours_sensitivity&&selected.earth_hours_sensitivity&&<div className="sampling-sensitivity"><strong>{tr("Variación por muestreo angular")}</strong><span>{tr("Sol:")}{" "}{tr(num(selected.sun_hours_sensitivity.lower,0))}–{tr(num(selected.sun_hours_sensitivity.upper,0))}{" "}{tr("h · Tierra:")}{" "}{tr(num(selected.earth_hours_sensitivity.lower,0))}–{tr(num(selected.earth_hours_sensitivity.upper,0))} h</span><small>{tr("Compara direcciones vecinas del horizonte. No es una probabilidad de éxito.")}</small></div>}
             {cellLoading&&<p className="cell-detail-status" role="status"><LoaderCircle className="spin" size={13}/>{" "}{tr("Cargando condiciones de esta área…")}</p>}
@@ -1485,6 +1510,9 @@ export default function UnifiedMissionPlanner(){
     {(help||evidence)&&<div className="mission-modal-backdrop" onClick={()=>{setHelp(false);setEvidence(false)}}><section className="mission-modal" role="dialog" aria-modal="true" aria-label={tr(help?'Cómo se planifica tu misión':'Datos del plan de misión')} onClick={e=>e.stopPropagation()} onKeyDown={e=>{if(e.key==='Escape'){setHelp(false);setEvidence(false)}}}><div className="modal-top"><h2>{tr(help?'Escribe tu viaje. Nosotros calculamos.':'Los datos detrás de tu recomendación.')}</h2><button autoFocus aria-label={tr("Cerrar información")} onClick={()=>{setHelp(false);setEvidence(false)}}><X size={17}/></button></div>
       {help?<><p>{tr("Escribe la fecha y hora de salida y pulsa")}{" "}<strong>{tr("Planificar mi misión")}</strong>{tr(". Gemini interpreta tu petición; el motor científico consulta NASA y compara el polo sur automáticamente. Si la fecha no produce candidatos favorables, busca automáticamente otras fechas manteniendo los requisitos y te permite comparar antes de aplicar.")}</p><p>{tr("Puedes adjuntar un perfil JSON o metadatos glTF y comparar parámetros hipotéticos del vehículo. El catálogo no constituye una ficha técnica verificada. El estudio operativo recalcula horizontes nativos para las alturas declaradas en el punto elegido. La clasificación regional conserva sus horizontes preparados de 2 m; otras alturas se estudian localmente.")}</p><p>{tr("La evaluación cubre todo el polo sur visible. Verde indica sectores favorables en el modelo, amarillo indica sensibilidad al muestreo, rojo indica que no cumplen los criterios y gris indica datos insuficientes. Haz clic en cualquier área para consultar su pendiente, Sol, Tierra y motivos. La estrella destaca el mejor centro candidato; los colores no certifican cada punto de un sector.")}</p><p>{tr("Si dices «alunizar el…», esa fecha se interpreta como llegada. Si dices «viajar el…», se interpreta como salida. La hora se interpreta en el centro espacial elegido, con su horario de verano, o en UTC si lo indicas. Kennedy LC-39B es la referencia inicial para Artemis. El centro no convierte la estimación orbital en una ventana real de lanzamiento.")}</p><p>{tr("La ida y vuelta usan una estimación orbital simplificada. La estancia se declara como supuesto editable. Una misión real requiere diseñar la trayectoria, la nave y sus operaciones.")}</p></>:<><p>{tr(plan?'Datos del cálculo actual:':'Escribe y calcula una misión para obtener las consultas y mediciones de tu caso.')}</p>{(rescueReport||adopted)&&<details open><summary>{tr("Evidencia de la búsqueda de alternativas")}</summary><p>{tr("Se proponen cambios de fecha conservando las restricciones. El resultado sólo cubre los escenarios examinados.")}</p><pre>{tr(JSON.stringify(rescueReport??adopted,null,2))}</pre></details>}<ul>{assumptions.map(a=><li key={a}>{tr(a)}</li>)}{plan?.mission.assumptions?.map(a=><li key={a}>{tr(a)}</li>)}</ul><p>{tr("Terreno: NASA LOLA de 80 m. Comparación regional por sectores de 4,75 km y perfiles de horizonte propios por centro. Los intervalos amarillo/verde comparan los azimuts vecinos del horizonte; no representan toda la incertidumbre del terreno. Los sectores del borde sin mediciones se conservan en gris. Las superficies se calculan sobre la esfera lunar y se recortan al casquete 80–90°S.")}</p><ul>{plan?.meta.limitations.map(note=><li key={note}>{tr(note)}</li>)}</ul><details><summary>{tr("Consultas y procedencia completas")}</summary><pre>{tr(JSON.stringify(plan?.meta.sources??[],null,2))}</pre></details>{plan&&<button className="download-plan" onClick={exportPlan}><Download size={14}/>{" "}{tr("Descargar evidencia completa")}</button>}</>}
 
+    </section></div>}
+    {visibilityModalTarget&&<div className="mission-modal-backdrop" onClick={()=>setVisibilityModalTarget(null)}><section className="mission-modal visibility-modal" role="dialog" aria-modal="true" aria-label={tr("Especificaciones de visibilidad y relieve")} onClick={e=>e.stopPropagation()} onKeyDown={e=>{if(e.key==='Escape')setVisibilityModalTarget(null)}}><div className="modal-top"><div><span className="micro-title">{tr("ESPECIFICACIONES DE VISIBILIDAD · NASA LOLA DEM")}</span><h2>{tr(visibilityModalTarget==='sun'?'Horizonte y ángulo del Sol':'Horizonte y ángulo de la Tierra')}</h2></div><button autoFocus aria-label={tr("Cerrar especificaciones")} onClick={()=>setVisibilityModalTarget(null)}><X size={17}/></button></div>
+      <MissionVisibilityPanel sample={current} sunHeightM={vehicle.solar_panel_height} earthHeightM={vehicle.antenna_height} initialTarget={visibilityModalTarget}/>
     </section></div>}
   </div>
 }

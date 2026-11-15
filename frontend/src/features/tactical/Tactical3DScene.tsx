@@ -34,6 +34,9 @@ export interface Tactical3DSceneProps {
   solarPanelHeightM?:number;antennaHeightM?:number;landerName?:string;vehiclePulseKey?:number
   pinnedTarget?:{lat:number;lon:number;label?:string}|null
   scientificSurfaceElevationM?:number|null
+  traverseRadiusKm?:number|null
+  roverName?:string
+  roverSpeed?:number
 }
 const EXAGGERATION=1
 const COLORS:Record<Risk,string>={green:'#62e6a0',yellow:'#f5cb67',red:'#ff797f',unknown:'#788e9e'}
@@ -81,6 +84,7 @@ export function Tactical3DScene(props:Tactical3DSceneProps){
       {props.overview&&props.polarSelection&&props.atlasData&&<PolarSelection data={props.atlasData} cell={props.polarSelection}/>}
       {props.atlasData&&props.pinnedTarget&&<PinnedPinMarker data={props.atlasData} pin={props.pinnedTarget}/>}
       {props.atlasData&&props.missionMarkers&&<MissionMarkers data={props.atlasData} markers={props.missionMarkers} onSelect={props.onMarkerSelect}/>}
+      {props.atlasData&&props.traverseRadiusKm&&props.traverseRadiusKm>0&&<RoverTraverseRange data={props.atlasData} lat={props.latDeg} lon={props.lonDeg} radiusKm={props.traverseRadiusKm} roverName={props.roverName} roverSpeed={props.roverSpeed}/>}
       <Camera {...props} dragging={dragging}/>
     </Canvas>
     {props.atlasData&&!props.overview&&<div className="surface-destination" style={{borderColor:COLORS[props.assessmentRisk??'unknown']}}>
@@ -420,6 +424,55 @@ function PinnedPinMarker({data,pin}:{data:AtlasData;pin:{lat:number;lon:number;l
         <div className="tactical-pinned-flag">
           <span className="pinned-flag-dot"/>
           <strong>📍 {tr(pin.label??'Lugar fijado')}</strong>
+        </div>
+      </Html>
+    </group>
+  )
+}
+
+function RoverTraverseRange({
+  data,
+  lat,
+  lon,
+  radiusKm,
+  roverName,
+  roverSpeed
+}: {
+  data: AtlasData
+  lat: number
+  lon: number
+  radiusKm: number
+  roverName?: string
+  roverSpeed?: number
+}) {
+  const {tr}=useI18n()
+  const surface=surfacePoint(data,lat,lon)
+  if(!Number.isFinite(surface.position.y))return null
+  const up=bodyDirection({latitude_deg:lat,longitude_deg:lon} as never,0,90)
+  const rotation=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1),up)
+  const pos=surface.position.clone().addScaledVector(up,0.2)
+  return (
+    <group position={pos} quaternion={rotation} name="rover-traverse-range">
+      {/* Outer exploration boundary ring */}
+      <mesh renderOrder={32} raycast={()=>null}>
+        <ringGeometry args={[radiusKm*0.96, radiusKm, 80]}/>
+        <meshBasicMaterial color="#38bdf8" transparent opacity={0.82} side={THREE.DoubleSide} depthTest={false} depthWrite={false}/>
+      </mesh>
+      {/* Semi-transparent reachable area */}
+      <mesh renderOrder={31} raycast={()=>null}>
+        <circleGeometry args={[radiusKm*0.96, 64]}/>
+        <meshBasicMaterial color="#0284c7" transparent opacity={0.12} side={THREE.DoubleSide} depthTest={false} depthWrite={false}/>
+      </mesh>
+      {/* Mid-range safety checkpoint ring (50% distance for safe return) */}
+      <mesh renderOrder={32} raycast={()=>null}>
+        <ringGeometry args={[radiusKm*0.48, radiusKm*0.50, 48]}/>
+        <meshBasicMaterial color="#38bdf8" transparent opacity={0.38} side={THREE.DoubleSide} depthTest={false} depthWrite={false}/>
+      </mesh>
+      {/* Label hovering on the perimeter */}
+      <Html position={[radiusKm*0.72, radiusKm*0.72, 0.5]} center zIndexRange={[45,30]}>
+        <div className="rover-range-badge" title={tr("Radio de desplazamiento seguro ida y vuelta")}>
+          <span className="rover-badge-title">🚗 {tr("Radio de acción:")} <b>{radiusKm.toFixed(1)} km</b></span>
+          <small>{tr(roverName??'Rover')}{roverSpeed ? ` · ${roverSpeed} km/h` : ''} · {tr("ida y vuelta")}</small>
         </div>
       </Html>
     </group>

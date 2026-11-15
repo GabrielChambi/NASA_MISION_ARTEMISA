@@ -25,6 +25,7 @@ try{
  await send('I want to travel on December 1, 2026 at 10am and stay 72 hours')
  firstPlan=await (await initial).json()
  check('An English request evaluates the entire south-pole cap with the Kennedy clock',firstPlan.total_cells===12892&&firstPlan.mission.requested_utc==='2026-12-01T15:00:00Z'&&firstPlan.mission.surface_hours===72)
+ await page.locator('[data-testid="open-visibility-earth"], .legend-earth').first().click()
  const diagnostic=page.getByTestId('visibility-diagnostic');await diagnostic.waitFor()
  await page.waitForFunction(()=>document.querySelector('[data-testid="visibility-diagnostic"]')?.dataset.state!=='unknown')
  const elevation=Number(await diagnostic.getAttribute('data-elevation-deg')),horizon=Number(await diagnostic.getAttribute('data-horizon-deg')),clearance=Number(await diagnostic.getAttribute('data-clearance-deg'))
