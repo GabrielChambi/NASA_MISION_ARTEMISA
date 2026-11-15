@@ -1191,18 +1191,17 @@ export default function UnifiedMissionPlanner(){
             </div>
           </div>}
 
-          {/* Bottom Toolbar inside the Chat Input Box — single .json/.gltf option */}
+          {/* Bottom Toolbar inside the Chat Input Box — single horizontal line */}
           <div className="composer-toolbar">
             <div className="composer-tools-left">
               <button
                 type="button"
-                className="composer-icon-btn"
+                className="composer-icon-btn composer-plus-btn"
                 onClick={()=>fileInputRef.current?.click()}
                 title="Añadir perfil de vehículo (.json o .gltf)"
                 aria-label="Añadir archivo JSON o GLTF"
               >
-                <Plus size={15}/>
-                <span>.json / .gltf</span>
+                <Plus size={16}/>
               </button>
               <button
                 type="button"
@@ -1217,15 +1216,20 @@ export default function UnifiedMissionPlanner(){
               </button>
             </div>
 
-            <button className="primary-plan composer-send-btn" type="submit" disabled={Boolean(busy)||!atlas||!polar}>
-              {busy?<LoaderCircle className="spin" size={15}/>:<Send size={14}/>}
-              <span>{busy?t.calculating:t.planBtn}</span>
+            <button
+              className="primary-plan composer-send-btn"
+              type="submit"
+              disabled={Boolean(busy)||!atlas||!polar}
+              title={busy?t.calculating:t.planBtn}
+              aria-label={t.planBtn}
+            >
+              {busy?<LoaderCircle className="spin" size={15}/>:<Send size={15}/>}
             </button>
           </div>
-          {!intent&&!busy&&<div className="mission-prompt-hints"><button type="button" onClick={()=>void submitMessage('QUIERO HACER UN VIAJE EL 1DE DICIEMBREDE 2026 A LAS 10AM')}>Planificar el 1 dic · 10:00</button></div>}
-          {intent&&!busy&&<div className="mission-prompt-hints"><button type="button" onClick={()=>void submitMessage('Busca alternativas conservando mis requisitos')}>Buscar alternativas</button><button type="button" onClick={()=>{setMessage('¿Qué pasa si mis paneles producen un 20% menos?');document.querySelector<HTMLTextAreaElement>('#mission-request')?.focus()}}>Probar un fallo solar</button><button type="button" onClick={()=>void submitMessage('Estudia la huella local del destino')}>Estudiar huella</button></div>}
           {uploadNotice&&<small className="upload-notice">{uploadNotice}</small>}
         </form>
+        {!intent&&!busy&&<div className="mission-prompt-hints"><button type="button" onClick={()=>void submitMessage('QUIERO HACER UN VIAJE EL 1DE DICIEMBREDE 2026 A LAS 10AM')}>Planificar el 1 dic · 10:00</button></div>}
+        {intent&&!busy&&<div className="mission-prompt-hints"><button type="button" onClick={()=>void submitMessage('Busca alternativas conservando mis requisitos')}>Buscar alternativas</button><button type="button" onClick={()=>{setMessage('¿Qué pasa si mis paneles producen un 20% menos?');document.querySelector<HTMLTextAreaElement>('#mission-request')?.focus()}}>Probar un fallo solar</button><button type="button" onClick={()=>void submitMessage('Estudia la huella local del destino')}>Estudiar huella</button></div>}
         {intent&&<div className="recognized-mission" data-testid="recognized-mission"><span>ESCENARIO ACTIVO</span><strong>{intent.date_kind==='landing'?'Alunizaje':'Salida'} · {localDate(intent.departure_utc)}</strong><small>{TIMEZONE} · {intent.surface_hours} h en superficie · {launchSite.name}</small>{(pendingText||pendingCommandText)&&<small>La última petición está pendiente de completar; este escenario se conserva.</small>}</div>}
         {adopted&&<div className="adopted-alternative" data-testid="adopted-alternative"><Check size={14}/><div><strong>Alternativa aplicada</strong><span>{adopted.original.date_kind==='landing'?'Alunizaje':'Salida'} original: {localDate(adopted.original.departure_utc)}<br/>Nueva fecha: {localDate(adopted.proposal.proposed_request.departure_utc)}</span><small>La solicitud original queda guardada en la comparación. La estancia y los requisitos no cambian.</small></div></div>}
       </aside>}

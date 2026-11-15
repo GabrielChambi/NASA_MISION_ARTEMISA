@@ -262,13 +262,17 @@ button:disabled{cursor:default;opacity:.43}
 .pinned-flag-dot{width:6px;height:6px;border-radius:50%;background:#38bdf8;box-shadow:0 0 7px #38bdf8}
 .unified-mission .composer-json-btn{padding:3px 7px;font:9px 'IBM Plex Mono',monospace;border-radius:999px;background:transparent;border:1px solid #2b3948;color:#8fa3b8;flex-shrink:0}
 .chat-composer-box textarea{width:100%;resize:none;min-height:58px;border:0!important;background:transparent!important;color:#edf4f8;padding:4px 2px;font-size:13px;line-height:1.5;display:block;outline:none!important}
-.composer-toolbar{display:flex;align-items:center;justify-content:space-between;gap:6px;padding-top:6px;flex-wrap:wrap}
+.composer-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:6px;flex-wrap:nowrap}
 
-.composer-tools-left{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
-.unified-mission .composer-icon-btn,.unified-mission .composer-catalog-btn{padding:5px 10px;border-radius:999px;font-size:11px;background:rgba(255, 255, 255, 0.05);border:1px solid rgba(255, 255, 255, 0.1);color:#c9d7e6;gap:5px}
-.unified-mission .composer-catalog-btn.open{border-color:#687f96;background:rgba(255, 255, 255, 0.12);color:#eef5fc}
-.unified-mission .composer-send-btn.primary-plan{width:auto;margin-top:0;min-height:32px;padding:6px 13px;border-radius:999px;font-size:12px;margin-left:auto;background:#e4ecf4;color:#0e141b;border-color:#e4ecf4}
-.unified-mission .composer-send-btn.primary-plan:hover:not(:disabled){background:#ffffff;border-color:#ffffff}
+.composer-tools-left{display:flex;align-items:center;gap:7px;flex-wrap:nowrap}
+.unified-mission .composer-icon-btn.composer-plus-btn{width:32px;height:32px;padding:0;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#c9d7e6;flex-shrink:0;transition:all .15s ease}
+.unified-mission .composer-icon-btn.composer-plus-btn:hover{background:rgba(255,255,255,0.14);border-color:rgba(255,255,255,0.25);color:#ffffff}
+.unified-mission .composer-catalog-btn{height:32px;padding:0 11px;border-radius:999px;font-size:11px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#c9d7e6;gap:5px;display:inline-flex;align-items:center;flex-shrink:0;transition:all .15s ease}
+.unified-mission .composer-catalog-btn:hover{background:rgba(255,255,255,0.09);border-color:rgba(255,255,255,0.18);color:#f0f6fc}
+.unified-mission .composer-catalog-btn.open{border-color:#687f96;background:rgba(255,255,255,0.12);color:#eef5fc}
+.unified-mission .composer-send-btn.primary-plan{width:34px;height:34px;min-height:34px;padding:0;border-radius:50%;margin-left:auto;margin-top:0;background:#ffffff;color:#0e141b;border-color:#ffffff;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,0.25);transition:all .15s ease}
+.unified-mission .composer-send-btn.primary-plan:hover:not(:disabled){background:#94edbb;border-color:#94edbb;color:#091911;box-shadow:0 0 12px rgba(148,237,187,0.4)}
+.unified-mission .composer-send-btn.primary-plan:disabled{opacity:.35;background:rgba(255,255,255,0.12);border-color:transparent;color:#7e91a0}
 .upload-notice{display:block;margin-top:6px;font-size:10px;color:#9bb0c4}
 
 /* Popover for all Lunar South Pole objects and vehicles */
