@@ -183,3 +183,14 @@ node frontend/scripts/test-mission-rescue.mjs
 ~~~
 
 Las seis respuestas originales NASA de la búsqueda y de la aplicación exacta se identifican en data/prepared/rescue_example.json. Las suites Node y Python validan ese caso sin red. El detalle del algoritmo y la evolución propuesta hacia un gemelo ambiental y operacional están en [DECISION_SUPPORT_AND_TWIN_ROADMAP.md](docs/DECISION_SUPPORT_AND_TWIN_ROADMAP.md).
+
+
+## Perfiles de vehículo sin supuestos ocultos
+
+El chat acepta perfiles `.json` o metadatos `.gltf` de hasta 1 MiB, con parámetros numéricos obligatorios. Los objetos del catálogo son ejemplos hipotéticos; no representan especificaciones verificadas del fabricante. La referencia regional utiliza paneles y antena a 2 m, que es la altura de los horizontes preparados. Otras alturas quedan como datos desconocidos hasta calcular horizontes propios. La tolerancia de un perfil nunca amplía el límite de pendiente elegido por el usuario.
+
+La explicación de Gemini se apoya en las mediciones y las fuentes del escenario; no afirma supervivencia, producción eléctrica o prestaciones de radio a partir de visibilidad geométrica. Para comprobar importaciones inválidas, límites conservados, perfiles sin cobertura y selección accesible en escritorio/móvil:
+
+~~~powershell
+node frontend/scripts/test-vehicle-profile-integrity.mjs
+~~~

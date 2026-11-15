@@ -30,9 +30,9 @@ Las dos últimas filas son una hoja de ruta, no capacidades que el producto actu
 
 | Prioridad | Función | Decisión que permite tomar | Estado en esta revisión |
 | --- | --- | --- | --- |
-| P0 | Rescate automático del escenario | Qué fechas o lugares satisfacen las mismas restricciones | Trabajo de esta iteración |
-| P0 | Comparador del escenario original y propuestas | Qué cambió, qué se preservó y qué mejora realmente | Integración de interfaz asociada al rescate |
-| P1 | Ventanas operativas y cuenta atrás | Cuándo se pierde o recupera Sol/Tierra y cuánto dura el peor corte | Derivable de series propias; requiere etiquetas de cadencia y límite temporal |
+| P0 | Rescate automático del escenario | Qué fechas o lugares satisfacen las mismas restricciones | Implementado y probado con respuestas NASA originales |
+| P0 | Comparador del escenario original y propuestas | Qué cambió, qué se preservó y qué mejora realmente | Implementado: aplicación explícita y exportación de la comparación |
+| P1 | Ventanas operativas y cuenta atrás | Cuándo se pierde o recupera Sol/Tierra y cuánto dura el peor corte | Implementado con cadencia horaria, intervalos y fin de datos explícitos |
 | P1 | Modelo configurable de energía y memoria | Si la nave puede sostener la operación durante los cortes | Requiere parámetros de vehículo y actividades; no inferirlos de la apariencia del mapa |
 | P2 | Planificación de actividades y frontera de compromisos | Qué observaciones ejecutar con energía y comunicaciones disponibles | Depende del modelo de recursos |
 | P2 | Refinamiento local y validación independiente | Si la preselección regional se mantiene a escala de huella | Requiere datos locales y tolerancias de nave |
@@ -180,3 +180,12 @@ Las mediciones pueden llegar mediante archivos importados; no hace falta inventa
 Las páginas de algunos eventos locales 2026 alojadas en el portal citan impacto, creatividad, validez, relevancia y presentación. Son contenidos de organizadores locales y no sustituyen el manual global ni las reglas de la sede del equipo. [Space Apps Ajmer 2026](https://www.spaceappschallenge.org/2026/local-events/ajmer/), [Space Apps Islamabad 2026](https://www.spaceappschallenge.org/2026/local-events/islamabad/). No se afirma que esta hoja de ruta garantice premios o interés institucional.
 
 El mayor avance inmediato es cerrar el ciclo «evaluar, explicar, proponer, comparar y recalcular». El camino hacia el gemelo exige después conectar ese ciclo con estados y observaciones del sistema que se desea representar.
+
+
+## Perfiles de nave: evidencia antes de comparar hardware
+
+El chat permite importar un perfil JSON o metadatos JSON glTF y elegir ejemplos hipotéticos del catálogo. Cada archivo debe declarar altura de paneles, altura de antena y límite de pendiente; se rechazan números ausentes, booleanos y valores fuera de rango. El nombre se toma de los metadatos o del archivo. El límite es 1 MiB y no se admiten archivos GLB binarios. La apariencia y el nombre del objeto no verifican sus especificaciones físicas.
+
+El conjunto actual de horizontes corresponde a un observador a 2 m. Una altura diferente requiere calcular su horizonte desde el terreno; hasta entonces, sus horas de Sol/Tierra quedan desconocidas y el rescate no propone una fecha ficticia. No se utiliza una distancia arbitraria a obstáculos para conceder visibilidad a vehículos altos. El límite efectivo de pendiente es el menor entre la preferencia del usuario y el límite declarado por el perfil; cargar un vehículo nunca relaja la preferencia.
+
+Gemini recibe un resumen compacto de mediciones, fuentes y cobertura. Su explicación no convierte despeje solar en energía, visibilidad de la Tierra en capacidad de transmisión, ni pendiente regional en estabilidad mecánica o supervivencia. El descenso sigue siendo un ensayo de una nave genérica hipotética, sin parámetros dinámicos identificados de los objetos del catálogo.

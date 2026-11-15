@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { AlertTriangle, ArrowRight, Bot, Check, ChevronDown, CircleHelp, Clock3, Compass, Cpu, Download, FileUp, Globe2, Layers, LoaderCircle, MapPin, Orbit, Pause, Play, Plus, Radio, Rocket, Send, Settings2, Sun, User, X } from 'lucide-react'
+import { AlertTriangle, ArrowRight, Bot, Check, ChevronDown, CircleHelp, Clock3, Compass, Cpu, Download, FileUp, Globe2, Layers, LoaderCircle, MapPin, Orbit, Pause, Play, Plus, Rocket, Send, Settings2, Sun, User, X } from 'lucide-react'
 import { Tactical3DScene,type PlanMapMarker } from '../tactical/Tactical3DScene'
 import { loadAtlas,type AtlasData } from '../sites/atlasGeometry'
 import { loadDetailTile } from '../sites/lunarDetail'
@@ -323,8 +323,8 @@ export default function UnifiedMissionPlanner(){
       const solar_panel_height=meta.solar_panel_height??meta.panel_height
       const antenna_height=meta.antenna_height??meta.dte_antenna_height
       const center_of_gravity_tolerance=meta.center_of_gravity_tolerance??meta.max_slope_deg
-      if(typeof solar_panel_height!=='number'||typeof antenna_height!=='number'||typeof center_of_gravity_tolerance!=='number'||!Number.isFinite(solar_panel_height)||solar_panel_height<0.5||solar_panel_height>200||!Number.isFinite(antenna_height)||antenna_height<0.5||antenna_height>200||!Number.isFinite(center_of_gravity_tolerance)||center_of_gravity_tolerance<=0||center_of_gravity_tolerance>45){
-        setError('El archivo debe incluir solar_panel_height (0.5–200m), antenna_height (0.5–200m) y center_of_gravity_tolerance (1–45°).')
+      if(typeof solar_panel_height!=='number'||typeof antenna_height!=='number'||typeof center_of_gravity_tolerance!=='number'||!Number.isFinite(solar_panel_height)||solar_panel_height<0.5||solar_panel_height>200||!Number.isFinite(antenna_height)||antenna_height<0.5||antenna_height>200||!Number.isFinite(center_of_gravity_tolerance)||center_of_gravity_tolerance<0||center_of_gravity_tolerance>45){
+        setError('El archivo debe incluir solar_panel_height (0.5–200m), antenna_height (0.5–200m) y center_of_gravity_tolerance (0–45°).')
         return
       }
       setError('')
@@ -477,7 +477,7 @@ export default function UnifiedMissionPlanner(){
           {chatTurns.length===0&&!plan&&!busy&&<div className="chat-bubble assistant welcome-bubble">
             <div className="bubble-avatar"><Bot size={15}/></div>
             <div className="bubble-body">
-              <div className="bubble-meta"><strong>Gemini Copilot</strong><span>Copiloto del escenario</span></div>
+              <div className="bubble-meta"><strong>Copiloto de misión</strong><span>Planificador del escenario</span></div>
               <p>Escribe la fecha de tu viaje al Polo Sur Lunar. Dentro de la casilla inferior puedes <strong>adjuntar tu propio `.json` / `.gltf`</strong> con el botón <strong>+</strong> o elegir cualquiera de los <strong>perfiles de referencia y ejemplos hipotéticos de vehículos e infraestructura</strong>.</p>
               <button type="button" className="example-trip" onClick={()=>{setMessage(EXAMPLE);void calculate(EXAMPLE)}} disabled={!atlas||!polar}>Probar el viaje del 25 dic · 08:00 <ArrowRight size={12}/></button>
             </div>
@@ -516,27 +516,27 @@ export default function UnifiedMissionPlanner(){
             <div className="bubble-avatar"><Bot size={15}/></div>
             <div className="bubble-body">
               <div className="bubble-meta">
-                <strong>Análisis de Misión (Gemini Copilot)</strong>
-                <span>{reviewBusy?'Evaluando geometría…':landerReview?.mode==='ai'?`IA · ${landerReview.model}`:'Ingeniero Jefe LOLA'}</span>
+                <strong>Explicación del escenario</strong>
+                <span>{reviewBusy?'Evaluando geometría…':landerReview?.mode==='ai'?`IA · ${landerReview.model}`:'Guía con evidencia del modelo'}</span>
               </div>
               {landerReview?<>
                 <p className="engineer-summary">{landerReview.summary}</p>
                 <div className="engineer-alert">
                   <AlertTriangle size={14}/>
-                  <div><strong>Diagnóstico de Supervivencia:</strong> {landerReview.risk_alert}</div>
+                  <div><strong>Condiciones y límites:</strong> {landerReview.risk_alert}</div>
                 </div>
                 <div className="engineer-recs">
-                  <span className="micro-title">RECOMENDACIONES TÁCTICAS</span>
+                  <span className="micro-title">OPCIONES PARA ESTUDIAR</span>
                   <div className="engineer-rec-item">
-                    <strong>1. Cambio de Sitio:</strong> {landerReview.site_recommendation}
+                    <strong>1. Sitio:</strong> {landerReview.site_recommendation}
                     {recommendedAlt&&recommendedAlt.id!==selected?.id&&<button type="button" onClick={()=>{choose(recommendedAlt.id);setFocus(true);appendChatTurn('user',`Cambiar coordenada objetivo al sector alternativo (${num(Math.abs(recommendedAlt.latitude_deg),2)}°S, ${longitude(recommendedAlt.longitude_deg,2)})`,vehicle)}}>Ir al sitio alternativo ({num(Math.abs(recommendedAlt.latitude_deg),2)}°S)</button>}
                   </div>
                   <div className="engineer-rec-item">
-                    <strong>2. Cambio de Hardware:</strong> {landerReview.hardware_recommendation}
-                    {vehicle.solar_panel_height<45&&<button type="button" onClick={()=>{setFocus(true);applyVehicleProfile(LUNAR_OBJECTS.starship,'Recalculando con Starship HLS (Paneles a 50 m)…')}}>Recalcular misión con perfil Starship HLS (50m)</button>}
+                    <strong>2. Perfil del vehículo:</strong> {landerReview.hardware_recommendation}
+                    <small>Para comparar otras alturas se necesitan horizontes propios; elegir un nombre de nave no resuelve la falta de datos.</small>
                   </div>
                 </div>
-              </>:<p className="loading-note"><LoaderCircle size={13} className="spin"/> Generando diagnóstico del Ingeniero Jefe para {vehicle.lander_name}…</p>}
+              </>:<p className="loading-note"><LoaderCircle size={13} className="spin"/> Preparando una explicación del escenario para {vehicle.lander_name}…</p>}
             </div>
           </div>}
           <div ref={chatEndRef}/>
@@ -580,7 +580,7 @@ export default function UnifiedMissionPlanner(){
           />
 
           {/* Popover menu for all Lunar South Pole vehicles, rovers & habitats */}
-          {catalogOpen&&<div className="lunar-catalog-popover" role="listbox" aria-label="Objetos y vehículos para el Polo Sur Lunar">
+          {catalogOpen&&<div className="lunar-catalog-popover" role="region" aria-label="Objetos y vehículos para el Polo Sur Lunar">
             <div className="catalog-popover-head">
               <span><Compass size={12}/> OBJETOS Y ELEMENTOS · POLO SUR LUNAR</span>
               <button type="button" onClick={()=>setCatalogOpen(false)} aria-label="Cerrar selector"><X size={13}/></button>
@@ -611,7 +611,7 @@ export default function UnifiedMissionPlanner(){
             </div>
             <div className="catalog-popover-foot">
               <button type="button" onClick={()=>{setCatalogOpen(false);fileInputRef.current?.click()}}>
-                <FileUp size={13}/> Subir archivo personalizado (.json / .gltf / .glb)
+                <FileUp size={13}/> Subir archivo personalizado (.json / .gltf)
               </button>
             </div>
           </div>}
@@ -688,16 +688,16 @@ export default function UnifiedMissionPlanner(){
           <div className="conditions-heading"><strong><Globe2 size={15}/> Condiciones durante tu estancia ({vehicle.lander_name})</strong><time>{current?localDate(current.t_utc):localDate(plan.mission.arrival_utc)} · Bolivia</time></div>
           <div className="conditions-slider"><button aria-label={playing?'Pausar condiciones':'Reproducir condiciones'} disabled={!series.length||flying} onClick={()=>{if(timeline===series.length-1)setTimeline(0);setPlaying(v=>!v)}}>{playing?<Pause size={14}/>:<Play size={14}/>}</button><input aria-label="Hora de la estancia" type="range" min={0} max={Math.max(0,series.length-1)} value={timeline} disabled={!series.length||flying} onChange={e=>{setPlaying(false);setTimeline(Number(e.target.value))}}/><span>+{timeline} h</span></div>
           <div className="conditions-readouts">
-            <span><Sun size={12}/> Paneles ({vehicle.solar_panel_height}m): <b className={current&&current.sun_elevation_deg-current.sun_horizon_deg>0.3?'kpi-ok':'kpi-warn'}>{current?(current.sun_elevation_deg-current.sun_horizon_deg>0.3?(current.base_sun_horizon_deg!==undefined&&current.sun_elevation_deg-current.base_sun_horizon_deg<=0.3?'ENERGÍA NOMINAL (Punta iluminada · Base en sombra)':`ENERGÍA NOMINAL (+${num(current.sun_elevation_deg-current.sun_horizon_deg,2)}°)`):`SOMBRA (${num(current.sun_elevation_deg-current.sun_horizon_deg,2)}°)`):'—'}</b></span>
-            <span><Radio size={12}/> Antena DTE ({vehicle.antenna_height}m): <b className={current&&current.earth_elevation_deg-current.earth_horizon_deg>0.3?'kpi-ok':'kpi-warn'}>{current?(current.earth_elevation_deg-current.earth_horizon_deg>0.3?`ENLACE DIRECTO (+${num(current.earth_elevation_deg-current.earth_horizon_deg,2)}°)`:`BLOQUEO (${num(current.earth_elevation_deg-current.earth_horizon_deg,2)}°)`):'—'}</b></span>
-            <span>Pendiente vs CG ({vehicle.center_of_gravity_tolerance}°): <b className={(selected?.regional_slope_deg??0)<=vehicle.center_of_gravity_tolerance?'kpi-ok':'kpi-warn'}>{num(selected?.regional_slope_deg,1)}°</b></span>
+            <span><Sun size={12}/> Sol sobre el horizonte ({vehicle.solar_panel_height} m): <b className={current?(current.sun_elevation_deg-current.sun_horizon_deg>0.3?'kpi-ok':'kpi-warn'):undefined}>{num(current?current.sun_elevation_deg-current.sun_horizon_deg:null,2)}°</b></span>
+            <span><Globe2 size={12}/> Tierra sobre el horizonte ({vehicle.antenna_height} m): <b className={current?(current.earth_elevation_deg-current.earth_horizon_deg>0.3?'kpi-ok':'kpi-warn'):undefined}>{num(current?current.earth_elevation_deg-current.earth_horizon_deg:null,2)}°</b></span>
+            <span>Pendiente P95: <b className={selected?.regional_slope_deg==null?undefined:selected.regional_slope_deg<=Math.min(intent?.max_slope_deg??slope,vehicle.center_of_gravity_tolerance)?'kpi-ok':'kpi-warn'}>{num(selected?.regional_slope_deg,2)}°</b> · límite del escenario {num(Math.min(intent?.max_slope_deg??slope,vehicle.center_of_gravity_tolerance),2)}°</span>
           </div>
         </div>}
       </main>
 
       <aside className="mission-decisions">
         {!plan?<div className="decision-welcome"><MapPin size={28}/><h2>Aquí encontrarás tu mejor opción.</h2><p>El sistema relacionará la fecha de tu viaje y el objeto lunar elegido con el terreno, la luz y la visibilidad de la Tierra.</p><ul><li><Check size={13}/> Un destino recomendado y sus razones</li><li><Check size={13}/> Clasificación de toda la superficie</li><li><Check size={13}/> Diagnóstico conversacional en el chat izquierdo</li></ul><small>Los resultados corresponden a un modelo regional de planificación, no a una autorización de vuelo.</small></div>:<>
-          <div className="decision-title"><span className="micro-title">{plan.best?'RECOMENDACIÓN CALCULADA':'NINGUNA ZONA CUMPLE TODOS LOS CRITERIOS'}</span>{aiMode&&<small>{aiMode}</small>}</div>
+          <div className="decision-title"><span className="micro-title">{plan.best?'RECOMENDACIÓN CALCULADA':plan.counts.unknown===plan.total_cells?'FALTAN DATOS PARA EVALUAR ESTE PERFIL':'NINGUNA ZONA CUMPLE TODOS LOS CRITERIOS'}</span>{aiMode&&<small>{aiMode}</small>}</div>
           {plan.best?<button className={'best-destination '+(selected?.id===plan.best.id?'selected':'')} onClick={()=>choose(plan.best!.id)}><span className="best-badge">★ MEJOR CANDIDATO</span><h2>{num(Math.abs(plan.best.latitude_deg),3)}°S · {longitude(plan.best.longitude_deg,3)}</h2><p>{reasonPoint(plan.best)}</p><div className="destination-metrics"><span>Luz solar<strong>{num(plan.best.sun_hours,0)} h</strong></span><span>Tierra visible<strong>{num(plan.best.earth_hours,0)} h</strong></span><span>Pendiente P95<strong>{num(plan.best.regional_slope_deg,2)}°</strong></span></div></button>:<MissionRescuePanel report={rescueReport} busy={rescueBusy} error={rescueError} elapsed={rescueElapsed} onApply={applyAlternative} onRetry={()=>setRescueAttempt(a=>a+1)} onCancel={cancelRescue} onEvidence={()=>setEvidence(true)}/>}
           {plan.alternatives.filter(p=>p.id!==plan.best?.id).length>0&&<section className="other-destinations"><h3>También puedes estudiar</h3>{plan.alternatives.filter(p=>p.id!==plan.best?.id).map((p,i)=><button key={p.id} className={selected?.id===p.id?'selected':''} onClick={()=>choose(p.id)}><span className="destination-number">{i+2}</span><div><strong>{num(Math.abs(p.latitude_deg),2)}°S · {longitude(p.longitude_deg,2)}</strong><small>{num(p.sun_hours,0)} h de Sol · {num(p.earth_hours,0)} h de Tierra</small></div><ArrowRight size={13}/></button>)}</section>}
           {selected&&<section className="selected-destination"><div className="selected-destination-title"><span className={'selected-color '+selected.risk}/><h3>{selectedLabel}</h3></div><span className="selected-sector-id">Sector {selected.id.replace('polar:','')} · {num(selected.area_km2,2)} km² regionales</span><p>{reasonPoint(selected)}</p><dl><div><dt>Perfil del escenario</dt><dd>{vehicle.lander_name}</dd></div><div><dt>Centro del sector</dt><dd>{num(selected.latitude_deg,5)}°, {num(selected.longitude_deg,5)}°</dd></div><div><dt>Elevación</dt><dd>{num(selected.elevation_m??selectedCell?.elevation_m,0)} m</dd></div><div><dt>Pendiente P95 · fuente de 80 m</dt><dd>{num(selected.regional_slope_deg,2)}°</dd></div><div><dt>Máxima pendiente nativa</dt><dd>{num(selected.max_slope_deg??selectedCell?.max_slope_deg)}°</dd></div><div><dt>Sol visible acumulado</dt><dd>{num(selected.sun_hours,0)} h</dd></div><div><dt>Tierra visible acumulada</dt><dd>{num(selected.earth_hours,0)} h</dd></div></dl>
