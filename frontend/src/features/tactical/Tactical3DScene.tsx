@@ -61,7 +61,7 @@ export function Tactical3DScene(props:Tactical3DSceneProps){
       <ambientLight intensity={0.45}/>
       <Stars radius={1100} depth={200} count={2000} factor={2} fade/>
       {props.atlasData&&<Terrain {...props} dragging={dragging} onHover={setHover}/>}
-      {props.atlasData&&(!props.overview||props.showSurfaceVehicle)&&<Spacecraft {...props} onDrag={()=>setDragging(true)}/>}
+      {props.atlasData&&(!props.overview||props.showSurfaceVehicle||props.scienceReady)&&<Spacecraft {...props} onDrag={()=>setDragging(true)}/>}
       {props.scienceReady&&props.detailAtlasData&&props.assessments?.length&&<LandingContours data={props.detailAtlasData} assessments={props.assessments}/>}
       {props.cameraView==='polar'&&props.atlasData&&<group>
         {props.atlasData.manifest.features.map(f=><Html key={f.name} position={projectedToWorld(f.x_m,f.y_m,f.elevation_m,1,props.atlasData!.manifest.radius_m)} center zIndexRange={[8,0]} style={{pointerEvents:'none'}}>
@@ -250,22 +250,23 @@ function Spacecraft(props:Tactical3DSceneProps&{onDrag:()=>void}){
   const sun=emitter.clone().addScaledVector(bodyDirection(site,props.sunAzimuthDeg,props.sunElevationDeg),380)
   const earth=emitter.clone().addScaledVector(bodyDirection(site,props.earthAzimuthDeg,props.earthElevationDeg),340)
   const colour=COLORS[props.assessmentRisk??'unknown']
+  const showVehicle=!props.overview||props.showSurfaceVehicle||props.focusZone
   return <group>
-    <group position={position} quaternion={rotation} onPointerDown={e=>{e.stopPropagation();props.onDrag()}}>
-      <LunarRocketLanderModel isSafe={props.assessmentRisk==='green'} scale={0.008} statusColor={colour}/>
+    {showVehicle&&<group position={position} quaternion={rotation} onPointerDown={e=>{e.stopPropagation();props.onDrag()}}>
+      <LunarRocketLanderModel isSafe={props.assessmentRisk==='green'} scale={props.focusZone&&!props.showSurfaceVehicle?0.45:0.008} statusColor={colour}/>
       {(props.altitudeM??0)>0&&<mesh position={[0,-.008,0]} rotation={[Math.PI,0,0]}><coneGeometry args={[.003,.015,12]}/><meshBasicMaterial color="#8adaff" transparent opacity={.7}/></mesh>}
-    </group>
-    <group position={base.position} quaternion={new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1),base.normal)}>
+    </group>}
+    {showVehicle&&<group position={base.position} quaternion={new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1),base.normal)}>
       <mesh raycast={()=>null}><ringGeometry args={[.015,.017,64]}/><meshBasicMaterial color={colour} side={THREE.DoubleSide} transparent opacity={.95}/></mesh>
       {props.landed&&<mesh raycast={()=>null}><circleGeometry args={[.007,24]}/><meshBasicMaterial color={colour} side={THREE.DoubleSide}/></mesh>}
-    </group>
+    </group>}
     {props.scienceReady&&<>
-      <Line points={[emitter,sun]} color={props.sunRaycast.hit?'#ff797f':'#f5cb67'} lineWidth={1.2} transparent opacity={.6}/>
-      <Line points={[emitter,earth]} color={props.earthRaycast.hit?'#ff797f':'#8ddfe9'} lineWidth={1.2} transparent opacity={.6}/>
-      <mesh position={sun} raycast={()=>null}><sphereGeometry args={[5,32,24]}/><meshBasicMaterial color="#ffe8ad"/></mesh>
+      <Line points={[emitter,sun]} color={props.sunRaycast.hit?'#ff797f':'#f5cb67'} lineWidth={2.2} transparent opacity={.9}/>
+      <Line points={[emitter,earth]} color={props.earthRaycast.hit?'#ff797f':'#8ddfe9'} lineWidth={2.2} transparent opacity={.9}/>
+      <mesh position={sun} raycast={()=>null}><sphereGeometry args={[8,32,24]}/><meshBasicMaterial color="#ffe8ad"/></mesh>
       <group position={earth}>
-        <mesh raycast={()=>null}><sphereGeometry args={[7,40,32]}/><meshStandardMaterial color="#447fbc" roughness={1}/></mesh>
-        <mesh raycast={()=>null}><sphereGeometry args={[7.06,24,16]}/><meshBasicMaterial color="#bfe2e4" wireframe transparent opacity={.16}/></mesh>
+        <mesh raycast={()=>null}><sphereGeometry args={[10,40,32]}/><meshStandardMaterial color="#447fbc" roughness={1}/></mesh>
+        <mesh raycast={()=>null}><sphereGeometry args={[10.1,24,16]}/><meshBasicMaterial color="#bfe2e4" wireframe transparent opacity={.22}/></mesh>
       </group>
     </>}
   </group>
