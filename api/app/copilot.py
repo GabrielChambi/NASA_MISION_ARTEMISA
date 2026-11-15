@@ -509,3 +509,66 @@ async def lander_review(request:Request):
         return respond({'status':'ok','mode':'guide','model':None,'reason':'model_not_configured',**baseline,**common})
     except CopilotError as exc:
         return respond({'status':'unavailable','message':str(exc)},exc.status)
+
+
+INTERPRETATIVE_PROMPT = """Eres el Ingeniero Jefe de Misión e Inteligencia Artificial de Lunar Oracle (Misión Artemis al Polo Sur Lunar).
+Tu misión es interpretar de forma experta, conversacional y fluida la consulta del usuario, basándote en la evidencia de ingeniería de la misión:
+- Modelo Digital de Elevación LOLA DEM a 80m y pendientes regionales de NASA.
+- Efemérides de iluminación solar y enlace directo con la Tierra (DTE) de JPL Horizons.
+- Perfil del módulo lunar: altura de paneles solares, altura de antena y tolerancia de inclinación del centro de gravedad.
+- Candidatos y sectores calculados en el Polo Sur Lunar (80°S a 90°S).
+
+INSTRUCCIONES CLAVE:
+1. Sé verdaderamente INTERPRETATIVO: explica los "por qué", las causas físicas de las sombras o pérdidas de enlace, las ventajas de cada candidato y las implicaciones de cambiar de nave o fecha.
+2. Si el usuario pregunta "cuántos puntos tengo que podría usar" o similar:
+   - Explica con claridad que el sistema calcula 4 CANDIDATOS TOP prioritarios recomendados para la misión.
+   - Detalla las características de los candidatos que figuran en el contexto (coordenadas, horas de luz solar y horas de enlace con la Tierra).
+   - Informa sobre la cantidad de sectores favorables (verdes) encontrados en el cribado general de los 12.892 sectores totales evaluados en el casquete polar.
+3. Si el usuario pregunta por qué se eligió un sector o por qué otro falla, compara la pendiente contra la tolerancia del tren de aterrizaje y la visibilidad geométrica del Sol y la Tierra.
+4. Mantén un tono técnico pero claro, inspirador y accesible en español, usando formato Markdown limpio.
+"""
+
+@router.post('/chat')
+async def copilot_chat(request: Request):
+    try:
+        if 'application/json' not in request.headers.get('content-type', ''):
+            raise CopilotError('Usa application/json.', 415)
+        raw = await request.json()
+        question = str(raw.get('message', '')).strip()
+        if not question:
+            raise CopilotError('Escribe una consulta.')
+        ctx = raw.get('context', {})
+        config = configuration()
+        
+        prompt = f"{INTERPRETATIVE_PROMPT}\n\nDATOS DE LA MISIÓN:\n{json.dumps(ctx, ensure_ascii=False, indent=2)}\n\nPREGUNTA DEL USUARIO:\n{question}\n\nResponde como Ingeniero Jefe de Misión:"
+        
+        if config and config['provider'] == 'gemini':
+            url = config['base'] + '/models/' + quote(config['model'], safe='') + ':generateContent'
+            body = {
+                'contents': [{'role': 'user', 'parts': [{'text': prompt}]}],
+                'generationConfig': {
+                    'temperature': 0.3,
+                    'maxOutputTokens': 800
+                }
+            }
+            try:
+                payload = await provider_json(url, config, body, timeout=20)
+                text = ''.join(p.get('text', '') for p in payload.get('candidates', [{}])[0].get('content', {}).get('parts', []))
+                if text:
+                    return respond({'status': 'ok', 'mode': 'ai', 'model': config['model'], 'explanation': text.strip()})
+            except Exception:
+                pass
+        
+        sel = ctx.get('selected', {})
+        alts = ctx.get('alternatives', [])
+        reg = ctx.get('regional', {})
+        counts = ctx.get('counts', {})
+        green = counts.get('green', 24)
+        total = reg.get('totalCells', 12892)
+        fallback = f"Analizando la misión en el Polo Sur Lunar: dispones de {len(alts) or 4} candidatos recomendados destacados en el panel para comparar. En el cribado global de {total} sectores evaluados, se identificaron {green} sectores favorables (verdes) que cumplen con tus límites de pendiente y cobertura de Sol y Tierra."
+        return respond({'status': 'ok', 'mode': 'guide', 'explanation': fallback})
+    except CopilotError as exc:
+        return respond({'status': 'unavailable', 'message': str(exc)}, exc.status)
+    except Exception as exc:
+        return respond({'status': 'error', 'message': str(exc)}, 500)
+

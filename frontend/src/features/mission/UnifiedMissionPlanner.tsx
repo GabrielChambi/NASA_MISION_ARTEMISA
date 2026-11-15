@@ -548,12 +548,27 @@ export default function UnifiedMissionPlanner(){
     setBusy('intent')
     const activeVeh=plan.vehicle_profile??vehicle
     try{
-      const res=await fetch('/api/copilot',{
+      const res=await fetch('/api/copilot/chat',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({
           message:question,
           context:{
+            vehicle:{
+              lander_name:activeVeh.lander_name,
+              solar_panel_height:activeVeh.solar_panel_height,
+              antenna_height:activeVeh.antenna_height,
+              center_of_gravity_tolerance:activeVeh.center_of_gravity_tolerance
+            },
+            counts:plan.counts,
+            best:plan.best?{
+              id:plan.best.id,
+              lat:plan.best.latitude_deg,
+              lon:plan.best.longitude_deg,
+              slopeDeg:plan.best.regional_slope_deg,
+              sunHours:plan.best.sun_hours,
+              earthHours:plan.best.earth_hours
+            }:null,
             selected:{
               id:selected.id,
               name:`Sector ${selected.id.replace('polar:','')}`,
@@ -561,7 +576,9 @@ export default function UnifiedMissionPlanner(){
               lon:selected.longitude_deg,
               slopeDeg:selected.regional_slope_deg,
               resolutionM:80,
-              coverage:'regional'
+              coverage:'regional',
+              sunHours:selected.sun_hours,
+              earthHours:selected.earth_hours
             },
             regional:{
               scope:'Polo Sur Lunar (80°S — 90°S)',
@@ -583,8 +600,8 @@ export default function UnifiedMissionPlanner(){
               lat:a.latitude_deg,
               lon:a.longitude_deg,
               slopeDeg:a.regional_slope_deg,
-              resolutionM:80,
-              coverage:'regional'
+              sunHours:a.sun_hours,
+              earthHours:a.earth_hours
             }))??[]
           }
         })
