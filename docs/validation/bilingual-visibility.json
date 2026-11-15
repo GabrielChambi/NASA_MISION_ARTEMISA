@@ -1,0 +1,51 @@
+{
+  "checked_at_utc": "2026-11-15T18:46:13.004982+00:00",
+  "scope": "Local application; latest teammate commits integrated; no deployment",
+  "teammate_main_commit": "2d5a597e68b9ca313cc007c188aabf568592b5ed",
+  "python_tests_passed": 296,
+  "javascript_tests_passed": 223,
+  "browser_suites": {
+    "english_visibility": {
+      "status": "passed",
+      "checks": 23
+    },
+    "spanish_mission": {
+      "status": "passed",
+      "checks": 52
+    },
+    "full_surface": {
+      "status": "passed",
+      "checks": 34
+    },
+    "native_operations": {
+      "status": "passed",
+      "checks": 25
+    },
+    "vehicle_profiles": {
+      "status": "passed",
+      "checks": 56
+    }
+  },
+  "browser_checks": 190,
+  "earth_case": {
+    "departure_utc": "2026-12-01T15:00:00Z",
+    "elevation_deg": -1.884,
+    "horizon_deg": -1.47,
+    "clearance_deg": -0.4139999999999999
+  },
+  "visibility_definition": {
+    "body": "geometric center",
+    "clearance_deg": "elevation_deg - horizon_deg",
+    "required_clearance_deg": 0.3,
+    "equality": "insufficient margin",
+    "observer_origin": "selected DEM elevation plus declared height along local vertical; independent of decorative spacecraft scale"
+  },
+  "locale_invariance": "Changing language preserves NASA results, UTC instants and requirements",
+  "build_hosted": "passed",
+  "limits": [
+    "Finite DEM angular sampling and partial distant coverage.",
+    "Angular profiles do not locate the terrain point defining the horizon.",
+    "The illustrative 3D bodies do not calculate a visible disk fraction or an RF link budget.",
+    "Native energy and terrain operations require the local Python API and NASA rasters."
+  ]
+}

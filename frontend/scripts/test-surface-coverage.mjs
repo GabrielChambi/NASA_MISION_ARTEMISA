@@ -53,6 +53,23 @@ function poseDifference(a,b){
  }
  return changed/Math.max(total,1)
 }
+function terrainClickTargets(image){
+ // Pick interior pixels from the actual neutral terrain; a diagnostic panel can change canvas aspect.
+ const {width,height,data}=image
+ const terrain=(x,y)=>{const i=(y*width+x)*4,r=data[i],g=data[i+1],b=data[i+2];return Math.min(r,g,b)>25&&Math.max(r,g,b)-Math.min(r,g,b)<45}
+ const points=[]
+ for(let y=12;y<height-16;y+=3)for(let x=12;x<width-12;x+=3){
+  let solid=0;for(const dy of [-6,0,6])for(const dx of [-6,0,6])if(terrain(x+dx,y+dy))solid++
+  if(solid>=8)points.push([x,y])
+ }
+ assert.ok(points.length>500,'A substantial actual terrain interior must remain visible')
+ const xs=points.map(p=>p[0]),ys=points.map(p=>p[1]),xmin=Math.min(...xs),xmax=Math.max(...xs),ymin=Math.min(...ys),ymax=Math.max(...ys)
+ return [[.28,.35],[.5,.35],[.72,.35],[.28,.7],[.5,.7],[.72,.7]].map(([u,v])=>{
+  const tx=xmin+u*(xmax-xmin),ty=ymin+v*(ymax-ymin)
+  const point=points.reduce((best,p)=>Math.hypot((p[0]-tx)/width,(p[1]-ty)/height)<Math.hypot((best[0]-tx)/width,(best[1]-ty)/height)?p:best)
+  return [point[0]/width,point[1]/height]
+ })
+}
 function rasterDifference(evaluation,relief){
  assert.equal(evaluation.width,relief.width);assert.equal(evaluation.height,relief.height)
  const {width,height}=relief,tiles=Array.from({length:9},()=>({moon:0,changed:0}))
@@ -112,7 +129,7 @@ try{
  check('Todo el polo restores the complete-cap framing without residual orbit inertia',resetDrift<.005)
  await page.screenshot({path:path('surface-analysis-desktop.png'),fullPage:true})
  const markerIds=new Set([plan.best?.id,...plan.alternatives.map(c=>c.id)].filter(Boolean))
- const positions=[[.31,.39],[.49,.34],[.69,.40],[.29,.64],[.50,.64],[.70,.64]]
+ const positions=terrainClickTargets(pixels(neutral))
  for(const [x,y] of positions){
   const box=await canvas.boundingBox(),wait=responseFor('/api/automatic-plan/cell')
   await page.mouse.move(box.x+box.width*x,box.y+box.height*y)

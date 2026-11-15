@@ -40,7 +40,9 @@ try{
  check('Conversational questions receive the actual computed energy budget',answered.status()===200&&answer.status==='ok'&&answer.evidence.operations.summary.minimum_soc===study.affected.budget.summary.minimum_soc)
  check('Follow-up questions preserve the active scientific mission',requests.filter(r=>r.path==='/api/automatic-plan').length===beforeQa)
  const before=plan.mission.requested_utc,requestsBefore=requests.filter(r=>r.path==='/api/automatic-plan').length
+ await page.getByRole('button',{name:'Cambiar fecha o requisitos',exact:true}).click()
  await page.getByLabel('Zona horaria de misión',{exact:true}).selectOption('UTC')
+ await page.getByRole('button',{name:'Cerrar ajustes',exact:true}).click()
  await page.getByRole('button',{name:'Planificar mi misión',exact:true}).scrollIntoViewIfNeeded()
  check('Changing clock preserves the existing physical instant',requests.filter(r=>r.path==='/api/automatic-plan').length===requestsBefore&&(await page.getByLabel('Describe tu misión',{exact:true}).inputValue()).includes(before))
  const lowStudy=response('/api/operations/analyze'),repairs=response('/api/operations/replan')
