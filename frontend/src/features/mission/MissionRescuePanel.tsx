@@ -9,9 +9,12 @@ export default function MissionRescuePanel({report,busy,error,elapsed,onApply,on
 
  const delay=(hours:number)=>{const days=Math.floor(hours/24),rest=hours%24;return (days?days+' d ':'')+(rest?n(rest)+' h':days?'':'0 h')}
  const found=report?.status==='found'&&Boolean(report.proposals.length)
- return <section className="mission-rescue" aria-label={tr("Alternativas calculadas para tu misión")} data-testid="mission-rescue" aria-busy={busy}>
-  <div className="rescue-heading"><Search size={17}/><div><span className="micro-title">{tr("BUSCADOR DE SOLUCIONES")}</span><h2>{tr(busy?'Buscando una alternativa para ti.':found?'Tu misión tiene otras opciones.':'Qué impide esta misión y cómo avanzar.')}</h2></div></div>
-  {busy?<><p>{tr("Comparando próximas fechas sobre las zonas con terreno evaluable, conservando tu estancia, pendiente y requisitos de visibilidad.")}</p><div className="rescue-progress" role="status"><LoaderCircle className="spin" size={14}/><span>{tr("Consultando NASA y evaluando ventanas ·")}{" "}{elapsed} s</span></div><button className="rescue-cancel" onClick={onCancel}><X size={12}/>{" "}{tr("Cancelar búsqueda")}</button></>:<>
+ return <details className="mission-rescue collapsible-sidebar-card" aria-label={tr("Alternativas calculadas para tu misión")} data-testid="mission-rescue" aria-busy={busy} open>
+  <summary className="rescue-heading-summary">
+    <div className="rescue-heading"><Search size={17}/><div><span className="micro-title">{tr("BUSCADOR DE SOLUCIONES")}</span><h2>{tr(busy?'Buscando una alternativa para ti.':found?'Tu misión tiene otras opciones.':'Qué impide esta misión y cómo avanzar.')}</h2></div></div>
+  </summary>
+  <div className="rescue-body">
+   {busy?<><p>{tr("Comparando próximas fechas sobre las zonas con terreno evaluable, conservando tu estancia, pendiente y requisitos de visibilidad.")}</p><div className="rescue-progress" role="status"><LoaderCircle className="spin" size={14}/><span>{tr("Consultando NASA y evaluando ventanas ·")}{" "}{elapsed} s</span></div><button className="rescue-cancel" onClick={onCancel}><X size={12}/>{" "}{tr("Cancelar búsqueda")}</button></>:<>
    {Boolean(report?.diagnosis?.blockers?.length)&&<div className="rescue-diagnosis"><strong>{tr("En la fecha solicitada")}</strong><ul>{report!.diagnosis.blockers.filter(b=>b.count>0).sort((a,b)=>b.count-a.count).slice(0,2).map(blocker=><li key={blocker.code}>{tr(blocker.label)} <span>{tr(n(blocker.count))}{" "}{tr("sectores evaluables")}</span></li>)}</ul></div>}
    {found&&<><p>{tr("Estas alternativas cumplen los criterios del modelo sin reducir tus requisitos. Elige una para recalcular el mapa completo.")}</p><div className="rescue-proposals">{report!.proposals.map((proposal,index)=><article key={proposal.id} className="rescue-proposal" data-proposal-id={proposal.id}>
     <div className="proposal-rank"><span>{tr(index===0?'MENOR RETRASO ENCONTRADO':'OTRA OPCIÓN CALCULADA')}</span><b><Clock3 size={11}/> +{tr(delay(proposal.delta_hours))}</b></div>
@@ -28,5 +31,6 @@ export default function MissionRescuePanel({report,busy,error,elapsed,onApply,on
    {report&&<div className="rescue-search-scope">{tr(n(report.search?.tested_scenarios??report.search?.tested_offsets_hours?.length??0))}{" "}{tr("fechas comprobadas · intervalo de búsqueda:")}{" "}{report.search?.search_days??14}{" "}{tr("días · refinamiento por hora. Se comparan horas disponibles; no es un diseño de lanzamiento.")}</div>}
    <div className="rescue-footer"><button onClick={onRetry}><RefreshCw size={12}/>{" "}{tr("Volver a buscar")}</button>{report&&<button onClick={onEvidence}>{tr("Ver evidencia")}</button>}</div>
   </>}
- </section>
+  </div>
+ </details>
 }

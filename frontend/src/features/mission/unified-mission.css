@@ -119,6 +119,19 @@ button:disabled{cursor:default;opacity:.43}
 .other-destinations strong{font-size:12px;font-weight:500}.other-destinations small{display:block;font-size:10px;color:var(--muted);margin-top:4px}
 .other-destinations button>svg{margin-left:auto}
 .selected-destination{border-top:1px solid var(--line);margin-top:24px;padding-top:21px}
+.mission-decisions details.collapsible-sidebar-card>summary{cursor:pointer;user-select:none;font-size:11px;color:#b7cbd8;line-height:1.6;transition:color .15s ease,opacity .15s ease;outline:none}
+.mission-decisions details.collapsible-sidebar-card>summary:hover{color:#e4edf4}
+.mission-decisions details.collapsible-sidebar-card[open]>summary{margin-bottom:12px}
+.selected-destination-summary{display:flex;flex-direction:column;gap:4px}
+.selected-destination-summary .selected-sector-id{font-size:10px;color:var(--muted);margin-left:16px}
+.brief-summary h3{font:500 24px/1.18 'Barlow Condensed',sans-serif;margin:6px 0 0;color:#e7f2ed}
+.brief-summary .micro-title,.itinerary-summary .micro-title,.candidates-summary .micro-title{display:block;font:9px 'IBM Plex Mono',monospace;letter-spacing:.8px;color:#8fa799}
+.itinerary-summary-sub{margin-top:4px;font-size:11px;color:#b3c7d6}
+.candidates-list-wrapper{border-top:1px solid var(--line);margin-top:24px;padding-top:21px}
+.candidates-summary h3{font-size:13px;font-weight:500;margin:4px 0 0;color:#e6edf2}
+.rescue-heading-summary{cursor:pointer}
+.rescue-heading-summary .rescue-heading{margin-bottom:0}
+.operations-heading-summary{cursor:pointer}
 .selected-destination-title{display:flex;gap:8px;align-items:center}
 .selected-destination-title h3{margin-bottom:0}
 .selected-color,.reject-dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0}

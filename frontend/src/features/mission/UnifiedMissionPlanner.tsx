@@ -1508,37 +1508,49 @@ export default function UnifiedMissionPlanner(){
         {!plan?<div className="decision-welcome"><MapPin size={28}/><h2>{tr("Aquí encontrarás tu mejor opción.")}</h2><p>{tr("El sistema relacionará la fecha de tu viaje y el objeto lunar elegido con el terreno, la luz y la visibilidad de la Tierra.")}</p><ul><li><Check size={13}/>{" "}{tr("Un destino recomendado y sus razones")}</li><li><Check size={13}/>{" "}{tr("Clasificación de toda la superficie")}</li><li><Check size={13}/>{" "}{tr("Diagnóstico conversacional en el chat izquierdo")}</li></ul><small>{tr("Los resultados corresponden a un modelo regional de planificación, no a una autorización de vuelo.")}</small></div>:<>
           {!plan.best&&<><div className="decision-title"><span className="micro-title">{tr(plan.best?'RECOMENDACIÓN CALCULADA':plan.counts.unknown===plan.total_cells?'FALTAN DATOS PARA EVALUAR ESTE PERFIL':'NINGUNA ZONA CUMPLE TODOS LOS CRITERIOS')}</span>{aiMode&&<small>{tr(aiMode)}</small>}</div><MissionRescuePanel timezone={TIMEZONE} report={rescueReport} busy={rescueBusy} error={rescueError} elapsed={rescueElapsed} onApply={applyAlternative} onRetry={()=>setRescueAttempt(a=>a+1)} onCancel={cancelRescue} onEvidence={()=>setEvidence(true)}/></>}
           {/* Selected sector, followed by the compact candidate list. */}
-          {selected&&<section className="selected-destination top-selected-destination"><div className="selected-destination-title"><span className={'selected-color '+selected.risk}/><h3>{tr(selectedLabel)}</h3></div><span className="selected-sector-id">{tr("Sector")}{" "}{tr(selected.id.replace('polar:',''))} · {tr(num(selected.area_km2,2))}{" "}{tr("km² regionales")}</span><p>{tr(reasonPoint(selected))}</p><dl><div><dt>{tr("Perfil del escenario")}</dt><dd>{tr(vehicle.lander_name)}</dd></div><div><dt>{tr("Centro del sector")}</dt><dd>{tr(num(selected.latitude_deg,5))}°, {tr(num(selected.longitude_deg,5))}°</dd></div><div><dt>{tr("Elevación")}</dt><dd>{tr(num(selected.elevation_m??selectedCell?.elevation_m,0))} m</dd></div><div><dt>{tr("Pendiente P95 · fuente de 80 m")}</dt><dd>{tr(num(selected.regional_slope_deg,2))}°</dd></div><div><dt>{tr("Máxima pendiente nativa")}</dt><dd>{tr(num(selected.max_slope_deg??selectedCell?.max_slope_deg))}°</dd></div><div><dt>{tr("Sol visible (")}{vehicle.solar_panel_height}m)</dt><dd>{tr(num(selected.sun_hours,0))} h</dd></div><div><dt>{tr("Tierra visible (")}{vehicle.antenna_height}m)</dt><dd>{tr(num(selected.earth_hours,0))} h</dd></div>{(vehicle.is_rover||vehicle.category==='Rover y Movilidad')&&<div><dt>{tr("Radio de acción rover")}</dt><dd className="kpi-ok">{vehicle.nominal_range_km??15} km {vehicle.speed_km_h?`(${vehicle.speed_km_h} km/h)`:''}</dd></div>}</dl>
+          {selected&&<details className="selected-destination top-selected-destination collapsible-sidebar-card" open>
+            <summary className="selected-destination-summary">
+              <div className="selected-destination-title"><span className={'selected-color '+selected.risk}/><h3>{tr(selectedLabel)}</h3></div>
+              <span className="selected-sector-id">{tr("Sector")}{" "}{tr(selected.id.replace('polar:',''))} · {tr(num(selected.area_km2,2))}{" "}{tr("km² regionales")}</span>
+            </summary>
+            <div className="selected-destination-body">
+              <p>{tr(reasonPoint(selected))}</p><dl><div><dt>{tr("Perfil del escenario")}</dt><dd>{tr(vehicle.lander_name)}</dd></div><div><dt>{tr("Centro del sector")}</dt><dd>{tr(num(selected.latitude_deg,5))}°, {tr(num(selected.longitude_deg,5))}°</dd></div><div><dt>{tr("Elevación")}</dt><dd>{tr(num(selected.elevation_m??selectedCell?.elevation_m,0))} m</dd></div><div><dt>{tr("Pendiente P95 · fuente de 80 m")}</dt><dd>{tr(num(selected.regional_slope_deg,2))}°</dd></div><div><dt>{tr("Máxima pendiente nativa")}</dt><dd>{tr(num(selected.max_slope_deg??selectedCell?.max_slope_deg))}°</dd></div><div><dt>{tr("Sol visible (")}{vehicle.solar_panel_height}m)</dt><dd>{tr(num(selected.sun_hours,0))} h</dd></div><div><dt>{tr("Tierra visible (")}{vehicle.antenna_height}m)</dt><dd>{tr(num(selected.earth_hours,0))} h</dd></div>{(vehicle.is_rover||vehicle.category==='Rover y Movilidad')&&<div><dt>{tr("Radio de acción rover")}</dt><dd className="kpi-ok">{vehicle.nominal_range_km??15} km {vehicle.speed_km_h?`(${vehicle.speed_km_h} km/h)`:''}</dd></div>}</dl>
 
-            {selected.sun_hours_sensitivity&&selected.earth_hours_sensitivity&&<div className="sampling-sensitivity"><strong>{tr("Variación por muestreo angular")}</strong><span>{tr("Sol:")}{" "}{tr(num(selected.sun_hours_sensitivity.lower,0))}–{tr(num(selected.sun_hours_sensitivity.upper,0))}{" "}{tr("h · Tierra:")}{" "}{tr(num(selected.earth_hours_sensitivity.lower,0))}–{tr(num(selected.earth_hours_sensitivity.upper,0))} h</span><small>{tr("Compara direcciones vecinas del horizonte. No es una probabilidad de éxito.")}</small></div>}
-            {cellLoading&&<p className="cell-detail-status" role="status"><LoaderCircle className="spin" size={13}/>{" "}{tr("Cargando condiciones de esta área…")}</p>}
-            {cellError&&<p className="trip-error" role="alert">{tr(cellError)}</p>}
-            {flight&&<div className="arrival-telemetry"><strong>{tr(landed?(flight.outcome==='soft-touchdown'?'Contacto suave en el modelo':'Impacto en el modelo'):'Descenso físico · 30×')}</strong><span>{tr("Altura:")}{" "}{tr(num(telemetry?.altitudeM,0))} m</span><span>{tr("Velocidad:")}{" "}{tr(num(telemetry?.velocityMps,1))} m/s</span><span>{tr("Combustible:")}{" "}{tr(num(telemetry?.fuelKg,0))} kg</span><button onClick={()=>setFlying(v=>!v)} disabled={landed}>{tr(flying?'Pausar':'Continuar')}</button><small>{tr("Descenso de una nave genérica hipotética. El perfil visual no aporta masa, empuje ni una validación del destino.")}</small></div>}
-          </section>}
+              {selected.sun_hours_sensitivity&&selected.earth_hours_sensitivity&&<div className="sampling-sensitivity"><strong>{tr("Variación por muestreo angular")}</strong><span>{tr("Sol:")}{" "}{tr(num(selected.sun_hours_sensitivity.lower,0))}–{tr(num(selected.sun_hours_sensitivity.upper,0))}{" "}{tr("h · Tierra:")}{" "}{tr(num(selected.earth_hours_sensitivity.lower,0))}–{tr(num(selected.earth_hours_sensitivity.upper,0))} h</span><small>{tr("Compara direcciones vecinas del horizonte. No es una probabilidad de éxito.")}</small></div>}
+              {cellLoading&&<p className="cell-detail-status" role="status"><LoaderCircle className="spin" size={13}/>{" "}{tr("Cargando condiciones de esta área…")}</p>}
+              {cellError&&<p className="trip-error" role="alert">{tr(cellError)}</p>}
+              {flight&&<div className="arrival-telemetry"><strong>{tr(landed?(flight.outcome==='soft-touchdown'?'Contacto suave en el modelo':'Impacto en el modelo'):'Descenso físico · 30×')}</strong><span>{tr("Altura:")}{" "}{tr(num(telemetry?.altitudeM,0))} m</span><span>{tr("Velocidad:")}{" "}{tr(num(telemetry?.velocityMps,1))} m/s</span><span>{tr("Combustible:")}{" "}{tr(num(telemetry?.fuelKg,0))} kg</span><button onClick={()=>setFlying(v=>!v)} disabled={landed}>{tr(flying?'Pausar':'Continuar')}</button><small>{tr("Descenso de una nave genérica hipotética. El perfil visual no aporta masa, empuje ni una validación del destino.")}</small></div>}
+            </div>
+          </details>}
 
           {/* 2. Below Selected Sector: Uniform Candidate List where #1 shares the exact compact row design of #2, #3, #4 */}
-          {plan.best&&<div className="decision-title candidates-below-title"><span className="micro-title">{tr(plan.best?'RECOMENDACIÓN CALCULADA':'NINGUNA ZONA CUMPLE TODOS LOS CRITERIOS')}</span>{aiMode&&<small>{tr(aiMode)}</small>}</div>}
           {plan.best?(
-            <section className="other-destinations unified-candidates-list">
-              <button className={'best-destination '+(selected?.id===plan.best.id?'selected':'')} onClick={()=>choose(plan.best!.id)}>
-                <span className="destination-number">1</span>
-                <div>
-                  <strong>{tr(num(Math.abs(plan.best.latitude_deg),2))}°S · {tr(longitude(plan.best.longitude_deg,2))}</strong>
-                  <small>{tr(num(plan.best.sun_hours,0))}{" "}{tr("h de Sol ·")}{" "}{tr(num(plan.best.earth_hours,0))}{" "}{tr("h de Tierra · P95")}{" "}{tr(num(plan.best.regional_slope_deg,2))}°</small>
-                </div>
-                <ArrowRight size={13}/>
-              </button>
-              {plan.alternatives.filter(p=>p.id!==plan.best?.id).map((p,i)=>(
-                <button key={p.id} className={selected?.id===p.id?'selected':''} onClick={()=>choose(p.id)}>
-                  <span className="destination-number">{i+2}</span>
+            <details className="candidates-list-wrapper collapsible-sidebar-card" open>
+              <summary className="candidates-summary">
+                <span className="micro-title">{tr(plan.best?'RECOMENDACIÓN CALCULADA':'NINGUNA ZONA CUMPLE TODOS LOS CRITERIOS')}</span>
+                <h3>{tr("Candidatos recomendados")} ({plan.alternatives.length})</h3>
+              </summary>
+              <section className="other-destinations unified-candidates-list">
+                <button className={'best-destination '+(selected?.id===plan.best.id?'selected':'')} onClick={()=>choose(plan.best!.id)}>
+                  <span className="destination-number">1</span>
                   <div>
-                    <strong>{tr(num(Math.abs(p.latitude_deg),2))}°S · {tr(longitude(p.longitude_deg,2))}</strong>
-                    <small>{tr(num(p.sun_hours,0))}{" "}{tr("h de Sol ·")}{" "}{tr(num(p.earth_hours,0))}{" "}{tr("h de Tierra")}</small>
+                    <strong>{tr(num(Math.abs(plan.best.latitude_deg),2))}°S · {tr(longitude(plan.best.longitude_deg,2))}</strong>
+                    <small>{tr(num(plan.best.sun_hours,0))}{" "}{tr("h de Sol ·")}{" "}{tr(num(plan.best.earth_hours,0))}{" "}{tr("h de Tierra · P95")}{" "}{tr(num(plan.best.regional_slope_deg,2))}°</small>
                   </div>
                   <ArrowRight size={13}/>
                 </button>
-              ))}
-            </section>
+                {plan.alternatives.filter(p=>p.id!==plan.best?.id).map((p,i)=>(
+                  <button key={p.id} className={selected?.id===p.id?'selected':''} onClick={()=>choose(p.id)}>
+                    <span className="destination-number">{i+2}</span>
+                    <div>
+                      <strong>{tr(num(Math.abs(p.latitude_deg),2))}°S · {tr(longitude(p.longitude_deg,2))}</strong>
+                      <small>{tr(num(p.sun_hours,0))}{" "}{tr("h de Sol ·")}{" "}{tr(num(p.earth_hours,0))}{" "}{tr("h de Tierra")}</small>
+                    </div>
+                    <ArrowRight size={13}/>
+                  </button>
+                ))}
+              </section>
+            </details>
           ):null}
           <details className="coordinate-inspector"><summary>{tr("Consultar cualquier coordenada del polo sur")}</summary><form onSubmit={e=>{e.preventDefault();inspectCoordinates()}}><label>{tr("Latitud")}<input aria-label={tr("Latitud a consultar")} type="number" step="any" min={-90} max={-80} value={inspectLat} onChange={e=>setInspectLat(e.target.value)}/></label><label>{tr("Longitud")}<input aria-label={tr("Longitud a consultar")} type="number" step="any" min={-180} max={180} value={inspectLon} onChange={e=>setInspectLon(e.target.value)}/></label><button type="submit">{tr("Examinar área")}</button>{coordinateError&&<p role="alert">{tr(coordinateError)}</p>}</form></details>
           <details className="rejected-destinations"><summary>{tr(num(rejectedTotal,0))}{" "}{tr("zonas descartadas · ver ejemplos")}</summary>{plan.rejected.map(p=><button key={p.id} onClick={()=>choose(p.id)}><span className="reject-dot"/><div><strong>{tr(num(Math.abs(p.latitude_deg),2))}°S · {tr(longitude(p.longitude_deg,2))}</strong><small>{tr(p.reasons?.[0]??'No cumple los criterios')}</small></div></button>)}</details>
@@ -1548,15 +1560,21 @@ export default function UnifiedMissionPlanner(){
         </>}
 
         {/* 3. At the bottom of the right panel: TU ITINERARIO ESTIMADO + Ver datos y supuestos */}
-        {plan&&<div className="trip-overview right-bottom-itinerary"><span className="micro-title">{tr("TU ITINERARIO ESTIMADO")}</span>
-          <div className="itinerary-item"><span className="itinerary-dot"/><div><small>{tr("Salida ·")}{" "}{tr(launchSite.name)}</small><strong>{tr(localDate(plan.mission.departure_utc))}</strong></div></div>
-          <div className="itinerary-duration">{tr("↓ Ida estimada:")}{" "}{tr(duration(plan.mission.outbound_hours))}</div>
-          <div className="itinerary-item"><span className="itinerary-dot moon"/><div><small>{tr("Alunizaje analizado")}</small><strong>{tr(localDate(plan.mission.arrival_utc))}</strong></div></div>
-          <div className="itinerary-duration">{tr("Estancia:")}{" "}{tr(duration(plan.mission.surface_hours))}</div>
-          <div className="itinerary-item"><span className="itinerary-dot"/><div><small>{tr("Regreso estimado")}</small><strong>{tr(localDate(plan.mission.return_utc))}</strong></div></div>
-          <div className="total-trip"><span>{tr("Duración total estimada")}</span><strong>{tr(duration(plan.mission.total_hours))}</strong></div>
-          <p className="estimate-note">{tr("Estimación orbital simplificada desde una órbita terrestre de 200 km.")}</p>
-        </div>}
+        {plan&&<details className="trip-overview right-bottom-itinerary collapsible-sidebar-card" open>
+          <summary className="itinerary-summary">
+            <span className="micro-title">{tr("TU ITINERARIO ESTIMADO")}</span>
+            <div className="itinerary-summary-sub"><strong>{tr(localDate(plan.mission.departure_utc))}</strong>{" · "}<small>{tr("Duración total:")}{" "}{tr(duration(plan.mission.total_hours))}</small></div>
+          </summary>
+          <div className="itinerary-body">
+            <div className="itinerary-item"><span className="itinerary-dot"/><div><small>{tr("Salida ·")}{" "}{tr(launchSite.name)}</small><strong>{tr(localDate(plan.mission.departure_utc))}</strong></div></div>
+            <div className="itinerary-duration">{tr("↓ Ida estimada:")}{" "}{tr(duration(plan.mission.outbound_hours))}</div>
+            <div className="itinerary-item"><span className="itinerary-dot moon"/><div><small>{tr("Alunizaje analizado")}</small><strong>{tr(localDate(plan.mission.arrival_utc))}</strong></div></div>
+            <div className="itinerary-duration">{tr("Estancia:")}{" "}{tr(duration(plan.mission.surface_hours))}</div>
+            <div className="itinerary-item"><span className="itinerary-dot"/><div><small>{tr("Regreso estimado")}</small><strong>{tr(localDate(plan.mission.return_utc))}</strong></div></div>
+            <div className="total-trip"><span>{tr("Duración total estimada")}</span><strong>{tr(duration(plan.mission.total_hours))}</strong></div>
+            <p className="estimate-note">{tr("Estimación orbital simplificada desde una órbita terrestre de 200 km.")}</p>
+          </div>
+        </details>}
         <button className="evidence-link" onClick={()=>setEvidence(true)}><Layers size={13}/>{" "}{tr("Ver datos y supuestos")}</button>
       </aside>}
     </div>
