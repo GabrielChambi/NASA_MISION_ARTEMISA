@@ -63,7 +63,7 @@ npm.cmd run ai:check -- --generate
 
 La clave sólo se usa en el servidor. No la pongas en variables `VITE_`, en el navegador ni en Git. El despliegue remoto necesita su propio secreto `GEMINI_API_KEY`; el archivo `.env` local no se publica. Los visitantes no necesitan claves ni cuentas.
 
-Si Gemini falla o falta la clave, un intérprete determinista reconoce fechas y requisitos compatibles y se identifica como sistema. No se presenta como IA. Si faltan fecha u hora, pide ese dato; no inventa una misión.
+Si Gemini falla o falta la clave, un intérprete determinista reconoce fechas y requisitos compatibles y se identifica como sistema. No se presenta como IA. Si falta la fecha, pide ese dato. Si omites la hora, usa las 08:00 en la zona indicada como hipótesis visible y editable.
 
 ### Compilar y previsualizar la versión alojable
 

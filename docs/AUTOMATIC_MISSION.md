@@ -20,7 +20,7 @@ Los visitantes no necesitan iniciar sesión con ChatGPT ni Google. La clave del 
 
 Si no indicas estancia, se utilizan **72 horas en la superficie como hipótesis editable**. Preguntar cuánto dura la misión no fija esa estancia. Los valores predeterminados de pendiente y visibilidad también son editables. Los requisitos explícitos del texto tienen prioridad sobre los predeterminados. Cambiar la solicitud o sus requisitos invalida los resultados y requiere recalcular. Los requisitos explícitos incompatibles con la estancia se muestran para corregirlos: no se recortan en silencio para obtener una solución.
 
-Si falta fecha completa u hora, se pide ese dato. Fechas imposibles y requisitos contradictorios no se corrigen en silencio. Si Gemini falta, falla o devuelve una extracción inválida, se usa el parser determinista y se informa `mode: "parser"`; no se simula IA.
+Si falta la fecha completa, se pide ese dato. Si no indicas hora, se asumen las 08:00 en la zona indicada y se declara como hipótesis editable. Fechas imposibles y requisitos contradictorios no se corrigen en silencio. Si Gemini falta, falla o devuelve una extracción inválida, se usa el parser determinista y se informa `mode: "parser"`; no se simula IA.
 
 ## Terreno y horizontes de todo el casquete
 
