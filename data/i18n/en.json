@@ -572,6 +572,7 @@
   "¿Qué fecha, con día, mes y año, quieres usar para tu viaje?": "What travel date would you like to use? Include the day, month and year.",
   "Reconocí el día y el mes. ¿De qué año es la misión?": "I recognized the day and month. What year is the mission?",
   "Reconocí el año. Indica el día y el mes de la misión.": "I recognized the year. Specify the mission day and month.",
+  "Reconocí el mes y el año. Indica qué día deseas evaluar (por ejemplo: 1 o 15 de enero de 2027) para calcular las condiciones en la zona.": "I recognized the month and year. Specify which day you want to evaluate (e.g. January 1 or 15, 2027) to calculate local conditions.",
   "Escribe una petición de viaje de hasta 1600 caracteres.": "Enter a travel request of up to 1600 characters.",
   "Revisa estancia y límites predeterminados.": "Check the default surface stay and limits.",
   "Usa una hora con precisión de minutos, sin segundos.": "Use a time with minute precision, without seconds.",

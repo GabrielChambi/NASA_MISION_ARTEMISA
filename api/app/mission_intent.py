@@ -131,11 +131,17 @@ def raw_parse(value):
                     fatal = "La fecha, hora o desplazamiento UTC no es válido."
     else:
         named = re.search(r"(?:^|\b|(?<=el)|(?<=del)|(?<=al))(\d{1,2})(?:\s*(?:de|del|el|,|-|/)\s*|\s+)(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)(?:\s*(?:de\s+el|en\s+el|del|de|el|en|ano|año|,|-|/)\s*|\s+)(\d{4})\b", text)
+        year_first = re.search(r"\b(\d{4})\b[,\s]+(?:el\s+|del\s+|en\s+)?(\d{1,2})(?:\s*(?:de|del|,|-|/)\s*|\s+)(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)\b", text)
+        month_first = re.search(r"\b(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)\s+(\d{1,2})(?:[,\s]+(?:de\s+|del\s+)?|\s+)(\d{4})\b", text)
         numeric = re.search(r"\b(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})\b", text)
-        match = named or numeric
-        if match:
-            month = MONTHS[match[2]] if named else int(match[2])
-            date, index = f"{match[3]}-{month:02d}-{int(match[1]):02d}", match.start()
+        if named:
+            date, index = f"{named[3]}-{MONTHS[named[2]]:02d}-{int(named[1]):02d}", named.start()
+        elif year_first:
+            date, index = f"{year_first[1]}-{MONTHS[year_first[3]]:02d}-{int(year_first[2]):02d}", year_first.start()
+        elif month_first:
+            date, index = f"{month_first[3]}-{MONTHS[month_first[1]]:02d}-{int(month_first[2]):02d}", month_first.start()
+        elif numeric:
+            date, index = f"{numeric[3]}-{int(numeric[2]):02d}-{int(numeric[1]):02d}", numeric.start()
     if not time:
         clock = re.search(r"(?:\ba\s*las?\s*|\blas\s+|\b(?:hora|a)\s+)(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)?\b", text) or re.search(r"\b(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)\b", text) or re.search(r"\b(\d{1,2}):(\d{2})\b", text)
         if clock:
@@ -205,7 +211,10 @@ def finish(value, raw, mode="parser", reason=None):
     if not local_date and re.search(r"\b\d{1,2}\s+(?:de\s+)?(?:"+'|'.join(MONTHS)+r")\b",normalized) and not re.search(r"\b(?:19\d{2}|20\d{2}|2100)\b",normalized):
         missing="Reconocí el día y el mes. ¿De qué año es la misión?"
     if not local_date and re.search(r"\b(?:19\d{2}|20\d{2}|2100)\b",normalized):
-        missing="Reconocí el año. Indica el día y el mes de la misión."
+        if re.search(r"\b(?:"+'|'.join(MONTHS)+r")\b",normalized):
+            missing="Reconocí el mes y el año. Indica qué día deseas evaluar (por ejemplo: 1 o 15 de enero de 2027) para calcular las condiciones en la zona."
+        else:
+            missing="Reconocí el año. Indica el día y el mes de la misión."
 
     base = dict(status="ok", mode=mode, reason=reason, intent=partial, assumptions=assumptions, explicit_fields=explicit)
     if problem or missing:
