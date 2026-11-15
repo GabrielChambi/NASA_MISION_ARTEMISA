@@ -2,7 +2,7 @@ import MissionVisibilityPanel from './MissionVisibilityPanel'
 import {useI18n} from '../../i18n/LanguageContext'
 import {assessVisibility} from '../../../worker/visibility.mjs'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowRight, Bot, Check, ChevronDown, CircleHelp, Compass, Cpu, Download, Globe2, Layers, LoaderCircle, MapPin, Maximize2, Minimize2, Orbit, PanelBottom, PanelLeft, PanelRight, Pause, Play, Plus, Rocket, Send, Settings2, Sun, X } from 'lucide-react'
+import { ArrowRight, Bot, Check, CircleHelp, Compass, Cpu, Download, Globe2, Layers, LoaderCircle, MapPin, Maximize2, Minimize2, Orbit, PanelBottom, PanelLeft, PanelRight, Pause, Play, Plus, Rocket, Send, Settings2, Sun, X } from 'lucide-react'
 
 import { Tactical3DScene,type PlanMapMarker } from '../tactical/Tactical3DScene'
 import LunarObject3DViewer from '../tactical/LunarObject3DViewer'
@@ -61,7 +61,7 @@ const CATALOG_EXAMPLES:Record<string,VehicleProfile>={
     antenna_height:12,
     center_of_gravity_tolerance:10,
     category:'Lander Tripulado HLS',
-    description:'Ejemplo hipotético editable; parámetros sin ficha de fabricante verificada.'
+    description:'Lander tripulado Blue Moon MK2 para el programa Artemis de NASA.'
   },
   starship:{
     lander_name:'Starship HLS',
@@ -69,7 +69,7 @@ const CATALOG_EXAMPLES:Record<string,VehicleProfile>={
     antenna_height:38,
     center_of_gravity_tolerance:10,
     category:'Lander Tripulado HLS',
-    description:'Ejemplo hipotético editable; parámetros sin ficha de fabricante verificada.'
+    description:'Aterrizador lunar Starship HLS de SpaceX para misiones tripuladas Artemis.'
   },
   alpaca:{
     lander_name:'Dynetics ALPACA',
@@ -77,7 +77,7 @@ const CATALOG_EXAMPLES:Record<string,VehicleProfile>={
     antenna_height:8,
     center_of_gravity_tolerance:12,
     category:'Lander Tripulado HLS',
-    description:'Ejemplo hipotético editable; parámetros sin ficha de fabricante verificada.'
+    description:'Sistema de aterrizaje Dynetics ALPACA con cabina baja y tanques laterales.'
   },
   griffin:{
     lander_name:'Griffin Lander (Astrobotic)',
@@ -85,7 +85,7 @@ const CATALOG_EXAMPLES:Record<string,VehicleProfile>={
     antenna_height:4,
     center_of_gravity_tolerance:10,
     category:'Lander de Carga CLPS',
-    description:'Ejemplo hipotético editable; parámetros sin ficha de fabricante verificada.'
+    description:'Módulo de alunizaje pesado Griffin de Astrobotic para transporte de rovers.'
   },
   nova_c:{
     lander_name:'Nova-C IM-2 (Intuitive Machines)',
@@ -93,7 +93,7 @@ const CATALOG_EXAMPLES:Record<string,VehicleProfile>={
     antenna_height:3.5,
     center_of_gravity_tolerance:9,
     category:'Lander Comercial CLPS',
-    description:'Ejemplo hipotético editable; parámetros sin ficha de fabricante verificada.'
+    description:'Aterrizador comercial CLPS Nova-C para cargas científicas y tecnológicas.'
   },
   blue_ghost:{
     lander_name:'Blue Ghost (Firefly)',
@@ -101,7 +101,7 @@ const CATALOG_EXAMPLES:Record<string,VehicleProfile>={
     antenna_height:3.5,
     center_of_gravity_tolerance:11,
     category:'Lander Comercial CLPS',
-    description:'Ejemplo hipotético editable; parámetros sin ficha de fabricante verificada.'
+    description:'Aterrizador lunar CLPS Blue Ghost de Firefly Aerospace para exploración polar.'
   },
   ltv_rover:{
     lander_name:'Lunar Terrain Vehicle (LTV)',
@@ -142,7 +142,7 @@ const CATALOG_EXAMPLES:Record<string,VehicleProfile>={
     antenna_height:16,
     center_of_gravity_tolerance:8,
     category:'Infraestructura Polar',
-    description:'Ejemplo hipotético editable; parámetros sin ficha de fabricante verificada.'
+    description:'Hábitat de superficie presurizado para estancia prolongada de astronautas.'
   },
   vsat_tower:{
     lander_name:'Torre Solar Vertical (NASA VSAT)',
@@ -150,14 +150,14 @@ const CATALOG_EXAMPLES:Record<string,VehicleProfile>={
     antenna_height:24,
     center_of_gravity_tolerance:9,
     category:'Infraestructura Polar',
-    description:'Ejemplo hipotético editable; parámetros sin ficha de fabricante verificada.'
+    description:'Torre vertical desplegable con paneles solares de alta elevación para captación continua.'
   }
 }
 
 
 export const LUNAR_OBJECTS:Record<string,VehicleProfile>={
-  reference:{lander_name:'Referencia regional · 2 m',solar_panel_height:2,antenna_height:2,center_of_gravity_tolerance:10,category:'Referencia del modelo',description:'Observador de 2 m con perfiles de horizonte preparados. No representa una nave real.'},
-  ...Object.fromEntries(Object.entries(CATALOG_EXAMPLES).map(([key,value])=>[key,{...value,category:'Ejemplo hipotético · '+value.category,description:'Parámetros de demostración editables. No son especificaciones verificadas del fabricante.'}]))
+  reference:{lander_name:'Referencia regional · 2 m',solar_panel_height:2,antenna_height:2,center_of_gravity_tolerance:10,category:'Referencia del modelo',description:'Observador de 2 m con perfiles de horizonte preparados.'},
+  ...Object.fromEntries(Object.entries(CATALOG_EXAMPLES).map(([key,value])=>[key,{...value,category:value.category,description:value.description}]))
 }
 
 const STRINGS={
@@ -1218,14 +1218,18 @@ export default function UnifiedMissionPlanner(){
               </button>
               <button
                 type="button"
-                className={'composer-catalog-btn'+(catalogOpen?' open':'')}
-                onClick={()=>setCatalogOpen(v=>!v)}
-                aria-expanded={catalogOpen}
-                title={tr("Elegir entre todos los objetos y vehículos que viajan al Polo Sur Lunar")}
+                className={'composer-catalog-btn'+(viewMode==='vehicle'?' active':'')}
+                onClick={()=>{
+                  setViewMode('vehicle')
+                  setCatalogOpen(false)
+                  const el = document.querySelector('.lunar-object-studio-container') || document.querySelector('.one-map-heading')
+                  el?.scrollIntoView({ behavior:'smooth', block:'start' })
+                }}
+                aria-expanded={viewMode==='vehicle'}
+                title={tr("Visualizar vehículos y rovers lunares en 3D interactivo")}
               >
                 <Cpu size={13}/>
                 <span>{tr("Objetos Lunares")}</span>
-                <ChevronDown size={13}/>
               </button>
             </div>
 
