@@ -64,9 +64,14 @@ button:disabled{cursor:default;opacity:.43}
 .one-moon-map{position:relative;min-height:510px;flex:1;isolation:isolate;overflow:hidden;background:#080d13}
 .one-moon-map>.tactical-canvas-container{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:0!important}
 .one-moon-map canvas{display:block;outline:none;touch-action:none}
-.one-map-source{position:absolute;left:20px;top:8px;z-index:37;pointer-events:none;background:#0c131cc9;border:1px solid #2a3743;border-radius:7px;padding:9px 12px}
-.one-map-source span{display:block;font:9px 'IBM Plex Mono',monospace;letter-spacing:.5px}
-.one-map-source small{display:block;color:#99a7b7;font-size:10px;margin-top:5px}
+.one-map-source{position:absolute;left:20px;top:10px;z-index:37;pointer-events:none;background:rgba(12, 19, 28, 0.85);border:1px solid rgba(255, 255, 255, 0.15);border-radius:10px;padding:10px 13px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 8px 24px rgba(0, 0, 0, 0.45);max-width:340px}
+.one-map-source .recognized-mission{padding:0 0 9px 0;border:0;border-bottom:1px solid rgba(255, 255, 255, 0.1);background:transparent;margin:0 0 8px 0}
+.one-map-source .recognized-mission>span{display:inline-flex;align-items:center;font:600 8.5px 'IBM Plex Mono',monospace;letter-spacing:0.8px;color:#86efac;background:rgba(34, 197, 94, 0.12);border:1px solid rgba(134, 239, 172, 0.3);padding:2px 6px;border-radius:4px}
+.one-map-source .recognized-mission strong{display:block;font-size:12px;font-weight:600;color:#f0fdf4;margin-top:6px;letter-spacing:0.2px}
+.one-map-source .recognized-mission small{display:block;font-size:10px;line-height:1.5;color:#cbd5e1;margin-top:3px}
+.one-map-source .recognized-mission .recognized-mission-pending{color:#fde047;font-size:9.5px}
+.one-map-source-body span{display:block;font:9px 'IBM Plex Mono',monospace;letter-spacing:.5px;color:#94a3b8}
+.one-map-source-body small{display:block;color:#64748b;font-size:9.5px;margin-top:3px}
 .one-map-empty{position:absolute;left:50%;bottom:100px;transform:translateX(-50%);z-index:38;pointer-events:none;text-align:center;background:#101823e8;border:1px solid #354355;border-radius:13px;padding:17px 22px;width:min(90%,390px);display:flex;align-items:center;flex-direction:column;gap:8px}
 .one-map-empty strong{font-size:15px;font-weight:500}.one-map-empty span{font-size:11px;color:var(--muted)}
 .one-map-legend{position:absolute;bottom:16px;left:18px;right:18px;z-index:38;display:flex;gap:11px;flex-wrap:wrap;align-items:center;padding:10px 12px;border-radius:8px;background:#101822ee;border:1px solid #33404c}

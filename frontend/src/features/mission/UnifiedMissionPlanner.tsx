@@ -1246,7 +1246,6 @@ export default function UnifiedMissionPlanner(){
           {uploadNotice&&<small className="upload-notice">{tr(uploadNotice)}</small>}
         </form>
         {intent&&!busy&&<div className="mission-prompt-hints"><button type="button" onClick={()=>void submitMessage(tr('Busca alternativas conservando mis requisitos'))}>{tr("Buscar alternativas")}</button><button type="button" onClick={()=>{setMessage(tr('¿Qué pasa si mis paneles producen un 20% menos?'));document.querySelector<HTMLTextAreaElement>('#mission-request')?.focus()}}>{tr("Probar un fallo solar")}</button><button type="button" onClick={()=>void submitMessage(tr('Estudia la huella local del destino'))}>{tr("Estudiar huella")}</button></div>}
-        {intent&&<div className="recognized-mission" data-testid="recognized-mission"><span>{tr("ESCENARIO ACTIVO")}</span><strong>{tr(intent.date_kind==='landing'?'Alunizaje':'Salida')} · {tr(localDate(intent.departure_utc))}</strong><small>{tr(TIMEZONE)} · {intent.surface_hours}{" "}{tr("h en superficie ·")}{" "}{tr(launchSite.name)}</small>{(pendingText||pendingCommandText)&&<small>{tr("La última petición está pendiente de completar; este escenario se conserva.")}</small>}</div>}
         {adopted&&<div className="adopted-alternative" data-testid="adopted-alternative"><Check size={14}/><div><strong>{tr("Alternativa aplicada")}</strong><span>{tr(adopted.original.date_kind==='landing'?'Alunizaje':'Salida')}{" "}{tr("original:")}{" "}{tr(localDate(adopted.original.departure_utc))}<br/>{tr("Nueva fecha:")}{" "}{tr(localDate(adopted.proposal.proposed_request.departure_utc))}</span><small>{tr("La solicitud original queda guardada en la comparación. La estancia y los requisitos no cambian.")}</small></div></div>}
       </aside>}
 
@@ -1349,7 +1348,14 @@ export default function UnifiedMissionPlanner(){
               pinnedTarget={pinnedTarget}
               traverseRadiusKm={vehicle.is_rover||vehicle.category==='Rover y Movilidad'?(vehicle.nominal_range_km??15):null}
               roverName={vehicle.lander_name} roverSpeed={vehicle.speed_km_h}/>
-            <div className="one-map-source"><span>{tr(plan&&coverageVisible&&!flight?'Evaluación de toda la superficie':'NASA LOLA · relieve continuo')}</span><small>{tr(focus&&detail?'Detalle visual ~396 m · fuente 80 m':shadingStatus.includes('no disponible')?'Sombreado no disponible; relieve conservado':'Vista regional · fuente de 80 m')}{tr(visualStatus.includes('no disponible')?' · '+visualStatus:'')}</small><small>{tr("Nave y astros en escala ilustrativa.")}</small></div>
+            <div className="one-map-source">
+              {intent&&<div className="recognized-mission" data-testid="recognized-mission"><span>{tr("ESCENARIO ACTIVO")}</span><strong>{tr(intent.date_kind==='landing'?'Alunizaje':'Salida')} · {tr(localDate(intent.departure_utc))}</strong><small>{tr(TIMEZONE)} · {intent.surface_hours}{" "}{tr("h en superficie ·")}{" "}{tr(launchSite.name)}</small>{(pendingText||pendingCommandText)&&<small className="recognized-mission-pending">{tr("La última petición está pendiente de completar; este escenario se conserva.")}</small>}</div>}
+              <div className="one-map-source-body">
+                <span>{tr(plan&&coverageVisible&&!flight?'Evaluación de toda la superficie':'NASA LOLA · relieve continuo')}</span>
+                <small>{tr(focus&&detail?'Detalle visual ~396 m · fuente 80 m':shadingStatus.includes('no disponible')?'Sombreado no disponible; relieve conservado':'Vista regional · fuente de 80 m')}{tr(visualStatus.includes('no disponible')?' · '+visualStatus:'')}</small>
+                <small>{tr("Nave y astros en escala ilustrativa.")}</small>
+              </div>
+            </div>
 
             {/* Icon-only "Simular llegada a este destino" button inside the Moon map screen */}
             {plan&&selected&&<button
