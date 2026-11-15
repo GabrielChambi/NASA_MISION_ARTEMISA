@@ -3,7 +3,7 @@ import MissionVisibilityPanel from './MissionVisibilityPanel'
 import {useI18n} from '../../i18n/LanguageContext'
 import {assessVisibility} from '../../../worker/visibility.mjs'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowRight, Bot, Check, CircleHelp, Compass, Cpu, Download, Globe2, Layers, LoaderCircle, MapPin, Maximize2, Minimize2, Orbit, PanelBottom, PanelLeft, PanelRight, Pause, Play, Plus, Rocket, Send, Settings2, Sun, X } from 'lucide-react'
+import { ArrowRight, Award, Ban, Bot, Check, CircleHelp, Compass, Cpu, Crosshair, Download, Globe2, Layers, LoaderCircle, MapPin, Maximize2, Minimize2, Orbit, PanelBottom, PanelLeft, PanelRight, Pause, Play, Plus, Rocket, Send, Settings2, Sun, X } from 'lucide-react'
 
 import { Tactical3DScene,type PlanMapMarker } from '../tactical/Tactical3DScene'
 import LunarObject3DViewer from '../tactical/LunarObject3DViewer'
@@ -319,6 +319,7 @@ export default function UnifiedMissionPlanner(){
   const [focus,setFocus]=useState(false),[detail,setDetail]=useState<AtlasData|null>(null),[visualStatus,setVisualStatus]=useState('')
   const [shadingStatus,setShadingStatus]=useState('Cargando relieve NASA…'),[timeline,setTimeline]=useState(0),[playing,setPlaying]=useState(false)
   const [flight,setFlight]=useState<DescentRun|null>(null),[flightTime,setFlightTime]=useState(0),[flying,setFlying]=useState(false)
+  const [activeMapOverlay,setActiveMapOverlay]=useState<'candidates'|'coordinates'|'rejected'|null>(null)
   const [aiMode,setAiMode]=useState(''),[departureInput,setDepartureInput]=useState('')
   const [vehicle,setVehicle]=useState<VehicleProfile>(LUNAR_OBJECTS.reference)
   const [vehiclePulseKey,setVehiclePulseKey]=useState(0),[uploadNotice,setUploadNotice]=useState('')
@@ -1358,17 +1359,118 @@ export default function UnifiedMissionPlanner(){
               </div>
             </div>
 
-            {/* Icon-only "Simular llegada a este destino" button inside the Moon map screen */}
-            {plan&&selected&&<button
-              type="button"
-              className={'simulate-arrival map-simulate-icon-btn'+(flight?' active':'')}
-              aria-label={tr("Simular llegada a este destino")}
-              title={tr(isRejected||!plan.best?'Selecciona un candidato favorable para simular el descenso':'Simular llegada a este destino')}
-              disabled={isRejected||!plan.best||cellLoading||Boolean(cellError)}
-              onClick={runDescent}
-            >
-              <Rocket size={16}/>
-            </button>}
+            {/* Map Floating Toolbar (Simular llegada + 3 interactive tools) */}
+            {plan&&<div className="map-floating-toolbar">
+              {selected&&<button
+                type="button"
+                className={'simulate-arrival map-simulate-icon-btn'+(flight?' active':'')}
+                aria-label={tr("Simular llegada a este destino")}
+                title={tr(isRejected||!plan.best?'Selecciona un candidato favorable para simular el descenso':'Simular llegada a este destino')}
+                disabled={isRejected||!plan.best||cellLoading||Boolean(cellError)}
+                onClick={runDescent}
+              >
+                <Rocket size={16}/>
+              </button>}
+
+              {plan.best&&<button
+                type="button"
+                className={'map-simulate-icon-btn map-action-icon-btn'+(activeMapOverlay==='candidates'?' active':'')}
+                aria-label={tr("Candidatos recomendados")}
+                title={tr("Candidatos recomendados") + ` (${plan.alternatives.length})`}
+                onClick={()=>setActiveMapOverlay(v=>v==='candidates'?null:'candidates')}
+              >
+                <Award size={16}/>
+              </button>}
+
+              <button
+                type="button"
+                className={'map-simulate-icon-btn map-action-icon-btn'+(activeMapOverlay==='coordinates'?' active':'')}
+                aria-label={tr("Consultar cualquier coordenada del polo sur")}
+                title={tr("Consultar cualquier coordenada del polo sur")}
+                onClick={()=>setActiveMapOverlay(v=>v==='coordinates'?null:'coordinates')}
+              >
+                <Crosshair size={16}/>
+              </button>
+
+              {plan.rejected.length>0&&<button
+                type="button"
+                className={'map-simulate-icon-btn map-action-icon-btn'+(activeMapOverlay==='rejected'?' active':'')}
+                aria-label={tr(num(rejectedTotal,0))+" "+tr("zonas descartadas · ver ejemplos")}
+                title={tr(num(rejectedTotal,0))+" "+tr("zonas descartadas · ver ejemplos")}
+                onClick={()=>setActiveMapOverlay(v=>v==='rejected'?null:'rejected')}
+              >
+                <Ban size={16}/>
+              </button>}
+            </div>}
+
+            {/* Floating Popovers anchored next to the toolbar */}
+            {plan&&activeMapOverlay&&<div className={'map-floating-overlay-card visible overlay-'+activeMapOverlay} data-overlay={activeMapOverlay} role="region" aria-label={tr("Panel desplegable del mapa")}>
+              <div className="map-floating-overlay-header">
+                <strong>
+                  {activeMapOverlay==='candidates'?(tr("Candidatos recomendados") + ` (${plan.alternatives.length})`):activeMapOverlay==='coordinates'?tr("Consultar coordenadas"):tr("Zonas descartadas")}
+                </strong>
+                <button type="button" className="overlay-close-btn" aria-label={tr("Cerrar panel")} onClick={()=>setActiveMapOverlay(null)}>
+                  <X size={14}/>
+                </button>
+              </div>
+              <div className="overlay-scroll-body">
+                {plan.best&&(
+                  <details className="candidates-list-wrapper collapsible-sidebar-card" open={activeMapOverlay==='candidates'} onToggle={(e)=>{
+                    const isOpen=(e.currentTarget as HTMLDetailsElement).open
+                    if(isOpen) setActiveMapOverlay('candidates')
+                    else if(activeMapOverlay==='candidates') setActiveMapOverlay(null)
+                  }}>
+                    <summary className="candidates-summary">
+                      <span className="micro-title">{tr('RECOMENDACIÓN CALCULADA')}</span>
+                      <h3>{tr("Candidatos recomendados")} ({plan.alternatives.length})</h3>
+                    </summary>
+                    <section className="other-destinations unified-candidates-list">
+                      <button className={'best-destination '+(selected?.id===plan.best.id?'selected':'')} onClick={()=>{choose(plan.best!.id);setActiveMapOverlay(null)}}>
+                        <span className="destination-number">1</span>
+                        <div>
+                          <strong>{tr(num(Math.abs(plan.best.latitude_deg),2))}°S · {tr(longitude(plan.best.longitude_deg,2))}</strong>
+                          <small>{tr(num(plan.best.sun_hours,0))}{" "}{tr("h de Sol ·")}{" "}{tr(num(plan.best.earth_hours,0))}{" "}{tr("h de Tierra · P95")}{" "}{tr(num(plan.best.regional_slope_deg,2))}°</small>
+                        </div>
+                        <ArrowRight size={13}/>
+                      </button>
+                      {plan.alternatives.filter(p=>p.id!==plan.best?.id).map((p,i)=>(
+                        <button key={p.id} className={selected?.id===p.id?'selected':''} onClick={()=>{choose(p.id);setActiveMapOverlay(null)}}>
+                          <span className="destination-number">{i+2}</span>
+                          <div>
+                            <strong>{tr(num(Math.abs(p.latitude_deg),2))}°S · {tr(longitude(p.longitude_deg,2))}</strong>
+                            <small>{tr(num(p.sun_hours,0))}{" "}{tr("h de Sol ·")}{" "}{tr(num(p.earth_hours,0))}{" "}{tr("h de Tierra")}</small>
+                          </div>
+                          <ArrowRight size={13}/>
+                        </button>
+                      ))}
+                    </section>
+                  </details>
+                )}
+
+                <details className="coordinate-inspector" open={activeMapOverlay==='coordinates'} onToggle={(e)=>{
+                  const isOpen=(e.currentTarget as HTMLDetailsElement).open
+                  if(isOpen) setActiveMapOverlay('coordinates')
+                  else if(activeMapOverlay==='coordinates') setActiveMapOverlay(null)
+                }}>
+                  <summary>{tr("Consultar cualquier coordenada del polo sur")}</summary>
+                  <form onSubmit={e=>{e.preventDefault();inspectCoordinates()}}>
+                    <label>{tr("Latitud")}<input aria-label={tr("Latitud a consultar")} type="number" step="any" min={-90} max={-80} value={inspectLat} onChange={e=>setInspectLat(e.target.value)}/></label>
+                    <label>{tr("Longitud")}<input aria-label={tr("Longitud a consultar")} type="number" step="any" min={-180} max={180} value={inspectLon} onChange={e=>setInspectLon(e.target.value)}/></label>
+                    <button type="submit">{tr("Examinar área")}</button>
+                    {coordinateError&&<p role="alert">{tr(coordinateError)}</p>}
+                  </form>
+                </details>
+
+                <details className="rejected-destinations" open={activeMapOverlay==='rejected'} onToggle={(e)=>{
+                  const isOpen=(e.currentTarget as HTMLDetailsElement).open
+                  if(isOpen) setActiveMapOverlay('rejected')
+                  else if(activeMapOverlay==='rejected') setActiveMapOverlay(null)
+                }}>
+                  <summary>{tr(num(rejectedTotal,0))}{" "}{tr("zonas descartadas · ver ejemplos")}</summary>
+                  {plan.rejected.map(p=><button key={p.id} onClick={()=>{choose(p.id);setActiveMapOverlay(null)}}><span className="reject-dot"/><div><strong>{tr(num(Math.abs(p.latitude_deg),2))}°S · {tr(longitude(p.longitude_deg,2))}</strong><small>{tr(p.reasons?.[0]??'No cumple los criterios')}</small></div></button>)}
+                </details>
+              </div>
+            </div>}
 
             {!plan&&!pinnedTarget&&<div className="one-map-empty"><Orbit size={20}/><strong>{tr(busy?'Estamos calculando tus destinos.':'Escribe tu viaje o haz clic en la Luna para fijar un punto.')}</strong><span>{tr(busy?'La recomendación aparecerá aquí con sus alternativas.':'Haz clic en el mapa para fijar un destino y escribe la fecha que quieres evaluar.')}</span></div>}
             {!plan&&pinnedTarget&&<div className="surface-inspection-hint"><MapPin size={12}/><b>{tr("Lugar fijado:")}{" "}{tr(pinnedTarget.label)}</b><span>{tr("Elevación")}{" "}{tr(pinnedTarget.elevation_m!=null?Math.round(pinnedTarget.elevation_m)+' m':'—')}{" "}{tr("· Pendiente")}{" "}{tr(pinnedTarget.regional_slope_deg!=null?pinnedTarget.regional_slope_deg.toFixed(1)+'°':'—')}{" "}{tr("· Escribe una fecha para calcular sus condiciones")}</span></div>}
@@ -1523,37 +1625,6 @@ export default function UnifiedMissionPlanner(){
             </div>
           </details>}
 
-          {/* 2. Below Selected Sector: Uniform Candidate List where #1 shares the exact compact row design of #2, #3, #4 */}
-          {plan.best?(
-            <details className="candidates-list-wrapper collapsible-sidebar-card" open>
-              <summary className="candidates-summary">
-                <span className="micro-title">{tr(plan.best?'RECOMENDACIÓN CALCULADA':'NINGUNA ZONA CUMPLE TODOS LOS CRITERIOS')}</span>
-                <h3>{tr("Candidatos recomendados")} ({plan.alternatives.length})</h3>
-              </summary>
-              <section className="other-destinations unified-candidates-list">
-                <button className={'best-destination '+(selected?.id===plan.best.id?'selected':'')} onClick={()=>choose(plan.best!.id)}>
-                  <span className="destination-number">1</span>
-                  <div>
-                    <strong>{tr(num(Math.abs(plan.best.latitude_deg),2))}°S · {tr(longitude(plan.best.longitude_deg,2))}</strong>
-                    <small>{tr(num(plan.best.sun_hours,0))}{" "}{tr("h de Sol ·")}{" "}{tr(num(plan.best.earth_hours,0))}{" "}{tr("h de Tierra · P95")}{" "}{tr(num(plan.best.regional_slope_deg,2))}°</small>
-                  </div>
-                  <ArrowRight size={13}/>
-                </button>
-                {plan.alternatives.filter(p=>p.id!==plan.best?.id).map((p,i)=>(
-                  <button key={p.id} className={selected?.id===p.id?'selected':''} onClick={()=>choose(p.id)}>
-                    <span className="destination-number">{i+2}</span>
-                    <div>
-                      <strong>{tr(num(Math.abs(p.latitude_deg),2))}°S · {tr(longitude(p.longitude_deg,2))}</strong>
-                      <small>{tr(num(p.sun_hours,0))}{" "}{tr("h de Sol ·")}{" "}{tr(num(p.earth_hours,0))}{" "}{tr("h de Tierra")}</small>
-                    </div>
-                    <ArrowRight size={13}/>
-                  </button>
-                ))}
-              </section>
-            </details>
-          ):null}
-          <details className="coordinate-inspector"><summary>{tr("Consultar cualquier coordenada del polo sur")}</summary><form onSubmit={e=>{e.preventDefault();inspectCoordinates()}}><label>{tr("Latitud")}<input aria-label={tr("Latitud a consultar")} type="number" step="any" min={-90} max={-80} value={inspectLat} onChange={e=>setInspectLat(e.target.value)}/></label><label>{tr("Longitud")}<input aria-label={tr("Longitud a consultar")} type="number" step="any" min={-180} max={180} value={inspectLon} onChange={e=>setInspectLon(e.target.value)}/></label><button type="submit">{tr("Examinar área")}</button>{coordinateError&&<p role="alert">{tr(coordinateError)}</p>}</form></details>
-          <details className="rejected-destinations"><summary>{tr(num(rejectedTotal,0))}{" "}{tr("zonas descartadas · ver ejemplos")}</summary>{plan.rejected.map(p=><button key={p.id} onClick={()=>choose(p.id)}><span className="reject-dot"/><div><strong>{tr(num(Math.abs(p.latitude_deg),2))}°S · {tr(longitude(p.longitude_deg,2))}</strong><small>{tr(p.reasons?.[0]??'No cumple los criterios')}</small></div></button>)}</details>
           {selected&&<OperationalWindowsPanel samples={series} index={timeline} timezone={TIMEZONE}/>}
           <button className="download-plan" onClick={exportPlan}><Download size={14}/>{" "}{tr("Descargar plan y evidencia")}</button>
           <p className="decision-scope">{tr("Los colores describen sectores regionales, con condiciones calculadas en sus centros. Una zona verde puede contener pendientes locales mayores. Falta evaluar rocas pequeñas, huella de la nave, energía, temperatura y enlace de radio.")}</p>

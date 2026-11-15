@@ -200,10 +200,29 @@ button:disabled{cursor:default;opacity:.43}
 .unified-mission .workspace-panel-toggles .panel-toggle-btn{width:30px;height:30px;padding:0;border-radius:7px;background:#131b24;border:1px solid #293645;color:#b8c7d6}
 .unified-mission .workspace-panel-toggles .panel-toggle-btn[aria-pressed=true]{background:#22312a;border-color:#6d9b81;color:#d3f5e0}
 
-/* Compact icon-only "Simular llegada a este destino" button inside .one-moon-map */
-.unified-mission .map-simulate-icon-btn{position:absolute;right:18px;top:10px;z-index:39;width:36px;height:36px;padding:0;border-radius:50%;background:#13211bd9;border:1px solid #598c6c;color:#baf4d2;box-shadow:0 4px 16px #0009}
-.unified-mission .map-simulate-icon-btn:hover:not(:disabled){background:#1f382d;border-color:#94edbb;color:#ffffff}
-.unified-mission .map-simulate-icon-btn.active{background:#94edbb;border-color:#e0f8e9;color:#0d2318}
+/* Compact icon-only "Simular llegada" and interactive tools inside .one-moon-map */
+.unified-mission .map-floating-toolbar{position:absolute;right:18px;top:10px;z-index:40;display:flex;flex-direction:column;gap:8px}
+.unified-mission .map-simulate-icon-btn{position:relative;right:auto;top:auto;z-index:auto;width:36px;height:36px;padding:0;border-radius:50%;background:#13211bd9;border:1px solid #598c6c;color:#baf4d2;box-shadow:0 4px 16px #0009;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s,border-color .15s,transform .1s}
+.unified-mission .map-simulate-icon-btn:hover:not(:disabled){background:#1f382d;border-color:#94edbb;color:#ffffff;transform:scale(1.05)}
+.unified-mission .map-simulate-icon-btn.active{background:#234a38;border-color:#94edbb;color:#94edbb;box-shadow:0 0 14px rgba(148,237,187,.4)}
+.unified-mission .map-action-icon-btn{background:#121c26d9;border-color:#3b4e60;color:#a8c4db}
+.unified-mission .map-action-icon-btn:hover:not(:disabled){background:#1c2b3a;border-color:#64b5f6;color:#ffffff}
+.unified-mission .map-action-icon-btn.active{background:#1d374d;border-color:#64b5f6;color:#90caf9;box-shadow:0 0 14px rgba(100,181,246,.35)}
+
+/* Floating Popover card inside .one-moon-map */
+.unified-mission .map-floating-overlay-card{position:absolute;right:62px;top:10px;width:330px;max-width:calc(100% - 80px);max-height:calc(100% - 24px);background:#0e1722f2;border:1px solid #33485c;border-radius:12px;box-shadow:0 12px 36px rgba(0,0,0,.75);backdrop-filter:blur(12px);z-index:42;display:flex;flex-direction:column;overflow:hidden;animation:popoverFade .18s ease-out}
+@keyframes popoverFade{from{opacity:0;transform:translateX(6px)}to{opacity:1;transform:translateX(0)}}
+.unified-mission .map-floating-overlay-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid #233444;background:#131e2c}
+.unified-mission .map-floating-overlay-header strong{font:500 13px 'Barlow Condensed',sans-serif;letter-spacing:.3px;color:#e1edf7}
+.unified-mission .map-floating-overlay-header .overlay-close-btn{background:transparent;border:none;color:#9eb2c4;cursor:pointer;padding:4px;display:flex;align-items:center;justify-content:center;border-radius:5px}
+.unified-mission .map-floating-overlay-header .overlay-close-btn:hover{color:#fff;background:#243649}
+.unified-mission .overlay-scroll-body{padding:12px;overflow-y:auto;max-height:420px}
+.unified-mission .map-floating-overlay-card:not([data-overlay="candidates"]) .candidates-list-wrapper{display:none}
+.unified-mission .map-floating-overlay-card:not([data-overlay="coordinates"]) .coordinate-inspector{display:none}
+.unified-mission .map-floating-overlay-card:not([data-overlay="rejected"]) .rejected-destinations{display:none}
+.unified-mission .map-floating-overlay-card .coordinate-inspector{margin-top:0;border-top:none;padding-top:0}
+.unified-mission .map-floating-overlay-card .rejected-destinations{margin-top:0;border-top:none;padding-top:0}
+.unified-mission .map-floating-overlay-card .candidates-list-wrapper{margin-top:0}
 
 /* Fluid Gemini-style conversational UI (no heavy boxes around assistant responses) */
 .chat-linked-panel{display:flex;flex-direction:column;gap:10px;position:relative;height:calc(100vh - 83px);box-sizing:border-box;overflow:hidden;background:transparent!important;border-right:1px solid rgba(255, 255, 255, 0.08)}

@@ -316,6 +316,7 @@ function Spacecraft(props:Tactical3DSceneProps&{onDrag:()=>void}){
 function Camera(props:Tactical3DSceneProps&{dragging:boolean}){
   const {camera,size}=useThree(),controls=useRef<Controls>(null)
   const lastCamPos=useRef(new THREE.Vector3())
+  const prevVehiclePos=useRef<THREE.Vector3|null>(null)
   const data=props.detailAtlasData??(props.showSurfaceVehicle?props.focusTerrainData:null)??props.atlasData
   const target=useMemo(()=>data?surfacePoint(data,props.latDeg,props.lonDeg).position:new THREE.Vector3(),[data,props.latDeg,props.lonDeg])
   useEffect(()=>{
@@ -328,7 +329,14 @@ function Camera(props:Tactical3DSceneProps&{dragging:boolean}){
     const damping=controls.current.enableDamping
     controls.current.enableDamping=false;controls.current.update();controls.current.enableDamping=damping
     camera.near=props.showSurfaceVehicle?.001:props.overview?.1:.001;camera.updateProjectionMatrix()
-    if(props.cameraView==='polar'&&props.focusZone){camera.position.copy(target).add(new THREE.Vector3(16,20,26));controls.current.target.copy(target)}
+    if(props.showSurfaceVehicle){
+      const up=bodyDirection({latitude_deg:props.latDeg,longitude_deg:props.lonDeg} as never,0,90)
+      const vehicle=target.clone().addScaledVector(up,(props.altitudeM??0)/1000)
+      camera.position.copy(vehicle).add(new THREE.Vector3(.20,.14,.24))
+      controls.current.target.copy(vehicle)
+      prevVehiclePos.current=vehicle.clone()
+    }
+    else if(props.cameraView==='polar'&&props.focusZone){camera.position.copy(target).add(new THREE.Vector3(16,20,26));controls.current.target.copy(target)}
     else if(props.cameraView==='polar'){
       // The oblique cap projects below its pole: center the projected footprint.
       // A width-dependent lower bound preserves the full 80 S rim on mobile.
@@ -351,8 +359,19 @@ function Camera(props:Tactical3DSceneProps&{dragging:boolean}){
     if(props.overview&&props.showSurfaceVehicle&&controls.current){
       const up=bodyDirection({latitude_deg:props.latDeg,longitude_deg:props.lonDeg} as never,0,90)
       const vehicle=target.clone().addScaledVector(up,(props.altitudeM??0)/1000)
-      const offset=new THREE.Vector3(.14,.10,.18)
-      camera.position.copy(vehicle).add(offset);controls.current.target.copy(vehicle);controls.current.update()
+      if(!prevVehiclePos.current){
+        prevVehiclePos.current=vehicle.clone()
+      }else{
+        const delta=vehicle.clone().sub(prevVehiclePos.current)
+        if(delta.lengthSq()>1e-10){
+          camera.position.add(delta)
+          controls.current.target.add(delta)
+          prevVehiclePos.current.copy(vehicle)
+          controls.current.update()
+        }
+      }
+    }else{
+      prevVehiclePos.current=null
     }
     if(camera.position.distanceToSquared(lastCamPos.current)<1e-6)return
     lastCamPos.current.copy(camera.position)
@@ -362,7 +381,7 @@ function Camera(props:Tactical3DSceneProps&{dragging:boolean}){
     const h=surfacePoint(terrain,lat,lon).position.y
     if(Number.isFinite(h)&&camera.position.y<h+.003)camera.position.y=h+.003
   })
-  return <OrbitControls ref={controls} enabled={!props.dragging&&!props.showSurfaceVehicle} enableRotate={props.overview||!props.placementMode} enableDamping dampingFactor={.08} minDistance={.025} maxDistance={props.overview?1800:800} maxPolarAngle={Math.PI*.51}/>
+  return <OrbitControls ref={controls} enabled={!props.dragging} enableRotate={props.overview||!props.placementMode||Boolean(props.showSurfaceVehicle)} enableDamping dampingFactor={.08} minDistance={.01} maxDistance={props.overview?1800:800} maxPolarAngle={Math.PI*.51}/>
 }
 
 function PolarSelection({data,cell}:{data:AtlasData;cell:PolarCell}){
