@@ -52,6 +52,22 @@ def validate_chat(raw):
    elif finite(value,0,1 if key.endswith('_soc') else 1e12):clean[key]=value
    else:raise ValueError('Medición operativa inválida.')
   facts['operations']={'scope':'Estudio local con configuración declarada, sin térmica ni presupuestoRF','status':operations.get('status') if operations.get('status') in ('ok','unknown') else 'unknown','feasible':operations.get('feasible') if isinstance(operations.get('feasible'),bool) else None,'summary':clean}
+ facts['visibility']=None
+ visibility=ctx.get('visibility')
+ if visibility is not None:
+  if not isinstance(visibility,dict) or not isinstance(visibility.get('t_utc'),str) or not re.fullmatch(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z',visibility['t_utc']):raise ValueError('Contexto temporal de visibilidad inválido.')
+  clean={'t_utc':visibility['t_utc'],'required_margin_deg':.3}
+  for target in ('sun','earth'):
+   raw_target=visibility.get(target)
+   if not isinstance(raw_target,dict):raise ValueError('Cuerpo celeste inválido.')
+   values={}
+   for key,lo,hi in [('elevation_deg',-90,90),('horizon_deg',-90,90),('azimuth_deg',0,360),('observer_height_m',.5,200)]:
+    if not finite(raw_target.get(key),lo,hi):raise ValueError('Ángulo o altura inválidos.')
+    values[key]=raw_target[key]
+   values['clearance_deg']=values['elevation_deg']-values['horizon_deg']
+   values['state']='occluded' if values['clearance_deg']<=1e-9 else 'limited' if values['clearance_deg']<=.3+1e-9 else 'clear'
+   clean[target]=values
+  facts['visibility']=clean
  launch=ctx.get('launch_site')
  if isinstance(launch,dict) and launch.get('id') in LAUNCH_SITES:facts['launch_site']=LAUNCH_SITES[launch['id']]
  zone=ctx.get('mission_time_zone')
@@ -63,6 +79,12 @@ def validate_chat(raw):
 
 def baseline_chat(value):
  facts=value['facts'];q=value['question'].lower();op=facts['operations']
+ if re.search(r'horizonte|horizon|bloque|blocked|ocult|obstruct|despeje|clearance',q):
+  visibility=facts.get('visibility')
+  if not visibility:return 'No hay ángulos de visibilidad calculados para explicar ese estado. Evalúa una fecha y un destino; los datos ausentes siguen sin resolver.'
+  target='sun' if re.search(r'\b(sol|sun|solar)\b',q) else 'earth';v=visibility[target];name='Sol' if target=='sun' else 'Tierra'
+  verdict='El centro está oculto por el horizonte muestreado.' if v['state']=='occluded' else 'El centro está sobre el horizonte, pero no supera el margen exigido.' if v['state']=='limited' else 'El centro supera el margen de despeje exigido.'
+  return f"Centro de {name}: elevación {v['elevation_deg']:g}°; horizonte NASA {v['horizon_deg']:g}°; despeje {v['clearance_deg']:g}°; margen exigido >0.3°. "+verdict+' La cámara puede omitir el terreno distante y la nave se dibuja ampliada. La visibilidad se calcula desde la altura declarada, no desde ese dibujo. Esto no calcula prestaciones de radio ni la fracción visible del disco.'
  if re.search(r'lanz|origen|florida|kennedy|desde donde|hora local',q) and facts.get('launch_site'):
   launch=facts['launch_site']
   return 'El origen de referencia seleccionado es **'+launch['name']+'**. Su zona local es '+launch['timezone']+'. El reloj de la misión usa '+facts.get('mission_time_zone',launch['timezone'])+'. El tránsito es una estimación desde órbita terrestre; no se ha resuelto el ascenso ni una ventana real desde la plataforma.'
@@ -93,6 +115,7 @@ def validate_chat_reply(reply,facts):
  if not isinstance(reply,str) or not 12<=len(reply.strip())<=2400 or re.search(r'<[^>]*>|[\x00-\x08\x0b\x0c\x0e-\x1f]|https?://',reply):raise ValueError('Respuesta no válida.')
  clean=reply.strip();normalized=clean.lower()
  if re.search(r'garantiz|aprobado por nasa|certificad|aterrizaje seguro|zona segura|sobrevivir[áa]|sobrevive|tolerancia de vuelco|probabilidad de [ée]xito',normalized):raise ValueError('Conclusión no respaldada.')
+ if re.search(r'\b(?:two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|twenty|thirty|forty|fifty|hundred|thousand)\b|guarantee|certif|approved by nasa|nasa.approved|safe landing|safe zone|risk.free|will survive|survives',normalized):raise ValueError('Conclusión no respaldada.')
  numbers=[]
  def collect(v):
   if isinstance(v,dict):

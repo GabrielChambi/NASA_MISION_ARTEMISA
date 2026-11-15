@@ -1,3 +1,5 @@
+import {useI18n} from '../../i18n/LanguageContext'
+import {assessVisibility,scientificObserver,visibilityColor} from '../../../worker/visibility.mjs'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { OrbitControls, Stars, Line, Html } from '@react-three/drei'
@@ -31,6 +33,7 @@ export interface Tactical3DSceneProps {
   overview?:boolean;focusZone?:boolean;onShadingStatus?:(status:string)=>void;polarSurface?:PolarSurface|null;polarAssessments?:PolarAssessment[];polarSelection?:PolarCell|null
   solarPanelHeightM?:number;antennaHeightM?:number;landerName?:string;vehiclePulseKey?:number
   pinnedTarget?:{lat:number;lon:number;label?:string}|null
+  scientificSurfaceElevationM?:number|null
 }
 const EXAGGERATION=1
 const COLORS:Record<Risk,string>={green:'#62e6a0',yellow:'#f5cb67',red:'#ff797f',unknown:'#788e9e'}
@@ -49,6 +52,8 @@ function cellPosition(data:AtlasData,x:number,y:number,offset=0.0008){
   return p
 }
 export function Tactical3DScene(props:Tactical3DSceneProps){
+ const {tr}=useI18n()
+
   const [dragging,setDragging]=useState(false)
   const [hover,setHover]=useState<[number,number]|null>(null)
   useEffect(()=>{
@@ -58,8 +63,8 @@ export function Tactical3DScene(props:Tactical3DSceneProps){
   },[])
   return <div className="tactical-canvas-container" style={{width:'100%',height:'100%',position:'relative',cursor:dragging?'grabbing':props.placementMode?'crosshair':'grab'}}>
     <div className="surface-tools" hidden={props.overview}>
-      <button className="tactical-surface-place-btn" onClick={props.onTogglePlacementMode} aria-pressed={props.placementMode}>{props.placementMode?<Crosshair size={12}/>:<MapPin size={12}/>} {props.placementMode?'CLIC PARA ELEGIR DESTINO':'ELEGIR SOBRE LA SUPERFICIE'}</button>
-      <span>{hover&&props.placementMode?hover[0].toFixed(5)+'°, '+hover[1].toFixed(5)+'°':'Arrastra para orbitar · rueda para acercar'}</span>
+      <button className="tactical-surface-place-btn" onClick={props.onTogglePlacementMode} aria-pressed={props.placementMode}>{props.placementMode?<Crosshair size={12}/>:<MapPin size={12}/>} {tr(props.placementMode?'CLIC PARA ELEGIR DESTINO':'ELEGIR SOBRE LA SUPERFICIE')}</button>
+      <span>{tr(hover&&props.placementMode?hover[0].toFixed(5)+'°, '+hover[1].toFixed(5)+'°':'Arrastra para orbitar · rueda para acercar')}</span>
     </div>
     <Canvas frameloop={props.active===false?'never':'always'} dpr={[1,1.25]} camera={{position:[12,7,14],near:props.overview?0.1:0.001,far:props.overview?2500:5000,fov:45}} gl={{antialias:true,alpha:false,localClippingEnabled:true,powerPreference:'high-performance'}}>
       <color attach="background" args={['#03080d']}/>
@@ -70,7 +75,7 @@ export function Tactical3DScene(props:Tactical3DSceneProps){
       {props.scienceReady&&props.detailAtlasData&&props.assessments?.length&&<LandingContours data={props.detailAtlasData} assessments={props.assessments}/>}
       {props.cameraView==='polar'&&props.atlasData&&<group>
         {props.atlasData.manifest.features.map(f=><Html key={f.name} position={projectedToWorld(f.x_m,f.y_m,f.elevation_m,1,props.atlasData!.manifest.radius_m)} center zIndexRange={[8,0]} style={{pointerEvents:'none'}}>
-          <div className="polar-feature-label">{f.name}</div>
+          <div className="polar-feature-label">{tr(f.name)}</div>
         </Html>)}
       </group>}
       {props.overview&&props.polarSelection&&props.atlasData&&<PolarSelection data={props.atlasData} cell={props.polarSelection}/>}
@@ -80,7 +85,7 @@ export function Tactical3DScene(props:Tactical3DSceneProps){
     </Canvas>
     {props.atlasData&&!props.overview&&<div className="surface-destination" style={{borderColor:COLORS[props.assessmentRisk??'unknown']}}>
       <span className="destination-dot" style={{background:COLORS[props.assessmentRisk??'unknown']}}/>
-      <div><strong>{props.landed?'CONTACTO · ':''}{props.siteName}</strong><small>{props.latDeg.toFixed(6)}°, {props.lonDeg.toFixed(6)}°{props.scienceReady?' · destino calculado':' · pendiente de simular'}</small></div>
+      <div><strong>{tr(props.landed?'CONTACTO · ':'')}{tr(props.siteName)}</strong><small>{tr(props.latDeg.toFixed(6))}°, {tr(props.lonDeg.toFixed(6))}°{tr(props.scienceReady?' · destino calculado':' · pendiente de simular')}</small></div>
     </div>}
   </div>
 }
@@ -265,18 +270,14 @@ function Spacecraft(props:Tactical3DSceneProps&{onDrag:()=>void}){
   const rotation=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),(props.altitudeM??0)>0?up:norm)
   const solarH=props.solarPanelHeightM??props.observerHeightM
   const antennaH=props.antennaHeightM??props.observerHeightM
-  const maxH=Math.max(solarH,antennaH,4)
-  const heightStretch=THREE.MathUtils.clamp(maxH/12,0.75,3.2)
-  const noseTopLocalY=(1.05+1.4*heightStretch+0.8)*vehicleScale
-  const antennaLocalY=(THREE.MathUtils.clamp((antennaH/maxH)*(2.6*heightStretch)+0.45,0.75,3.1*heightStretch))*vehicleScale
-  const sideDir=bodyDirection(site,90,0)
-
-  const solarEmitter=showVehicle
-    ?position.clone().addScaledVector(up,noseTopLocalY)
-    :base.position.clone().addScaledVector(up,Math.max(solarH/1000,0.02))
-  const earthEmitter=showVehicle
-    ?position.clone().addScaledVector(up,antennaLocalY).addScaledVector(sideDir,1.25*vehicleScale)
-    :base.position.clone().addScaledVector(up,Math.max(antennaH/1000,0.015)).addScaledVector(sideDir,0.18)
+  // Scientific rays originate at the declared surface observer, never at the enlarged display model.
+  const [scienceX,scienceY]=latLonToStereoM(props.latDeg,props.lonDeg,data.manifest.radius_m)
+  const scienceBase=typeof props.scientificSurfaceElevationM==='number'&&Number.isFinite(props.scientificSurfaceElevationM)
+    ?projectedToWorld(scienceX,scienceY,props.scientificSurfaceElevationM,1,data.manifest.radius_m):base.position
+  const solarEmitter=new THREE.Vector3().fromArray(scientificObserver(scienceBase.toArray(),up.toArray(),solarH))
+  const earthEmitter=new THREE.Vector3().fromArray(scientificObserver(scienceBase.toArray(),up.toArray(),antennaH))
+  const sunVisibility=assessVisibility(props.sunElevationDeg,props.sunRaycast.obstacleElevationDeg)
+  const earthVisibility=assessVisibility(props.earthElevationDeg,props.earthRaycast.obstacleElevationDeg)
 
   const sun=solarEmitter.clone().addScaledVector(bodyDirection(site,props.sunAzimuthDeg,props.sunElevationDeg),380)
   const earth=earthEmitter.clone().addScaledVector(bodyDirection(site,props.earthAzimuthDeg,props.earthElevationDeg),340)
@@ -298,8 +299,8 @@ function Spacecraft(props:Tactical3DSceneProps&{onDrag:()=>void}){
       {props.landed&&<mesh raycast={()=>null}><circleGeometry args={[.007,24]}/><meshBasicMaterial color={colour} side={THREE.DoubleSide}/></mesh>}
     </group>}
     {props.scienceReady&&<>
-      <Line points={[solarEmitter,sun]} color={props.sunRaycast.hit?'#ff797f':'#f5cb67'} lineWidth={2.4} transparent opacity={.92}/>
-      <Line points={[earthEmitter,earth]} color={props.earthRaycast.hit?'#ff797f':'#8ddfe9'} lineWidth={2.2} transparent opacity={.9}/>
+      <Line points={[solarEmitter,sun]} color={visibilityColor(sunVisibility.state,'sun')} lineWidth={2.4} transparent opacity={.92}/>
+      <Line points={[earthEmitter,earth]} color={visibilityColor(earthVisibility.state,'earth')} lineWidth={2.2} transparent opacity={.9}/>
       <mesh position={sun} raycast={()=>null}><sphereGeometry args={[8,24,18]}/><meshBasicMaterial color="#ffe8ad"/></mesh>
       <group position={earth}>
         <mesh raycast={()=>null}><sphereGeometry args={[10,28,20]}/><meshStandardMaterial color="#447fbc" roughness={1}/></mesh>
@@ -371,6 +372,8 @@ function PolarSelection({data,cell}:{data:AtlasData;cell:PolarCell}){
 }
 
 function MissionMarkers({data,markers,onSelect}:{data:AtlasData;markers:PlanMapMarker[];onSelect?:(id:string)=>void}){
+ const {tr}=useI18n()
+
   return <group name="calculated-mission-destinations">
     {markers.map((m,index)=>{
       const surface=surfacePoint(data,m.latitude_deg,m.longitude_deg)
@@ -382,13 +385,15 @@ function MissionMarkers({data,markers,onSelect}:{data:AtlasData;markers:PlanMapM
       return <group key={m.id} position={surface.position.clone().addScaledVector(up,.3)} quaternion={rotation} onClick={e=>{e.stopPropagation();onSelect?.(m.id)}}>
         <mesh renderOrder={30}><ringGeometry args={[radius*.76,radius,64]}/><meshBasicMaterial color={color} transparent opacity={.95} side={THREE.DoubleSide} depthTest={false} depthWrite={false}/></mesh>
         <mesh renderOrder={29}><circleGeometry args={[radius*.76,48]}/><meshBasicMaterial color={color} transparent opacity={.13} side={THREE.DoubleSide} depthTest={false} depthWrite={false}/></mesh>
-        <Html center zIndexRange={[35,25]}><button type="button" aria-label={m.kind==='best'?'Elegir mejor candidato':m.kind==='rejected'?'Ver zona descartada':'Elegir alternativa '+(m.label??String(index+1))} onClick={e=>{e.stopPropagation();onSelect?.(m.id)}} className={'mission-marker-label '+m.kind}>{m.kind==='best'?'★':m.kind==='rejected'?'×':m.label??String(index+1)}{m.kind==='best'&&<span>Mejor candidato</span>}</button></Html>
+        <Html center zIndexRange={[35,25]}><button type="button" aria-label={tr(m.kind==='best'?'Elegir mejor candidato':m.kind==='rejected'?'Ver zona descartada':'Elegir alternativa '+(m.label??String(index+1)))} onClick={e=>{e.stopPropagation();onSelect?.(m.id)}} className={'mission-marker-label '+m.kind}>{tr(m.kind==='best'?'★':m.kind==='rejected'?'×':m.label??String(index+1))}{m.kind==='best'&&<span>{tr("Mejor candidato")}</span>}</button></Html>
       </group>
     })}
   </group>
 }
 
 function PinnedPinMarker({data,pin}:{data:AtlasData;pin:{lat:number;lon:number;label?:string}}){
+ const {tr}=useI18n()
+
   const surface=surfacePoint(data,pin.lat,pin.lon)
   if(!Number.isFinite(surface.position.y))return null
   const up=bodyDirection({latitude_deg:pin.lat,longitude_deg:pin.lon} as never,0,90)
@@ -414,7 +419,7 @@ function PinnedPinMarker({data,pin}:{data:AtlasData;pin:{lat:number;lon:number;l
       <Html center zIndexRange={[50,35]}>
         <div className="tactical-pinned-flag">
           <span className="pinned-flag-dot"/>
-          <strong>📍 {pin.label??'Lugar fijado'}</strong>
+          <strong>📍 {tr(pin.label??'Lugar fijado')}</strong>
         </div>
       </Html>
     </group>

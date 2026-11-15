@@ -1,3 +1,4 @@
+import {clearsMargin} from '../../../worker/visibility.mjs'
 
 /** Bounded hourly visibility windows from measured/modelled series, never extrapolated.
  * "Visible" means apparent-center clearance exceeds the declared margin. It is
@@ -49,7 +50,7 @@ function nextEvent(states:(boolean|null)[],times:string[],index:number,target:bo
   return event('not_observed',end)
 }
 function channel(clearances:(number|null)[],times:string[],index:number,margin:number):OperationalChannel{
-  const states=clearances.map(v=>v===null?null:v>margin)
+  const states=clearances.map(v=>v===null?null:clearsMargin(v,margin))
   const intervals:OperationalInterval[]=[]
   let start:number|null=null,visible=0,blocked=0,unknown=0
   // The last row is an observed endpoint, not an additional one-hour interval.

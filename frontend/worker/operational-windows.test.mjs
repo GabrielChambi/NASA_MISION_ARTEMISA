@@ -1,10 +1,11 @@
 
 import {readFile} from 'node:fs/promises'
-import {transform} from 'esbuild'
+import {build} from 'esbuild'
 import {test} from 'node:test'
 import assert from 'node:assert/strict'
 const source=await readFile(new URL('../src/features/mission/operationalWindows.ts',import.meta.url),'utf8')
-const {code}=await transform(source,{loader:'ts',format:'esm',target:'es2022'})
+const {outputFiles}=await build({stdin:{contents:source,resolveDir:new URL('../src/features/mission/',import.meta.url).pathname.replace(/^\/(?:([A-Za-z]):)/,'$1:'),loader:'ts'},bundle:true,write:false,platform:'node',format:'esm',target:'es2022'})
+const code=outputFiles[0].text
 const {getOperationalWindows}=await import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'))
 const START=Date.parse('2026-12-06T12:00:00Z'),H=3600000
 const utc=i=>new Date(START+i*H).toISOString().replace('.000Z','Z')

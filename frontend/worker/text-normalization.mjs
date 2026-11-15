@@ -1,3 +1,4 @@
+import {normalizeEnglishInput} from './english-input.mjs'
 /** Conservative repairs of explicit text; never invent a missing year or correct a calendar date. */
 const MONTHS=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
 const ALIASES={ene:'enero',feb:'febrero',mar:'marzo',abr:'abril',may:'mayo',jun:'junio',jul:'julio',ago:'agosto',sep:'septiembre',sept:'septiembre',setiembre:'septiembre',oct:'octubre',nov:'noviembre',dic:'diciembre',january:'enero',february:'febrero',march:'marzo',april:'abril',june:'junio',july:'julio',august:'agosto',september:'septiembre',october:'octubre',november:'noviembre',december:'diciembre'}
@@ -5,6 +6,7 @@ const WORDS={cero:0,uno:1,primero:1,dos:2,tres:3,cuatro:4,cinco:5,seis:6,siete:7
 function closeOne(a,b){if(Math.abs(a.length-b.length)>1)return false;if(a.length===b.length)return [...a].filter((c,i)=>c!==b[i]).length<=1;if(a.length>b.length)[a,b]=[b,a];let i=0,j=0,miss=0;while(i<a.length&&j<b.length){if(a[i]===b[j]){i++;j++}else{j++;miss++}}return miss+b.length-j<=1}
 export function normalizeMissionText(value){
  let text=value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/−/g,'-').replace(/\u00a0/g,' ')
+ text=normalizeEnglishInput(text)
  text=text.replace(/\b(viaje|viajar|el|de|del|al|las|hora|durante|estar|necesito|quiero|reserva|bateria|solar|carga|consumo|desde|salida|lanzamiento|retraso)(?=\d)/g,'$1 ')
  text=text.replace(/(?<=\d)(?=(?:de|del)(?:\s|[a-z]))/g,' ').replace(/\b(?:el|del|al)(?=\d{1,2}(?:de|\s))/g,m=>m+' ')
  for(const month of MONTHS){

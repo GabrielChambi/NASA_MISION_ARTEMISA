@@ -8,6 +8,12 @@ Escribe cuándo quieres viajar y el sistema calcula una **clasificación continu
 
 **Gemini interpreta la solicitud; el motor científico calcula con NASA LOLA y JPL Horizons.** Es un prototipo de planificación regional con hipótesis visibles, no un gemelo digital certificado ni una autorización de vuelo.
 
+## English-speaking reviewers
+
+Select **English** in the header. You can plan and revise a mission in English, inspect the whole south pole, and read the energy, terrain and visibility results in the same language. For example: “I want to travel on December 25, 2026 at 8am and stay 72 hours.” The default clock is Kennedy Space Center, America/New_York. Language changes preserve all calculated data.
+
+[English workflow, the Earth-visibility correction, scientific scope and reproduction](docs/ENGLISH_AND_VISIBILITY.md).
+
 ## Conversación que ejecuta y conserva el contexto
 
 Reconoce también «QUIERO HACER UN VIAJE EL 1DE DICIEMBREDE 2026 A LAS 10AM»: con Kennedy son las **15:00 UTC**. Después puedes pedir «retrasa 12 horas», «batería de mil Wh», «paneles un 20 % menos» o «corte de comunicaciones de 6 horas desde la hora 12». Se ejecuta el cálculo correspondiente conservando los demás parámetros. Si falta una unidad o el año, pregunta sólo por ese dato y acepta una respuesta breve.

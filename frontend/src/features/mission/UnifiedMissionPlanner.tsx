@@ -1,3 +1,6 @@
+import MissionVisibilityPanel from './MissionVisibilityPanel'
+import {useI18n} from '../../i18n/LanguageContext'
+import {assessVisibility} from '../../../worker/visibility.mjs'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowRight, Bot, Check, ChevronDown, CircleHelp, Compass, Cpu, Download, Globe2, Layers, LoaderCircle, MapPin, Maximize2, Minimize2, Orbit, PanelBottom, PanelLeft, PanelRight, Pause, Play, Plus, Rocket, Send, Settings2, Sun, X } from 'lucide-react'
 
@@ -147,17 +150,6 @@ export const LUNAR_OBJECTS:Record<string,VehicleProfile>={
   ...Object.fromEntries(Object.entries(CATALOG_EXAMPLES).map(([key,value])=>[key,{...value,category:'Ejemplo hipotético · '+value.category,description:'Parámetros de demostración editables. No son especificaciones verificadas del fabricante.'}]))
 }
 
-// Language detection from cookie or navigator
-function getInitialLanguage():'es'|'en'{
-  try{
-    const match=document.cookie.match(/(?:^|;\s*)app_lang=(es|en)(?:;|$)/)
-    if(match&&match[1])return match[1] as 'es'|'en'
-    const nav=navigator.language?.toLowerCase()||''
-    if(nav.startsWith('en'))return 'en'
-  }catch{}
-  return 'es'
-}
-
 const STRINGS={
   es:{
     chatGreeting:'Dime las características de tu viaje (fecha, tiempo o vehículo) y calculamos tu mejor lugar de alunizaje en el Polo Sur Lunar.',
@@ -260,9 +252,7 @@ type ChatTurn={
 }
 
 const unknownRay:RaycastHit={hit:true,hitDistanceM:NaN,hitPositionWorld:null,obstacleElevationDeg:NaN,marginDeg:NaN}
-const num=(value:number|null|undefined,digits=1)=>typeof value==='number'&&Number.isFinite(value)?value.toLocaleString('es',{maximumFractionDigits:digits}):'—'
 const duration=(hours:number)=>{if(!Number.isFinite(hours))return '—';const rounded=Math.round(hours),d=Math.floor(rounded/24),h=rounded%24;return d?d+' d'+(h?' '+h+' h':''):h+' h'}
-const longitude=(value:number,digits=2)=>num(Math.abs(value),digits)+'°'+(value<0?'O':'E')
 
 
 function reasonPoint(p:MissionPoint){return p.reasons?.join(' ')||p.reason||'No hay evaluación suficiente para clasificar este sector.'}
@@ -288,7 +278,7 @@ export default function UnifiedMissionPlanner(){
   const [launchSiteId,setLaunchSiteId]=useState('ksc-39b'),[clockMode,setClockMode]=useState('local')
   const launchSite=LAUNCH_SITES.find(site=>site.id===launchSiteId)??LAUNCH_SITES[0]
   const TIMEZONE=clockMode==='UTC'?'UTC':launchSite.timezone
-  const localDate=(utc:string)=>Number.isFinite(Date.parse(utc))?formatMissionDate(utc,TIMEZONE):'—'
+  const localDate=(utc:string)=>Number.isFinite(Date.parse(utc))?formatMissionDate(utc,TIMEZONE,lang):'—'
   const operationsEvidence=useRef<unknown>(null)
   const USER_TIMEZONE=TIMEZONE
   const localTimeZoneLabel=()=>TIMEZONE
@@ -296,7 +286,8 @@ export default function UnifiedMissionPlanner(){
   const [operationsCommand,setOperationsCommand]=useState<OperationsCommand|null>(null)
   const [operationsSnapshot,setOperationsSnapshot]=useState<(OperationsReport&{repair?:{status:string;proposals:unknown[]}})|null>(null)
   const commandCounter=useRef(0),lastOpsSummary=useRef('')
-  const [lang]=useState<'es'|'en'>(getInitialLanguage)
+  const {language:lang,setLanguage,tr,number:num,fetch}=useI18n()
+  const longitude=(value:number,digits=2)=>num(Math.abs(value),digits)+'°'+(value<0?(lang==='en'?'W':'O'):'E')
   const t=STRINGS[lang]
 
   const [atlas,setAtlas]=useState<AtlasData|null>(null),[polar,setPolar]=useState<PolarSurface|null>(null)
@@ -344,8 +335,10 @@ export default function UnifiedMissionPlanner(){
   const coverageLayer=useMemo(()=>coverageVisible&&plan?{cells:plan.cells,selectedId,opacity:1}:undefined,[coverageVisible,plan,selectedId])
   const series=selected?.time_series??[]
   const current=series[timeline]
-  const currentSunOk=Boolean(current&&current.sun_elevation_deg-current.sun_horizon_deg>0.3)
-  const currentEarthOk=Boolean(current&&current.earth_elevation_deg-current.earth_horizon_deg>0.3)
+  const currentSunVisibility=assessVisibility(current?.sun_elevation_deg,current?.sun_horizon_deg)
+  const currentEarthVisibility=assessVisibility(current?.earth_elevation_deg,current?.earth_horizon_deg)
+  const currentSunOk=currentSunVisibility.meets_margin===true
+  const currentEarthOk=currentEarthVisibility.meets_margin===true
   const currentBothOk=currentSunOk&&currentEarthOk
   const chartGeometry=useMemo(()=>{
     if(!series.length)return null
@@ -366,7 +359,7 @@ export default function UnifiedMissionPlanner(){
     const blockZones:Array<{x:number;w:number;kind:'sun'|'earth'|'both'}>=[]
     let start=-1,curKind:'sun'|'earth'|'both'|null=null
     for(let i=0;i<series.length;i++){
-      const sBad=sunMargins[i]<=0.3,eBad=earthMargins[i]<=0.3
+      const sBad=assessVisibility(series[i].sun_elevation_deg,series[i].sun_horizon_deg).meets_margin!==true,eBad=assessVisibility(series[i].earth_elevation_deg,series[i].earth_horizon_deg).meets_margin!==true
       const k:'sun'|'earth'|'both'|null=sBad&&eBad?'both':sBad?'sun':eBad?'earth':null
       if(k!==curKind){
         if(curKind!==null&&start>=0){
@@ -386,8 +379,8 @@ export default function UnifiedMissionPlanner(){
     if(!series.length)return []
     const pins:Array<{hour:number;kind:'ok'|'fail';label:string;detail:string}>=[]
     const lastIdx=series.length-1
-    const isSun=(s:typeof series[number])=>s.sun_elevation_deg-s.sun_horizon_deg>0.3
-    const isEarth=(s:typeof series[number])=>s.earth_elevation_deg-s.earth_horizon_deg>0.3
+    const isSun=(s:typeof series[number])=>assessVisibility(s.sun_elevation_deg,s.sun_horizon_deg).meets_margin===true
+    const isEarth=(s:typeof series[number])=>assessVisibility(s.earth_elevation_deg,s.earth_horizon_deg).meets_margin===true
     const s0=isSun(series[0]),e0=isEarth(series[0])
     pins.push({
       hour:0,
@@ -659,7 +652,7 @@ export default function UnifiedMissionPlanner(){
       try{
         if(command.operations){const patch=validateOperationPatch(command.operations);const utc=command.parsed?.departure_utc;if(!utc)throw new Error('No hay fecha suficiente para aplicar el cambio.');dispatchOperation({id:++commandCounter.current,expected_utc:utc,patch})}
         if(command.context_used&&command.changes?.length)appendChatTurn('assistant',command.changes.join(' · ')+'. Recalculo el escenario y conservo los demás requisitos.')
-        await calculate(command.message??original,intent&&command.parsed?command.parsed:undefined,undefined,true)
+        await calculate(command.message??original,command.context_used&&command.parsed?command.parsed:undefined,undefined,true)
       }catch(e){appendChatTurn('assistant',e instanceof Error?e.message:'No se ha aplicado el cambio.')}
       return
     }
@@ -698,6 +691,11 @@ export default function UnifiedMissionPlanner(){
           message:question,
           context:{
             operations:compactOperationsEvidence(),
+            visibility:current?{
+              t_utc:current.t_utc,
+              sun:{elevation_deg:current.sun_elevation_deg,horizon_deg:current.sun_horizon_deg,azimuth_deg:current.sun_azimuth_deg,observer_height_m:vehicle.solar_panel_height},
+              earth:{elevation_deg:current.earth_elevation_deg,horizon_deg:current.earth_horizon_deg,azimuth_deg:current.earth_azimuth_deg,observer_height_m:vehicle.antenna_height}
+            }:null,
             launch_site:launchSite,
             mission_time_zone:TIMEZONE,
             history:chatTurns.slice(-6).map(t=>({
@@ -853,8 +851,8 @@ export default function UnifiedMissionPlanner(){
     if(!intent||!rescueReport||proposal.criteria_preserved!==true)return
     const chosen={original_text:missionText||message,original:rescueReport.original_request,proposal,search:rescueReport.search,meta:rescueReport.meta}
     const request=proposal.proposed_request,date=new Date(request.departure_utc)
-    const day=new Intl.DateTimeFormat('es',{timeZone:TIMEZONE,day:'numeric',month:'long',year:'numeric'}).format(date)
-    const clock=new Intl.DateTimeFormat('es',{timeZone:TIMEZONE,hour:'2-digit',minute:'2-digit',hour12:false}).format(date)
+    const day=new Intl.DateTimeFormat(lang,{timeZone:TIMEZONE,day:'numeric',month:'long',year:'numeric'}).format(date)
+    const clock=new Intl.DateTimeFormat(lang,{timeZone:TIMEZONE,hour:'2-digit',minute:'2-digit',hour12:false}).format(date)
     const updated='Quiero '+(request.date_kind==='landing'?'alunizar':'viajar')+' el '+day+' a las '+clock+' ('+TIMEZONE+') y estar '+request.surface_hours+' horas en la Luna. Pendiente máxima '+request.max_slope_deg+' grados; mínimo '+request.min_sun_hours+' horas de Sol y '+request.min_earth_hours+' horas de Tierra visible.'
     const local=wallTime(request.departure_utc,TIMEZONE)
     setMessage(updated)
@@ -933,7 +931,7 @@ export default function UnifiedMissionPlanner(){
     void calculate(text,next,undefined,false,undefined,cellId)
 
   }
-  const ray=(el:number|undefined,h:number|undefined):RaycastHit=>el!==undefined&&h!==undefined?{hit:el<=h,hitDistanceM:NaN,hitPositionWorld:null,obstacleElevationDeg:h,marginDeg:el-h}:unknownRay
+  const ray=(el:number|undefined,h:number|undefined):RaycastHit=>el!==undefined&&h!==undefined?{hit:assessVisibility(el,h).state==='occluded',hitDistanceM:NaN,hitPositionWorld:null,obstacleElevationDeg:h,marginDeg:el-h}:unknownRay
   const rejectedTotal=plan?.counts.red??0
   const groupedCatalog=useMemo(()=>{
     const groups=new Map<string,Array<[string,VehicleProfile]>>()
@@ -954,21 +952,21 @@ export default function UnifiedMissionPlanner(){
   ].filter(Boolean).join(' ')
 
   return <div className={'unified-mission'+(mapFullscreen?' map-is-fullscreen':'')} data-testid="unified-mission">
-    <header className="unified-header"><div className="unified-logo"><Orbit size={30}/><div>LUNAR ORACLE<small>PLANIFICA TU LLEGADA A LA LUNA</small></div></div><span className="unified-data-status"><i/> NASA LOLA + JPL HORIZONS</span><button onClick={()=>setHelp(true)}><CircleHelp size={15}/> Cómo funciona</button></header>
+    <header className="unified-header"><div className="unified-logo"><Orbit size={30}/><div>LUNAR ORACLE<small>{tr("PLANIFICA TU LLEGADA A LA LUNA")}</small></div></div><span className="unified-data-status"><i/> NASA LOLA + JPL HORIZONS</span><div className="language-picker" role="group" aria-label={tr("Language / Idioma")}><button type="button" lang="es" aria-pressed={lang==='es'} onClick={()=>setLanguage('es')}>Español</button><button type="button" lang="en" aria-pressed={lang==='en'} onClick={()=>setLanguage('en')}>English</button></div><button onClick={()=>setHelp(true)}><CircleHelp size={15}/>{" "}{tr("Cómo funciona")}</button></header>
     <div className={layoutClass}>
       {!hideLeftPanel&&<aside className="trip-panel chat-linked-panel">
         <div className="chat-panel-top">
           <div className="chat-panel-top-bar">
-            <span className="sr-only">Copiloto de misión</span>
+            <span className="sr-only">{tr("Copiloto de misión")}</span>
             <button
               type="button"
               className={'chat-settings-gear-btn'+(preferences?' active':'')}
               onClick={()=>setPreferences(v=>!v)}
-              aria-label={intent?'Cambiar fecha o requisitos':t.manualSettings}
+              aria-label={tr(intent?'Cambiar fecha o requisitos':t.manualSettings)}
               aria-expanded={preferences}
               aria-controls="mission-manual-settings"
               aria-haspopup="dialog"
-              title={t.manualSettings}
+              title={tr(t.manualSettings)}
             >
               <Settings2 size={16}/>
             </button>
@@ -976,34 +974,32 @@ export default function UnifiedMissionPlanner(){
         </div>
 
         {preferences&&(
-          <div id="mission-manual-settings" className="chat-manual-modal" role="dialog" aria-label="Ajustes y requisitos manuales" onKeyDown={e=>{if(e.key==='Escape')setPreferences(false)}}>
+          <div id="mission-manual-settings" className="chat-manual-modal" role="dialog" aria-label={tr("Ajustes y requisitos manuales")} onKeyDown={e=>{if(e.key==='Escape')setPreferences(false)}}>
             <div className="manual-modal-head">
-              <strong>{plan?'Cambiar fecha o requisitos':'Ajustes y Configuración de Misión'}</strong>
-              <button type="button" autoFocus onClick={()=>setPreferences(false)} aria-label="Cerrar ajustes"><X size={15}/></button>
+              <strong>{tr(plan?'Cambiar fecha o requisitos':'Ajustes y Configuración de Misión')}</strong>
+              <button type="button" autoFocus onClick={()=>setPreferences(false)} aria-label={tr("Cerrar ajustes")}><X size={15}/></button>
             </div>
             <div className="trip-preferences">
               <div className="launch-context" data-testid="launch-context">
-                <label>Centro de lanzamiento
-                  <select aria-label="Centro de lanzamiento" value={launchSiteId} onChange={e=>changeLaunchContext(e.target.value,'local')}>
-                    {LAUNCH_SITES.map(site=><option key={site.id} value={site.id}>{site.name}</option>)}
+                <label>{tr("Centro de lanzamiento")}{" "}<select aria-label={tr("Centro de lanzamiento")} value={launchSiteId} onChange={e=>changeLaunchContext(e.target.value,'local')}>
+                    {LAUNCH_SITES.map(site=><option key={site.id} value={site.id}>{tr(site.name)}</option>)}
                   </select>
                 </label>
-                <label>Reloj de la misión
-                  <select aria-label="Zona horaria de misión" value={clockMode} onChange={e=>changeLaunchContext(launchSiteId,e.target.value)}>
-                    <option value="local">Hora local del centro espacial</option>
-                    <option value="UTC">UTC · tiempo universal</option>
+                <label>{tr("Reloj de la misión")}{" "}<select aria-label={tr("Zona horaria de misión")} value={clockMode} onChange={e=>changeLaunchContext(launchSiteId,e.target.value)}>
+                    <option value="local">{tr("Hora local del centro espacial")}</option>
+                    <option value="UTC">{tr("UTC · tiempo universal")}</option>
                   </select>
                 </label>
-                <small>{launchSite.use} · {TIMEZONE}. Los instantes calculados se conservan al cambiar de reloj. <a href={launchSite.source_url} target="_blank" rel="noreferrer">Fuente NASA</a></small>
+                <small>{tr(launchSite.use)} · {tr(TIMEZONE)}{tr(". Los instantes calculados se conservan al cambiar de reloj.")}{" "}<a href={launchSite.source_url} target="_blank" rel="noreferrer">{tr("Fuente NASA")}</a></small>
               </div>
 
-              {intent&&<label>{intent.date_kind==='landing'?'Fecha de alunizaje':'Fecha de salida'} · {TIMEZONE}<input aria-label="Fecha de viaje" type="datetime-local" value={departureInput} onChange={e=>{clearResult();setDepartureInput(e.target.value)}}/></label>}
-              <label>Tiempo en la Luna<select aria-label="Estancia en la Luna" value={stay} onChange={e=>{clearResult();setStay(e.target.value)}}><option value="24">1 día · 24 h</option><option value="48">2 días · 48 h</option><option value="72">3 días · 72 h</option><option value="168">7 días · 168 h</option>{!['24','48','72','168'].includes(stay)&&<option value={stay}>{stay} horas</option>}</select></label>
-              <label>Pendiente regional máxima · grados<input aria-label="Pendiente máxima" type="number" min={0} max={45} value={slope} onChange={e=>{clearResult();setSlope(Number(e.target.value))}}/></label>
-              <label>Horas mínimas de Sol<input aria-label="Horas mínimas de Sol" type="number" min={0} max={Number(stay)} value={sunHours} onChange={e=>{clearResult();setSunHours(Number(e.target.value))}}/></label>
-              <label>Horas mínimas de Tierra visible<input aria-label="Horas mínimas de Tierra" type="number" min={0} max={Number(stay)} value={earthHours} onChange={e=>{clearResult();setEarthHours(Number(e.target.value))}}/></label>
-              <p>El viaje de ida y vuelta se estima por separado. La estancia no es la duración total. Los perfiles del catálogo son hipótesis editables, no fichas verificadas del fabricante.</p>{(error||loadError)&&<p className="trip-error" role="alert">{error||loadError}</p>}
-              {intent&&<button type="button" onClick={()=>void recalculate()} disabled={Boolean(busy)}>Recalcular con estos cambios</button>}
+              {intent&&<label>{tr(intent.date_kind==='landing'?'Fecha de alunizaje':'Fecha de salida')} · {tr(TIMEZONE)}<input aria-label={tr("Fecha de viaje")} type="datetime-local" value={departureInput} onChange={e=>{clearResult();setDepartureInput(e.target.value)}}/></label>}
+              <label>{tr("Tiempo en la Luna")}<select aria-label={tr("Estancia en la Luna")} value={stay} onChange={e=>{clearResult();setStay(e.target.value)}}><option value="24">{tr("1 día · 24 h")}</option><option value="48">{tr("2 días · 48 h")}</option><option value="72">{tr("3 días · 72 h")}</option><option value="168">{tr("7 días · 168 h")}</option>{!['24','48','72','168'].includes(stay)&&<option value={stay}>{tr(stay)}{" "}{tr("horas")}</option>}</select></label>
+              <label>{tr("Pendiente regional máxima · grados")}<input aria-label={tr("Pendiente máxima")} type="number" min={0} max={45} value={slope} onChange={e=>{clearResult();setSlope(Number(e.target.value))}}/></label>
+              <label>{tr("Horas mínimas de Sol")}<input aria-label={tr("Horas mínimas de Sol")} type="number" min={0} max={Number(stay)} value={sunHours} onChange={e=>{clearResult();setSunHours(Number(e.target.value))}}/></label>
+              <label>{tr("Horas mínimas de Tierra visible")}<input aria-label={tr("Horas mínimas de Tierra")} type="number" min={0} max={Number(stay)} value={earthHours} onChange={e=>{clearResult();setEarthHours(Number(e.target.value))}}/></label>
+              <p>{tr("El viaje de ida y vuelta se estima por separado. La estancia no es la duración total. Los perfiles del catálogo son hipótesis editables, no fichas verificadas del fabricante.")}</p>{(error||loadError)&&<p className="trip-error" role="alert">{tr(error||loadError)}</p>}
+              {intent&&<button type="button" onClick={()=>void recalculate()} disabled={Boolean(busy)}>{tr("Recalcular con estos cambios")}</button>}
             </div>
           </div>
         )}
@@ -1015,11 +1011,11 @@ export default function UnifiedMissionPlanner(){
             <div className="chat-hero-avatar-wrap">
               <FriendlyBotIcon size={54}/>
             </div>
-            <span className="micro-title">COPILOTO DE MISIÓN</span>
-            <h1 className="chat-hero-title">Dime cuándo y <em>encuentro dónde.</em></h1>
+            <span className="micro-title">{tr("COPILOTO DE MISIÓN")}</span>
+            <h1 className="chat-hero-title">{tr("Dime cuándo y")}{" "}<em>{tr("encuentro dónde.")}</em></h1>
             {chatTurns.length===0&&!plan&&!busy&&(
-              <button type="button" className="example-trip" onClick={()=>{setMessage(EXAMPLE);void calculate(EXAMPLE)}} disabled={!atlas||!polar}>
-                {t.exampleBtn} <ArrowRight size={12}/>
+              <button type="button" className="example-trip" onClick={()=>{setMessage(tr(EXAMPLE));void calculate(tr(EXAMPLE))}} disabled={!atlas||!polar}>
+                {tr(t.exampleBtn)} <ArrowRight size={12}/>
               </button>
             )}
           </div>
@@ -1030,7 +1026,7 @@ export default function UnifiedMissionPlanner(){
                 <div key={turn.id} className="gemini-msg user">
                   <div className="user-pill">
                     <p>{turn.text}</p>
-                    {turn.vehicle&&<small className="user-pill-meta">{turn.vehicle.lander_name} · {turn.vehicle.solar_panel_height}m / {turn.vehicle.antenna_height}m / {turn.vehicle.center_of_gravity_tolerance}°</small>}
+                    {turn.vehicle&&<small className="user-pill-meta">{tr(turn.vehicle.lander_name)} · {turn.vehicle.solar_panel_height}m / {turn.vehicle.antenna_height}m / {turn.vehicle.center_of_gravity_tolerance}°</small>}
                   </div>
                 </div>
               )
@@ -1043,19 +1039,19 @@ export default function UnifiedMissionPlanner(){
                 <div key={turn.id} className="gemini-msg assistant" data-testid={isLatestReview?'gemini-engineer-card':undefined}>
                   <div className="gemini-msg-head">
                     <Bot size={15}/>
-                    <span>Explicación del mapa regional</span>
-                    <small>{rev.mode==='ai'?`IA · ${rev.model}`:'Guía con evidencia del modelo'} · {turn.timestamp}</small>
+                    <span>{tr("Explicación del mapa regional")}</span>
+                    <small>{tr(rev.mode==='ai'?`IA · ${rev.model}`:'Guía con evidencia del modelo')} · {tr(turn.timestamp)}</small>
                   </div>
                   <div className="gemini-msg-content">
-                    <p className="engineer-summary">{rev.summary}</p><small>Lectura del mapa regional. El estudio de misión recalcula energía y horizontes locales para las alturas declaradas.</small>
-                    <details className="chat-scientific-detail"><summary>Ver mediciones y límites del sector</summary><p>{rev.summary}</p><p className="gemini-paragraph-muted"><strong>Diagnóstico:</strong> {rev.risk_alert}</p>
+                    <p className="engineer-summary">{tr(rev.summary)}</p><small>{tr("Lectura del mapa regional. El estudio de misión recalcula energía y horizontes locales para las alturas declaradas.")}</small>
+                    <details className="chat-scientific-detail"><summary>{tr("Ver mediciones y límites del sector")}</summary><p>{tr(rev.summary)}</p><p className="gemini-paragraph-muted"><strong>{tr("Diagnóstico:")}</strong> {tr(rev.risk_alert)}</p>
                     <div className="gemini-recommendations-list">
-                      <p><strong>1. Sitio alternativo:</strong> {rev.site_recommendation}</p>
-                      <p><strong>2. Hardware:</strong> {rev.hardware_recommendation}</p>
+                      <p><strong>{tr("1. Sitio alternativo:")}</strong> {tr(rev.site_recommendation)}</p>
+                      <p><strong>{tr("2. Hardware:")}</strong> {tr(rev.hardware_recommendation)}</p>
                     </div>
                     <div className="gemini-action-chips">
-                      {alt&&alt.id!==selected?.id&&<button type="button" onClick={()=>{choose(alt.id);setFocus(true);appendChatTurn('user',`Cambiar al sector alternativo (${num(Math.abs(alt.latitude_deg),2)}°S, ${longitude(alt.longitude_deg,2)})`,vehicle)}}>Ir a {num(Math.abs(alt.latitude_deg),2)}°S <ArrowRight size={11}/></button>}
-                      <small>Comparar otras alturas requiere recalcular sus propios horizontes.</small>
+                      {alt&&alt.id!==selected?.id&&<button type="button" onClick={()=>{choose(alt.id);setFocus(true);appendChatTurn('user',`Cambiar al sector alternativo (${num(Math.abs(alt.latitude_deg),2)}°S, ${longitude(alt.longitude_deg,2)})`,vehicle)}}>{tr("Ir a")}{" "}{tr(num(Math.abs(alt.latitude_deg),2))}°S <ArrowRight size={11}/></button>}
+                      <small>{tr("Comparar otras alturas requiere recalcular sus propios horizontes.")}</small>
                     </div></details>
                   </div>
                 </div>
@@ -1063,19 +1059,19 @@ export default function UnifiedMissionPlanner(){
             }
             return (
               <div key={turn.id} className="gemini-msg assistant">
-                <div className="gemini-msg-head"><Bot size={15}/><span>Copiloto de misión</span><small>{turn.timestamp}{turn.sourceMode==='guide'?' · Guía calculada':turn.sourceMode==='ai'?' · Gemini':''}</small></div>
-                <div className="gemini-msg-content">{renderMarkdown(turn.text)}</div>
+                <div className="gemini-msg-head"><Bot size={15}/><span>{tr("Copiloto de misión")}</span><small>{tr(turn.timestamp)}{tr(turn.sourceMode==='guide'?' · Guía calculada':turn.sourceMode==='ai'?' · Gemini':'')}</small></div>
+                <div className="gemini-msg-content">{renderMarkdown(tr(turn.text))}</div>
               </div>
             )
           })}
 
           {busy&&<div className="gemini-msg assistant">
-            <div className="gemini-msg-head"><LoaderCircle size={15} className="spin"/><span>Copiloto de misión</span></div>
+            <div className="gemini-msg-head"><LoaderCircle size={15} className="spin"/><span>{tr("Copiloto de misión")}</span></div>
             <div className="gemini-msg-content">
               <div className="planning-progress" role="status">
-                <span>{busy==='intent'?'Interpretando tu viaje…':'Calculando horizontes NASA LOLA y efemérides JPL…'}</span>
-                <div><Check size={13}/> Relieve polar · {vehicle.lander_name} ({vehicle.solar_panel_height}m / {vehicle.antenna_height}m)</div>
-                <small>{elapsed} s · <button type="button" className="inline-cancel" onClick={()=>{request.current?.abort();setBusy(null)}}>Cancelar</button></small>
+                <span>{tr(busy==='intent'?'Interpretando tu viaje…':'Calculando horizontes NASA LOLA y efemérides JPL…')}</span>
+                <div><Check size={13}/>{" "}{tr("Relieve polar ·")}{" "}{tr(vehicle.lander_name)} ({vehicle.solar_panel_height}m / {vehicle.antenna_height}m)</div>
+                <small>{elapsed} s · <button type="button" className="inline-cancel" onClick={()=>{request.current?.abort();setBusy(null)}}>{tr("Cancelar")}</button></small>
               </div>
             </div>
           </div>}
@@ -1083,19 +1079,19 @@ export default function UnifiedMissionPlanner(){
           {plan&&reviewBusy&&!chatTurns.some(t=>Boolean(t.review))&&<div className="gemini-msg assistant" data-testid="gemini-engineer-card">
             <div className="gemini-msg-head">
               <Bot size={15}/>
-              <span>Explicación del mapa regional</span>
-              <small>Analizando…</small>
+              <span>{tr("Explicación del mapa regional")}</span>
+              <small>{tr("Analizando…")}</small>
             </div>
             <div className="gemini-msg-content">
-              <p className="loading-note">Evaluando geometría del vehículo sobre el terreno…</p>
+              <p className="loading-note">{tr("Evaluando geometría del vehículo sobre el terreno…")}</p>
 
             </div>
           </div>}
           <div ref={chatEndRef}/>
         </div>
 
-        {!preferences&&(error||loadError)&&<div className="trip-error" role="alert">{error||loadError}{loadError&&<button onClick={()=>setRetry(r=>r+1)}>Reintentar datos</button>}</div>}
-        {!atlas&&!loadError&&<p className="loading-note">Cargando el relieve lunar…</p>}
+        {!preferences&&(error||loadError)&&<div className="trip-error" role="alert">{tr(error||loadError)}{loadError&&<button onClick={()=>setRetry(r=>r+1)}>{tr("Reintentar datos")}</button>}</div>}
+        {!atlas&&!loadError&&<p className="loading-note">{tr("Cargando el relieve lunar…")}</p>}
 
         {/* ChatGPT / Gemini style unified composer with single + (.json/.gltf) and Lunar Object Selector */}
         <form
@@ -1109,23 +1105,23 @@ export default function UnifiedMissionPlanner(){
 
           {/* Active Vehicle and Pinned Target Chips inside the composer box */}
           <div className="composer-attachment-bar">
-            <div className="composer-active-chip" title={vehicle.description??vehicle.lander_name}>
+            <div className="composer-active-chip" title={tr(vehicle.description??vehicle.lander_name)}>
               <Rocket size={12}/>
-              <strong>{vehicle.lander_name}</strong>
-              <span>Paneles {vehicle.solar_panel_height}m · Antena {vehicle.antenna_height}m · límite {vehicle.center_of_gravity_tolerance}°</span>
+              <strong>{tr(vehicle.lander_name)}</strong>
+              <span>{tr("Paneles")} {vehicle.solar_panel_height}{tr("m · Antena")}{" "}{vehicle.antenna_height}{tr("m · límite")}{" "}{vehicle.center_of_gravity_tolerance}°</span>
             </div>
-            {pinnedTarget&&<div className="composer-active-chip pin-target-chip" title="Lugar fijado en el mapa">
+            {pinnedTarget&&<div className="composer-active-chip pin-target-chip" title={tr("Lugar fijado en el mapa")}>
               <MapPin size={11} className="pin-icon"/>
-              <strong>{pinnedTarget.label}</strong>
-              <span>Elevación {pinnedTarget.elevation_m!=null?Math.round(pinnedTarget.elevation_m):'—'}m · Pendiente {pinnedTarget.regional_slope_deg!=null?pinnedTarget.regional_slope_deg.toFixed(1)+'°':'—'}</span>
-              <button type="button" onClick={()=>setPinnedTarget(null)} aria-label="Quitar pin" className="pin-remove-btn"><X size={11}/></button>
+              <strong>{tr(pinnedTarget.label)}</strong>
+              <span>{tr("Elevación")}{" "}{pinnedTarget.elevation_m!=null?Math.round(pinnedTarget.elevation_m):'—'}{tr("m · Pendiente")}{" "}{tr(pinnedTarget.regional_slope_deg!=null?pinnedTarget.regional_slope_deg.toFixed(1)+'°':'—')}</span>
+              <button type="button" onClick={()=>setPinnedTarget(null)} aria-label={tr("Quitar pin")} className="pin-remove-btn"><X size={11}/></button>
             </div>}
           </div>
 
-          <label htmlFor="mission-request" className="sr-only-label">¿Qué misión quieres hacer?</label>
+          <label htmlFor="mission-request" className="sr-only-label">{tr("¿Qué misión quieres hacer?")}</label>
           <textarea
             id="mission-request"
-            aria-label="Describe tu misión"
+            aria-label={tr("Describe tu misión")}
             value={message}
             onChange={e=>setMessage(e.target.value)}
             onKeyDown={e=>{
@@ -1156,19 +1152,19 @@ export default function UnifiedMissionPlanner(){
             }}
             rows={3}
             maxLength={1600}
-            placeholder={t.placeholder}
+            placeholder={tr(t.placeholder)}
           />
 
           {/* Popover menu for all Lunar South Pole vehicles, rovers & habitats */}
-          {catalogOpen&&<div className="lunar-catalog-popover" role="region" aria-label="Objetos y vehículos para el Polo Sur Lunar">
+          {catalogOpen&&<div className="lunar-catalog-popover" role="region" aria-label={tr("Objetos y vehículos para el Polo Sur Lunar")}>
             <div className="catalog-popover-head">
-              <span><Compass size={12}/> OBJETOS Y ELEMENTOS · POLO SUR LUNAR</span>
-              <button type="button" onClick={()=>setCatalogOpen(false)} aria-label="Cerrar selector"><X size={13}/></button>
+              <span><Compass size={12}/>{" "}{tr("OBJETOS Y ELEMENTOS · POLO SUR LUNAR")}</span>
+              <button type="button" onClick={()=>setCatalogOpen(false)} aria-label={tr("Cerrar selector")}><X size={13}/></button>
             </div>
             <div className="catalog-popover-list">
               {groupedCatalog.map(([category,items])=>(
                 <div key={category} className="catalog-group">
-                  <small className="catalog-group-title">{category}</small>
+                  <small className="catalog-group-title">{tr(category)}</small>
                   {items.map(([key,item])=>{
                     const active=vehicle.lander_name===item.lander_name
                     return (
@@ -1179,10 +1175,10 @@ export default function UnifiedMissionPlanner(){
                         onClick={()=>applyVehicleProfile(item)}
                       >
                         <div className="catalog-item-main">
-                          <strong>{item.lander_name}</strong>
-                          <span>Paneles {item.solar_panel_height}m · Antena {item.antenna_height}m · límite del perfil {item.center_of_gravity_tolerance}°</span>
+                          <strong>{tr(item.lander_name)}</strong>
+                          <span>{tr("Paneles")} {item.solar_panel_height}{tr("m · Antena")}{" "}{item.antenna_height}{tr("m · límite del perfil")}{" "}{item.center_of_gravity_tolerance}°</span>
                         </div>
-                        <small>{item.description}</small>
+                        <small>{tr(item.description)}</small>
                       </button>
                     )
                   })}
@@ -1198,8 +1194,8 @@ export default function UnifiedMissionPlanner(){
                 type="button"
                 className="composer-icon-btn composer-plus-btn"
                 onClick={()=>fileInputRef.current?.click()}
-                title="Añadir perfil de vehículo (.json o .gltf)"
-                aria-label="Añadir archivo JSON o GLTF"
+                title={tr("Añadir perfil de vehículo (.json o .gltf)")}
+                aria-label={tr("Añadir archivo JSON o GLTF")}
               >
                 <Plus size={16}/>
               </button>
@@ -1208,10 +1204,10 @@ export default function UnifiedMissionPlanner(){
                 className={'composer-catalog-btn'+(catalogOpen?' open':'')}
                 onClick={()=>setCatalogOpen(v=>!v)}
                 aria-expanded={catalogOpen}
-                title="Elegir entre todos los objetos y vehículos que viajan al Polo Sur Lunar"
+                title={tr("Elegir entre todos los objetos y vehículos que viajan al Polo Sur Lunar")}
               >
                 <Cpu size={13}/>
-                <span>Objetos Lunares</span>
+                <span>{tr("Objetos Lunares")}</span>
                 <ChevronDown size={13}/>
               </button>
             </div>
@@ -1220,40 +1216,40 @@ export default function UnifiedMissionPlanner(){
               className="primary-plan composer-send-btn"
               type="submit"
               disabled={Boolean(busy)||!atlas||!polar}
-              title={busy?t.calculating:t.planBtn}
-              aria-label={t.planBtn}
+              title={tr(busy?t.calculating:t.planBtn)}
+              aria-label={tr(t.planBtn)}
             >
               {busy?<LoaderCircle className="spin" size={15}/>:<Send size={15}/>}
             </button>
           </div>
-          {uploadNotice&&<small className="upload-notice">{uploadNotice}</small>}
+          {uploadNotice&&<small className="upload-notice">{tr(uploadNotice)}</small>}
         </form>
-        {!intent&&!busy&&<div className="mission-prompt-hints"><button type="button" onClick={()=>void submitMessage('QUIERO HACER UN VIAJE EL 1DE DICIEMBREDE 2026 A LAS 10AM')}>Planificar el 1 dic · 10:00</button></div>}
-        {intent&&!busy&&<div className="mission-prompt-hints"><button type="button" onClick={()=>void submitMessage('Busca alternativas conservando mis requisitos')}>Buscar alternativas</button><button type="button" onClick={()=>{setMessage('¿Qué pasa si mis paneles producen un 20% menos?');document.querySelector<HTMLTextAreaElement>('#mission-request')?.focus()}}>Probar un fallo solar</button><button type="button" onClick={()=>void submitMessage('Estudia la huella local del destino')}>Estudiar huella</button></div>}
-        {intent&&<div className="recognized-mission" data-testid="recognized-mission"><span>ESCENARIO ACTIVO</span><strong>{intent.date_kind==='landing'?'Alunizaje':'Salida'} · {localDate(intent.departure_utc)}</strong><small>{TIMEZONE} · {intent.surface_hours} h en superficie · {launchSite.name}</small>{(pendingText||pendingCommandText)&&<small>La última petición está pendiente de completar; este escenario se conserva.</small>}</div>}
-        {adopted&&<div className="adopted-alternative" data-testid="adopted-alternative"><Check size={14}/><div><strong>Alternativa aplicada</strong><span>{adopted.original.date_kind==='landing'?'Alunizaje':'Salida'} original: {localDate(adopted.original.departure_utc)}<br/>Nueva fecha: {localDate(adopted.proposal.proposed_request.departure_utc)}</span><small>La solicitud original queda guardada en la comparación. La estancia y los requisitos no cambian.</small></div></div>}
+        {!intent&&!busy&&<div className="mission-prompt-hints"><button type="button" onClick={()=>void submitMessage('QUIERO HACER UN VIAJE EL 1DE DICIEMBREDE 2026 A LAS 10AM')}>{tr("Planificar el 1 dic · 10:00")}</button></div>}
+        {intent&&!busy&&<div className="mission-prompt-hints"><button type="button" onClick={()=>void submitMessage('Busca alternativas conservando mis requisitos')}>{tr("Buscar alternativas")}</button><button type="button" onClick={()=>{setMessage('¿Qué pasa si mis paneles producen un 20% menos?');document.querySelector<HTMLTextAreaElement>('#mission-request')?.focus()}}>{tr("Probar un fallo solar")}</button><button type="button" onClick={()=>void submitMessage('Estudia la huella local del destino')}>{tr("Estudiar huella")}</button></div>}
+        {intent&&<div className="recognized-mission" data-testid="recognized-mission"><span>{tr("ESCENARIO ACTIVO")}</span><strong>{tr(intent.date_kind==='landing'?'Alunizaje':'Salida')} · {tr(localDate(intent.departure_utc))}</strong><small>{tr(TIMEZONE)} · {intent.surface_hours}{" "}{tr("h en superficie ·")}{" "}{tr(launchSite.name)}</small>{(pendingText||pendingCommandText)&&<small>{tr("La última petición está pendiente de completar; este escenario se conserva.")}</small>}</div>}
+        {adopted&&<div className="adopted-alternative" data-testid="adopted-alternative"><Check size={14}/><div><strong>{tr("Alternativa aplicada")}</strong><span>{tr(adopted.original.date_kind==='landing'?'Alunizaje':'Salida')}{" "}{tr("original:")}{" "}{tr(localDate(adopted.original.departure_utc))}<br/>{tr("Nueva fecha:")}{" "}{tr(localDate(adopted.proposal.proposed_request.departure_utc))}</span><small>{tr("La solicitud original queda guardada en la comparación. La estancia y los requisitos no cambian.")}</small></div></div>}
       </aside>}
 
 
       <main className="one-moon-panel">
         <div className="one-map-heading">
-          <div><span className="micro-title">POLO SUR LUNAR · 80°S — 90°S</span><h2>{plan?'Toda la superficie. Una decisión informada.':'Una Luna. Todos los destinos.'}</h2></div>
+          <div><span className="micro-title">{tr("POLO SUR LUNAR · 80°S — 90°S")}</span><h2>{tr(plan?'Toda la superficie. Una decisión informada.':'Una Luna. Todos los destinos.')}</h2></div>
           <div className="one-map-actions">
-            <button onClick={()=>{setFocus(false);setFlight(null);setFlying(false);setCameraRevision(r=>r+1)}} aria-pressed={!focus}>Todo el polo</button>
-            <button disabled={!selected||selected.latitude_deg> -80||selected.elevation_m==null} onClick={()=>{setFocus(true);setCameraRevision(r=>r+1)}} aria-pressed={focus}>Acercar destino</button>
-            <button disabled={!plan} onClick={()=>document.querySelector('.mission-operations')?.scrollIntoView({behavior:'smooth',block:'start'})}>Estudio de misión</button>
-            <button onClick={()=>{setMapFullscreen(v=>!v);setTimeout(()=>setCameraRevision(r=>r+1),60)}} aria-pressed={mapFullscreen} title={mapFullscreen?'Salir de pantalla grande (Esc)':'Ver vistazo de la Luna en pantalla grande'}>
+            <button onClick={()=>{setFocus(false);setFlight(null);setFlying(false);setCameraRevision(r=>r+1)}} aria-pressed={!focus}>{tr("Todo el polo")}</button>
+            <button disabled={!selected||selected.latitude_deg> -80||selected.elevation_m==null} onClick={()=>{setFocus(true);setCameraRevision(r=>r+1)}} aria-pressed={focus}>{tr("Acercar destino")}</button>
+            <button disabled={!plan} onClick={()=>document.querySelector('.mission-operations')?.scrollIntoView({behavior:'smooth',block:'start'})}>{tr("Estudio de misión")}</button>
+            <button onClick={()=>{setMapFullscreen(v=>!v);setTimeout(()=>setCameraRevision(r=>r+1),60)}} aria-pressed={mapFullscreen} title={tr(mapFullscreen?'Salir de pantalla grande (Esc)':'Ver vistazo de la Luna en pantalla grande')}>
               {mapFullscreen?<Minimize2 size={13}/>:<Maximize2 size={13}/>}
-              {mapFullscreen?'Salir de pantalla grande':'Pantalla grande'}
+              {tr(mapFullscreen?'Salir de pantalla grande':'Pantalla grande')}
             </button>
-            <div className="workspace-panel-toggles" role="group" aria-label="Ocultar o mostrar paneles">
+            <div className="workspace-panel-toggles" role="group" aria-label={tr("Ocultar o mostrar paneles")}>
               <button
                 type="button"
                 className="panel-toggle-btn"
                 aria-pressed={!hideLeftPanel&&!mapFullscreen}
                 onClick={()=>{setMapFullscreen(false);setHideLeftPanel(v=>!v);setTimeout(()=>setCameraRevision(r=>r+1),60)}}
-                title={hideLeftPanel?'Mostrar panel de chat izquierdo':'Ocultar panel de chat izquierdo'}
-                aria-label="Alternar panel de chat"
+                title={tr(hideLeftPanel?'Mostrar panel de chat izquierdo':'Ocultar panel de chat izquierdo')}
+                aria-label={tr("Alternar panel de chat")}
               >
                 <PanelLeft size={14}/>
               </button>
@@ -1262,8 +1258,8 @@ export default function UnifiedMissionPlanner(){
                 className="panel-toggle-btn"
                 aria-pressed={!hideTimelinePanel}
                 onClick={()=>{setHideTimelinePanel(v=>!v);setTimeout(()=>setCameraRevision(r=>r+1),60)}}
-                title={hideTimelinePanel?'Mostrar línea de tiempo':'Ocultar línea de tiempo'}
-                aria-label="Alternar línea de tiempo"
+                title={tr(hideTimelinePanel?'Mostrar línea de tiempo':'Ocultar línea de tiempo')}
+                aria-label={tr("Alternar línea de tiempo")}
               >
                 <PanelBottom size={14}/>
               </button>}
@@ -1272,8 +1268,8 @@ export default function UnifiedMissionPlanner(){
                 className="panel-toggle-btn"
                 aria-pressed={!hideRightPanel&&!mapFullscreen}
                 onClick={()=>{setMapFullscreen(false);setHideRightPanel(v=>!v);setTimeout(()=>setCameraRevision(r=>r+1),60)}}
-                title={hideRightPanel?'Mostrar panel derecho':'Ocultar panel derecho'}
-                aria-label="Alternar panel derecho"
+                title={tr(hideRightPanel?'Mostrar panel derecho':'Ocultar panel derecho')}
+                aria-label={tr("Alternar panel derecho")}
               >
                 <PanelRight size={14}/>
               </button>
@@ -1282,43 +1278,44 @@ export default function UnifiedMissionPlanner(){
         </div>
         <div className="one-moon-map" data-testid="mission-map">
           <Tactical3DScene latDeg={selected?.latitude_deg??pinnedTarget?.lat??-90} lonDeg={selected?.longitude_deg??pinnedTarget?.lon??0} observerHeightM={2} sunAzimuthDeg={current?.sun_azimuth_deg??0} sunElevationDeg={current?.sun_elevation_deg??0} earthAzimuthDeg={current?.earth_azimuth_deg??0} earthElevationDeg={current?.earth_elevation_deg??0} minSolarElevation={0} maxSlopeDeg={vehicle.center_of_gravity_tolerance} currentSlopeDeg={selected?.regional_slope_deg??pinnedTarget?.regional_slope_deg??NaN}
-            atlasData={atlas} focusTerrainData={detail} sunRaycast={ray(current?.sun_elevation_deg,current?.sun_horizon_deg)} earthRaycast={ray(current?.earth_elevation_deg,current?.earth_horizon_deg)} cameraView="polar" siteName={selected?`${vehicle.lander_name} · Destino`:pinnedTarget?`📍 ${pinnedTarget.label}`:'Polo sur'}
+            atlasData={atlas} focusTerrainData={detail} scientificSurfaceElevationM={selected?.elevation_m} sunRaycast={ray(current?.sun_elevation_deg,current?.sun_horizon_deg)} earthRaycast={ray(current?.earth_elevation_deg,current?.earth_horizon_deg)} cameraView="polar" siteName={selected?`${vehicle.lander_name} · Destino`:pinnedTarget?`📍 ${pinnedTarget.label}`:'Polo sur'}
             overview focusZone={focus} onShadingStatus={setShadingStatus} cameraResetKey={cameraRevision+(focus?1:0)} missionMarkers={flight?[]:markers} onMarkerSelect={choose} polarSurface={polar} missionCoverage={coverageLayer} onCoverageSelect={choose} onCoverageHover={setHoveredId}
             onSurfacePlace={sampleMap} placementMode scienceReady={Boolean(current)} assessmentRisk={selected?.risk??'unknown'} showSurfaceVehicle={Boolean(flight)} altitudeM={telemetry?.altitudeM??0} landed={landed}
             solarPanelHeightM={vehicle.solar_panel_height} antennaHeightM={vehicle.antenna_height} landerName={vehicle.lander_name} vehiclePulseKey={vehiclePulseKey}
             pinnedTarget={pinnedTarget}/>
-          <div className="one-map-source"><span>{plan&&coverageVisible&&!flight?'Evaluación de toda la superficie':'NASA LOLA · relieve continuo'}</span><small>{focus&&detail?'Detalle visual ~396 m · fuente 80 m':shadingStatus.includes('no disponible')?'Sombreado no disponible; relieve conservado':'Vista regional · fuente de 80 m'}{visualStatus.includes('no disponible')?' · '+visualStatus:''}</small><small>Nave y astros en escala ilustrativa.</small></div>
+          <div className="one-map-source"><span>{tr(plan&&coverageVisible&&!flight?'Evaluación de toda la superficie':'NASA LOLA · relieve continuo')}</span><small>{tr(focus&&detail?'Detalle visual ~396 m · fuente 80 m':shadingStatus.includes('no disponible')?'Sombreado no disponible; relieve conservado':'Vista regional · fuente de 80 m')}{tr(visualStatus.includes('no disponible')?' · '+visualStatus:'')}</small><small>{tr("Nave y astros en escala ilustrativa.")}</small></div>
 
           {/* Icon-only "Simular llegada a este destino" button inside the Moon map screen */}
           {plan&&selected&&<button
             type="button"
             className={'simulate-arrival map-simulate-icon-btn'+(flight?' active':'')}
-            aria-label="Simular llegada a este destino"
-            title={isRejected||!plan.best?'Selecciona un candidato favorable para simular el descenso':'Simular llegada a este destino'}
+            aria-label={tr("Simular llegada a este destino")}
+            title={tr(isRejected||!plan.best?'Selecciona un candidato favorable para simular el descenso':'Simular llegada a este destino')}
             disabled={isRejected||!plan.best||cellLoading||Boolean(cellError)}
             onClick={runDescent}
           >
             <Rocket size={16}/>
           </button>}
 
-          {!plan&&!pinnedTarget&&<div className="one-map-empty"><Orbit size={20}/><strong>{busy?'Estamos calculando tus destinos.':'Escribe tu viaje o haz clic en la Luna para fijar un punto.'}</strong><span>{busy?'La recomendación aparecerá aquí con sus alternativas.':'Haz clic en el mapa para fijar un destino y escribe la fecha que quieres evaluar.'}</span></div>}
-          {!plan&&pinnedTarget&&<div className="surface-inspection-hint"><MapPin size={12}/><b>Lugar fijado: {pinnedTarget.label}</b><span>Elevación {pinnedTarget.elevation_m!=null?Math.round(pinnedTarget.elevation_m)+' m':'—'} · Pendiente {pinnedTarget.regional_slope_deg!=null?pinnedTarget.regional_slope_deg.toFixed(1)+'°':'—'} · Escribe una fecha para calcular sus condiciones</span></div>}
-          {plan&&!flight&&<div className="surface-inspection-hint"><MapPin size={12}/>{hovered?<><b className={'risk-text '+hovered.risk}>{SURFACE_CLASS_LABELS[hovered.risk]}</b><span>{num(Math.abs(hovered.latitude_deg),2)}°S · {longitude(hovered.longitude_deg)} · pendiente P95 {num(hovered.regional_slope_deg)}°</span></>:<span>Haz clic en cualquier área para ver sus mediciones y motivos.</span>}</div>}
+          {!plan&&!pinnedTarget&&<div className="one-map-empty"><Orbit size={20}/><strong>{tr(busy?'Estamos calculando tus destinos.':'Escribe tu viaje o haz clic en la Luna para fijar un punto.')}</strong><span>{tr(busy?'La recomendación aparecerá aquí con sus alternativas.':'Haz clic en el mapa para fijar un destino y escribe la fecha que quieres evaluar.')}</span></div>}
+          {!plan&&pinnedTarget&&<div className="surface-inspection-hint"><MapPin size={12}/><b>{tr("Lugar fijado:")}{" "}{tr(pinnedTarget.label)}</b><span>{tr("Elevación")}{" "}{tr(pinnedTarget.elevation_m!=null?Math.round(pinnedTarget.elevation_m)+' m':'—')}{" "}{tr("· Pendiente")}{" "}{tr(pinnedTarget.regional_slope_deg!=null?pinnedTarget.regional_slope_deg.toFixed(1)+'°':'—')}{" "}{tr("· Escribe una fecha para calcular sus condiciones")}</span></div>}
+          {plan&&!flight&&<div className="surface-inspection-hint"><MapPin size={12}/>{hovered?<><b className={'risk-text '+hovered.risk}>{tr(SURFACE_CLASS_LABELS[hovered.risk])}</b><span>{tr(num(Math.abs(hovered.latitude_deg),2))}°S · {tr(longitude(hovered.longitude_deg))}{" "}{tr("· pendiente P95")}{" "}{tr(num(hovered.regional_slope_deg))}°</span></>:<span>{tr("Haz clic en cualquier área para ver sus mediciones y motivos.")}</span>}</div>}
         </div>
+        {plan&&<MissionVisibilityPanel sample={current} sunHeightM={vehicle.solar_panel_height} earthHeightM={vehicle.antenna_height}/>}
         {plan&&!hideTimelinePanel&&<SurfaceCoverageSummary plan={plan} active={coverageVisible} onToggle={()=>setCoverageVisible(v=>!v)} onEvidence={()=>setEvidence(true)}/>}
         {plan&&!hideTimelinePanel&&<div className="mission-conditions">
           <div className="conditions-heading">
-            <strong><Globe2 size={14}/> Línea de tiempo unificada · {vehicle.lander_name}</strong>
+            <strong><Globe2 size={14}/>{" "}{tr("Línea de tiempo unificada ·")}{" "}{tr(vehicle.lander_name)}</strong>
             <div className="conditions-legend-inline">
-              <span className="legend-sun"><Sun size={11}/> Sol ({vehicle.solar_panel_height}m): <b>{num(selected?.sun_hours,0)}h</b>/{plan.mission.surface_hours}h</span>
-              <span className="legend-earth"><Globe2 size={11}/> Tierra ({vehicle.antenna_height}m): <b>{num(selected?.earth_hours,0)}h</b>/{plan.mission.surface_hours}h</span>
-              <time>{current?localDate(current.t_utc):localDate(plan.mission.arrival_utc)} · {localTimeZoneLabel()} ({!current?'Datos no disponibles':currentBothOk?'Sol y Tierra visibles':!currentSunOk&&!currentEarthOk?'Sin despeje de Sol ni Tierra':!currentSunOk?'Sol sin despeje':'Tierra sin despeje'})</time>
+              <span className="legend-sun"><Sun size={11}/>{" "}{tr("Sol (")}{vehicle.solar_panel_height}m): <b>{tr(num(selected?.sun_hours,0))}h</b>/{plan.mission.surface_hours}h</span>
+              <span className="legend-earth"><Globe2 size={11}/>{" "}{tr("Tierra (")}{vehicle.antenna_height}m): <b>{tr(num(selected?.earth_hours,0))}h</b>/{plan.mission.surface_hours}h</span>
+              <time>{tr(current?localDate(current.t_utc):localDate(plan.mission.arrival_utc))} · {tr(localTimeZoneLabel())} ({tr(!current?'Datos no disponibles':currentBothOk?'Sol y Tierra visibles':!currentSunOk&&!currentEarthOk?'Sin despeje de Sol ni Tierra':!currentSunOk?'Sol sin despeje':'Tierra sin despeje')})</time>
             </div>
 
           </div>
 
           <div className="conditions-slider">
-            <button aria-label={playing?'Pausar condiciones':'Reproducir condiciones'} disabled={!series.length||flying} onClick={()=>{if(timeline===series.length-1)setTimeline(0);setPlaying(v=>!v)}}>{playing?<Pause size={14}/>:<Play size={14}/>}</button>
+            <button aria-label={tr(playing?'Pausar condiciones':'Reproducir condiciones')} disabled={!series.length||flying} onClick={()=>{if(timeline===series.length-1)setTimeline(0);setPlaying(v=>!v)}}>{playing?<Pause size={14}/>:<Play size={14}/>}</button>
             <div className="timeline-track-stack unified-curve-stack">
               {/* Minimal flat delimiter pins along the timeline axis */}
               {series.length>1&&<div className="timeline-axis-pins">
@@ -1331,9 +1328,9 @@ export default function UnifiedMissionPlanner(){
                       className={'axis-pin'+(timeline===pin.hour?' current':'')}
                       style={{left:`${pct}%`}}
                       onClick={()=>{setPlaying(false);setTimeline(pin.hour)}}
-                      title={pin.detail}
+                      title={tr(pin.detail)}
                     >
-                      <small>{pin.label}</small>
+                      <small>{tr(pin.label)}</small>
                       <i/>
                     </button>
                   )
@@ -1358,7 +1355,7 @@ export default function UnifiedMissionPlanner(){
                 </svg>
                 <input
                   className="chart-range-overlay"
-                  aria-label="Hora de la estancia"
+                  aria-label={tr("Hora de la estancia")}
                   type="range"
                   min={0}
                   max={Math.max(0,series.length-1)}
@@ -1368,7 +1365,7 @@ export default function UnifiedMissionPlanner(){
                 />
               </div>}
               {!chartGeometry&&<input
-                aria-label="Hora de la estancia"
+                aria-label={tr("Hora de la estancia")}
                 type="range"
                 min={0}
                 max={Math.max(0,series.length-1)}
@@ -1380,34 +1377,34 @@ export default function UnifiedMissionPlanner(){
               {/* Integrated interval strip at the base of the unified chart */}
               {series.length>0&&<div className="timeline-status-bars">
                 <div className="status-bar-row">
-                  <span className="bar-label sun-label"><Sun size={11}/> Sol ({vehicle.solar_panel_height}m)</span>
+                  <span className="bar-label sun-label"><Sun size={11}/>{" "}{tr("Sol (")}{vehicle.solar_panel_height}m)</span>
                   <div className="bar-segments">
                     {series.slice(0,-1).map((s,idx)=>{
-                      const ok=s.sun_elevation_deg-s.sun_horizon_deg>0.3
+                      const ok=assessVisibility(s.sun_elevation_deg,s.sun_horizon_deg).meets_margin===true
                       return <span
                         key={idx}
                         className={'seg '+(ok?'sun-ok':'off')+(idx===timeline?' active':'')}
                         onClick={()=>{setPlaying(false);setTimeline(idx)}}
-                        title={`Intervalo +${idx} a +${idx+1} h · Sol al inicio: ${ok?'Iluminado':'Sombra'} (${num(s.sun_elevation_deg-s.sun_horizon_deg,2)}°)`}
+                        title={tr(`Intervalo +${idx} a +${idx+1} h · Sol al inicio: ${ok?'Iluminado':'Sombra'} (${num(s.sun_elevation_deg-s.sun_horizon_deg,2)}°)`)}
                       />
                     })}
                   </div>
-                  <small className="bar-summary"><b>{num(selected?.sun_hours,0)}h</b>/{plan.mission.surface_hours}h</small>
+                  <small className="bar-summary"><b>{tr(num(selected?.sun_hours,0))}h</b>/{plan.mission.surface_hours}h</small>
                 </div>
                 <div className="status-bar-row">
-                  <span className="bar-label earth-label"><Globe2 size={11}/> Tierra ({vehicle.antenna_height}m)</span>
+                  <span className="bar-label earth-label"><Globe2 size={11}/>{" "}{tr("Tierra (")}{vehicle.antenna_height}m)</span>
                   <div className="bar-segments">
                     {series.slice(0,-1).map((s,idx)=>{
-                      const ok=s.earth_elevation_deg-s.earth_horizon_deg>0.3
+                      const ok=assessVisibility(s.earth_elevation_deg,s.earth_horizon_deg).meets_margin===true
                       return <span
                         key={idx}
                         className={'seg '+(ok?'earth-ok':'off')+(idx===timeline?' active':'')}
                         onClick={()=>{setPlaying(false);setTimeline(idx)}}
-                        title={`Intervalo +${idx} a +${idx+1} h · Tierra al inicio: ${ok?'Visible':'Sin despeje'} (${num(s.earth_elevation_deg-s.earth_horizon_deg,2)}°)`}
+                        title={tr(`Intervalo +${idx} a +${idx+1} h · Tierra al inicio: ${ok?'Visible':'Sin despeje'} (${num(s.earth_elevation_deg-s.earth_horizon_deg,2)}°)`)}
                       />
                     })}
                   </div>
-                  <small className="bar-summary"><b>{num(selected?.earth_hours,0)}h</b>/{plan.mission.surface_hours}h</small>
+                  <small className="bar-summary"><b>{tr(num(selected?.earth_hours,0))}h</b>/{plan.mission.surface_hours}h</small>
                 </div>
               </div>}
             </div>
@@ -1415,9 +1412,9 @@ export default function UnifiedMissionPlanner(){
           </div>
 
           <div className="conditions-readouts">
-            <span><Sun size={12}/> Sol sobre el horizonte ({vehicle.solar_panel_height} m): <b className={current?(current.sun_elevation_deg-current.sun_horizon_deg>0.3?'kpi-ok':'kpi-warn'):undefined}>{num(current?current.sun_elevation_deg-current.sun_horizon_deg:null,2)}°</b></span>
-            <span><Globe2 size={12}/> Tierra sobre el horizonte ({vehicle.antenna_height} m): <b className={current?(current.earth_elevation_deg-current.earth_horizon_deg>0.3?'kpi-ok':'kpi-warn'):undefined}>{num(current?current.earth_elevation_deg-current.earth_horizon_deg:null,2)}°</b></span>
-            <span>Pendiente P95: <b className={selected?.regional_slope_deg==null?undefined:selected.regional_slope_deg<=Math.min(intent?.max_slope_deg??slope,vehicle.center_of_gravity_tolerance)?'kpi-ok':'kpi-warn'}>{num(selected?.regional_slope_deg,2)}°</b> · límite del escenario {num(Math.min(intent?.max_slope_deg??slope,vehicle.center_of_gravity_tolerance),2)}°</span>
+            <span><Sun size={12}/>{" "}{tr("Sol sobre el horizonte (")}{vehicle.solar_panel_height} m): <b className={current?(currentSunOk?'kpi-ok':'kpi-warn'):undefined}>{tr(num(current?current.sun_elevation_deg-current.sun_horizon_deg:null,2))}°</b></span>
+            <span><Globe2 size={12}/>{" "}{tr("Tierra sobre el horizonte (")}{vehicle.antenna_height} m): <b className={current?(currentEarthOk?'kpi-ok':'kpi-warn'):undefined}>{tr(num(current?current.earth_elevation_deg-current.earth_horizon_deg:null,2))}°</b></span>
+            <span>{tr("Pendiente P95:")}{" "}<b className={selected?.regional_slope_deg==null?undefined:selected.regional_slope_deg<=Math.min(intent?.max_slope_deg??slope,vehicle.center_of_gravity_tolerance)?'kpi-ok':'kpi-warn'}>{tr(num(selected?.regional_slope_deg,2))}°</b>{" "}{tr("· límite del escenario")}{" "}{tr(num(Math.min(intent?.max_slope_deg??slope,vehicle.center_of_gravity_tolerance),2))}°</span>
           </div>
         </div>}
       </main>
@@ -1425,26 +1422,26 @@ export default function UnifiedMissionPlanner(){
       {!hideRightPanel&&<aside className="mission-decisions">
         <MissionDecisionBrief intent={intent} plan={plan} operations={operationsSnapshot} rescue={rescueReport} rescueBusy={rescueBusy} busy={Boolean(busy)} timezone={TIMEZONE} onStudy={()=>document.querySelector('.mission-operations')?.scrollIntoView({behavior:'smooth',block:'start'})} onBest={()=>{if(plan?.best)choose(plan.best.id)}}/>
 
-        {!plan?<div className="decision-welcome"><MapPin size={28}/><h2>Aquí encontrarás tu mejor opción.</h2><p>El sistema relacionará la fecha de tu viaje y el objeto lunar elegido con el terreno, la luz y la visibilidad de la Tierra.</p><ul><li><Check size={13}/> Un destino recomendado y sus razones</li><li><Check size={13}/> Clasificación de toda la superficie</li><li><Check size={13}/> Diagnóstico conversacional en el chat izquierdo</li></ul><small>Los resultados corresponden a un modelo regional de planificación, no a una autorización de vuelo.</small></div>:<>
-          {!plan.best&&<><div className="decision-title"><span className="micro-title">{plan.best?'RECOMENDACIÓN CALCULADA':plan.counts.unknown===plan.total_cells?'FALTAN DATOS PARA EVALUAR ESTE PERFIL':'NINGUNA ZONA CUMPLE TODOS LOS CRITERIOS'}</span>{aiMode&&<small>{aiMode}</small>}</div><MissionRescuePanel timezone={TIMEZONE} report={rescueReport} busy={rescueBusy} error={rescueError} elapsed={rescueElapsed} onApply={applyAlternative} onRetry={()=>setRescueAttempt(a=>a+1)} onCancel={cancelRescue} onEvidence={()=>setEvidence(true)}/></>}
+        {!plan?<div className="decision-welcome"><MapPin size={28}/><h2>{tr("Aquí encontrarás tu mejor opción.")}</h2><p>{tr("El sistema relacionará la fecha de tu viaje y el objeto lunar elegido con el terreno, la luz y la visibilidad de la Tierra.")}</p><ul><li><Check size={13}/>{" "}{tr("Un destino recomendado y sus razones")}</li><li><Check size={13}/>{" "}{tr("Clasificación de toda la superficie")}</li><li><Check size={13}/>{" "}{tr("Diagnóstico conversacional en el chat izquierdo")}</li></ul><small>{tr("Los resultados corresponden a un modelo regional de planificación, no a una autorización de vuelo.")}</small></div>:<>
+          {!plan.best&&<><div className="decision-title"><span className="micro-title">{tr(plan.best?'RECOMENDACIÓN CALCULADA':plan.counts.unknown===plan.total_cells?'FALTAN DATOS PARA EVALUAR ESTE PERFIL':'NINGUNA ZONA CUMPLE TODOS LOS CRITERIOS')}</span>{aiMode&&<small>{tr(aiMode)}</small>}</div><MissionRescuePanel timezone={TIMEZONE} report={rescueReport} busy={rescueBusy} error={rescueError} elapsed={rescueElapsed} onApply={applyAlternative} onRetry={()=>setRescueAttempt(a=>a+1)} onCancel={cancelRescue} onEvidence={()=>setEvidence(true)}/></>}
           {/* Selected sector, followed by the compact candidate list. */}
-          {selected&&<section className="selected-destination top-selected-destination"><div className="selected-destination-title"><span className={'selected-color '+selected.risk}/><h3>{selectedLabel}</h3></div><span className="selected-sector-id">Sector {selected.id.replace('polar:','')} · {num(selected.area_km2,2)} km² regionales</span><p>{reasonPoint(selected)}</p><dl><div><dt>Perfil del escenario</dt><dd>{vehicle.lander_name}</dd></div><div><dt>Centro del sector</dt><dd>{num(selected.latitude_deg,5)}°, {num(selected.longitude_deg,5)}°</dd></div><div><dt>Elevación</dt><dd>{num(selected.elevation_m??selectedCell?.elevation_m,0)} m</dd></div><div><dt>Pendiente P95 · fuente de 80 m</dt><dd>{num(selected.regional_slope_deg,2)}°</dd></div><div><dt>Máxima pendiente nativa</dt><dd>{num(selected.max_slope_deg??selectedCell?.max_slope_deg)}°</dd></div><div><dt>Sol visible ({vehicle.solar_panel_height}m)</dt><dd>{num(selected.sun_hours,0)} h</dd></div><div><dt>Tierra visible ({vehicle.antenna_height}m)</dt><dd>{num(selected.earth_hours,0)} h</dd></div></dl>
+          {selected&&<section className="selected-destination top-selected-destination"><div className="selected-destination-title"><span className={'selected-color '+selected.risk}/><h3>{tr(selectedLabel)}</h3></div><span className="selected-sector-id">{tr("Sector")}{" "}{tr(selected.id.replace('polar:',''))} · {tr(num(selected.area_km2,2))}{" "}{tr("km² regionales")}</span><p>{tr(reasonPoint(selected))}</p><dl><div><dt>{tr("Perfil del escenario")}</dt><dd>{tr(vehicle.lander_name)}</dd></div><div><dt>{tr("Centro del sector")}</dt><dd>{tr(num(selected.latitude_deg,5))}°, {tr(num(selected.longitude_deg,5))}°</dd></div><div><dt>{tr("Elevación")}</dt><dd>{tr(num(selected.elevation_m??selectedCell?.elevation_m,0))} m</dd></div><div><dt>{tr("Pendiente P95 · fuente de 80 m")}</dt><dd>{tr(num(selected.regional_slope_deg,2))}°</dd></div><div><dt>{tr("Máxima pendiente nativa")}</dt><dd>{tr(num(selected.max_slope_deg??selectedCell?.max_slope_deg))}°</dd></div><div><dt>{tr("Sol visible (")}{vehicle.solar_panel_height}m)</dt><dd>{tr(num(selected.sun_hours,0))} h</dd></div><div><dt>{tr("Tierra visible (")}{vehicle.antenna_height}m)</dt><dd>{tr(num(selected.earth_hours,0))} h</dd></div></dl>
 
-            {selected.sun_hours_sensitivity&&selected.earth_hours_sensitivity&&<div className="sampling-sensitivity"><strong>Variación por muestreo angular</strong><span>Sol: {num(selected.sun_hours_sensitivity.lower,0)}–{num(selected.sun_hours_sensitivity.upper,0)} h · Tierra: {num(selected.earth_hours_sensitivity.lower,0)}–{num(selected.earth_hours_sensitivity.upper,0)} h</span><small>Compara direcciones vecinas del horizonte. No es una probabilidad de éxito.</small></div>}
-            {cellLoading&&<p className="cell-detail-status" role="status"><LoaderCircle className="spin" size={13}/> Cargando condiciones de esta área…</p>}
-            {cellError&&<p className="trip-error" role="alert">{cellError}</p>}
-            {flight&&<div className="arrival-telemetry"><strong>{landed?(flight.outcome==='soft-touchdown'?'Contacto suave en el modelo':'Impacto en el modelo'):'Descenso físico · 30×'}</strong><span>Altura: {num(telemetry?.altitudeM,0)} m</span><span>Velocidad: {num(telemetry?.velocityMps,1)} m/s</span><span>Combustible: {num(telemetry?.fuelKg,0)} kg</span><button onClick={()=>setFlying(v=>!v)} disabled={landed}>{flying?'Pausar':'Continuar'}</button><small>Descenso de una nave genérica hipotética. El perfil visual no aporta masa, empuje ni una validación del destino.</small></div>}
+            {selected.sun_hours_sensitivity&&selected.earth_hours_sensitivity&&<div className="sampling-sensitivity"><strong>{tr("Variación por muestreo angular")}</strong><span>{tr("Sol:")}{" "}{tr(num(selected.sun_hours_sensitivity.lower,0))}–{tr(num(selected.sun_hours_sensitivity.upper,0))}{" "}{tr("h · Tierra:")}{" "}{tr(num(selected.earth_hours_sensitivity.lower,0))}–{tr(num(selected.earth_hours_sensitivity.upper,0))} h</span><small>{tr("Compara direcciones vecinas del horizonte. No es una probabilidad de éxito.")}</small></div>}
+            {cellLoading&&<p className="cell-detail-status" role="status"><LoaderCircle className="spin" size={13}/>{" "}{tr("Cargando condiciones de esta área…")}</p>}
+            {cellError&&<p className="trip-error" role="alert">{tr(cellError)}</p>}
+            {flight&&<div className="arrival-telemetry"><strong>{tr(landed?(flight.outcome==='soft-touchdown'?'Contacto suave en el modelo':'Impacto en el modelo'):'Descenso físico · 30×')}</strong><span>{tr("Altura:")}{" "}{tr(num(telemetry?.altitudeM,0))} m</span><span>{tr("Velocidad:")}{" "}{tr(num(telemetry?.velocityMps,1))} m/s</span><span>{tr("Combustible:")}{" "}{tr(num(telemetry?.fuelKg,0))} kg</span><button onClick={()=>setFlying(v=>!v)} disabled={landed}>{tr(flying?'Pausar':'Continuar')}</button><small>{tr("Descenso de una nave genérica hipotética. El perfil visual no aporta masa, empuje ni una validación del destino.")}</small></div>}
           </section>}
 
           {/* 2. Below Selected Sector: Uniform Candidate List where #1 shares the exact compact row design of #2, #3, #4 */}
-          {plan.best&&<div className="decision-title candidates-below-title"><span className="micro-title">{plan.best?'RECOMENDACIÓN CALCULADA':'NINGUNA ZONA CUMPLE TODOS LOS CRITERIOS'}</span>{aiMode&&<small>{aiMode}</small>}</div>}
+          {plan.best&&<div className="decision-title candidates-below-title"><span className="micro-title">{tr(plan.best?'RECOMENDACIÓN CALCULADA':'NINGUNA ZONA CUMPLE TODOS LOS CRITERIOS')}</span>{aiMode&&<small>{tr(aiMode)}</small>}</div>}
           {plan.best?(
             <section className="other-destinations unified-candidates-list">
               <button className={'best-destination '+(selected?.id===plan.best.id?'selected':'')} onClick={()=>choose(plan.best!.id)}>
                 <span className="destination-number">1</span>
                 <div>
-                  <strong>{num(Math.abs(plan.best.latitude_deg),2)}°S · {longitude(plan.best.longitude_deg,2)}</strong>
-                  <small>{num(plan.best.sun_hours,0)} h de Sol · {num(plan.best.earth_hours,0)} h de Tierra · P95 {num(plan.best.regional_slope_deg,2)}°</small>
+                  <strong>{tr(num(Math.abs(plan.best.latitude_deg),2))}°S · {tr(longitude(plan.best.longitude_deg,2))}</strong>
+                  <small>{tr(num(plan.best.sun_hours,0))}{" "}{tr("h de Sol ·")}{" "}{tr(num(plan.best.earth_hours,0))}{" "}{tr("h de Tierra · P95")}{" "}{tr(num(plan.best.regional_slope_deg,2))}°</small>
                 </div>
                 <ArrowRight size={13}/>
               </button>
@@ -1452,37 +1449,37 @@ export default function UnifiedMissionPlanner(){
                 <button key={p.id} className={selected?.id===p.id?'selected':''} onClick={()=>choose(p.id)}>
                   <span className="destination-number">{i+2}</span>
                   <div>
-                    <strong>{num(Math.abs(p.latitude_deg),2)}°S · {longitude(p.longitude_deg,2)}</strong>
-                    <small>{num(p.sun_hours,0)} h de Sol · {num(p.earth_hours,0)} h de Tierra</small>
+                    <strong>{tr(num(Math.abs(p.latitude_deg),2))}°S · {tr(longitude(p.longitude_deg,2))}</strong>
+                    <small>{tr(num(p.sun_hours,0))}{" "}{tr("h de Sol ·")}{" "}{tr(num(p.earth_hours,0))}{" "}{tr("h de Tierra")}</small>
                   </div>
                   <ArrowRight size={13}/>
                 </button>
               ))}
             </section>
           ):null}
-          <details className="coordinate-inspector"><summary>Consultar cualquier coordenada del polo sur</summary><form onSubmit={e=>{e.preventDefault();inspectCoordinates()}}><label>Latitud<input aria-label="Latitud a consultar" type="number" step="any" min={-90} max={-80} value={inspectLat} onChange={e=>setInspectLat(e.target.value)}/></label><label>Longitud<input aria-label="Longitud a consultar" type="number" step="any" min={-180} max={180} value={inspectLon} onChange={e=>setInspectLon(e.target.value)}/></label><button type="submit">Examinar área</button>{coordinateError&&<p role="alert">{coordinateError}</p>}</form></details>
-          <details className="rejected-destinations"><summary>{num(rejectedTotal,0)} zonas descartadas · ver ejemplos</summary>{plan.rejected.map(p=><button key={p.id} onClick={()=>choose(p.id)}><span className="reject-dot"/><div><strong>{num(Math.abs(p.latitude_deg),2)}°S · {longitude(p.longitude_deg,2)}</strong><small>{p.reasons?.[0]??'No cumple los criterios'}</small></div></button>)}</details>
-          {selected&&<OperationalWindowsPanel samples={series} index={timeline}/>}
-          <button className="download-plan" onClick={exportPlan}><Download size={14}/> Descargar plan y evidencia</button>
-          <p className="decision-scope">Los colores describen sectores regionales, con condiciones calculadas en sus centros. Una zona verde puede contener pendientes locales mayores. Falta evaluar rocas pequeñas, huella de la nave, energía, temperatura y enlace de radio.</p>
+          <details className="coordinate-inspector"><summary>{tr("Consultar cualquier coordenada del polo sur")}</summary><form onSubmit={e=>{e.preventDefault();inspectCoordinates()}}><label>{tr("Latitud")}<input aria-label={tr("Latitud a consultar")} type="number" step="any" min={-90} max={-80} value={inspectLat} onChange={e=>setInspectLat(e.target.value)}/></label><label>{tr("Longitud")}<input aria-label={tr("Longitud a consultar")} type="number" step="any" min={-180} max={180} value={inspectLon} onChange={e=>setInspectLon(e.target.value)}/></label><button type="submit">{tr("Examinar área")}</button>{coordinateError&&<p role="alert">{tr(coordinateError)}</p>}</form></details>
+          <details className="rejected-destinations"><summary>{tr(num(rejectedTotal,0))}{" "}{tr("zonas descartadas · ver ejemplos")}</summary>{plan.rejected.map(p=><button key={p.id} onClick={()=>choose(p.id)}><span className="reject-dot"/><div><strong>{tr(num(Math.abs(p.latitude_deg),2))}°S · {tr(longitude(p.longitude_deg,2))}</strong><small>{tr(p.reasons?.[0]??'No cumple los criterios')}</small></div></button>)}</details>
+          {selected&&<OperationalWindowsPanel samples={series} index={timeline} timezone={TIMEZONE}/>}
+          <button className="download-plan" onClick={exportPlan}><Download size={14}/>{" "}{tr("Descargar plan y evidencia")}</button>
+          <p className="decision-scope">{tr("Los colores describen sectores regionales, con condiciones calculadas en sus centros. Una zona verde puede contener pendientes locales mayores. Falta evaluar rocas pequeñas, huella de la nave, energía, temperatura y enlace de radio.")}</p>
         </>}
 
         {/* 3. At the bottom of the right panel: TU ITINERARIO ESTIMADO + Ver datos y supuestos */}
-        {plan&&<div className="trip-overview right-bottom-itinerary"><span className="micro-title">TU ITINERARIO ESTIMADO</span>
-          <div className="itinerary-item"><span className="itinerary-dot"/><div><small>Salida · {launchSite.name}</small><strong>{localDate(plan.mission.departure_utc)}</strong></div></div>
-          <div className="itinerary-duration">↓ Ida estimada: {duration(plan.mission.outbound_hours)}</div>
-          <div className="itinerary-item"><span className="itinerary-dot moon"/><div><small>Alunizaje analizado</small><strong>{localDate(plan.mission.arrival_utc)}</strong></div></div>
-          <div className="itinerary-duration">Estancia: {duration(plan.mission.surface_hours)}</div>
-          <div className="itinerary-item"><span className="itinerary-dot"/><div><small>Regreso estimado</small><strong>{localDate(plan.mission.return_utc)}</strong></div></div>
-          <div className="total-trip"><span>Duración total estimada</span><strong>{duration(plan.mission.total_hours)}</strong></div>
-          <p className="estimate-note">Estimación orbital simplificada desde una órbita terrestre de 200 km.</p>
+        {plan&&<div className="trip-overview right-bottom-itinerary"><span className="micro-title">{tr("TU ITINERARIO ESTIMADO")}</span>
+          <div className="itinerary-item"><span className="itinerary-dot"/><div><small>{tr("Salida ·")}{" "}{tr(launchSite.name)}</small><strong>{tr(localDate(plan.mission.departure_utc))}</strong></div></div>
+          <div className="itinerary-duration">{tr("↓ Ida estimada:")}{" "}{tr(duration(plan.mission.outbound_hours))}</div>
+          <div className="itinerary-item"><span className="itinerary-dot moon"/><div><small>{tr("Alunizaje analizado")}</small><strong>{tr(localDate(plan.mission.arrival_utc))}</strong></div></div>
+          <div className="itinerary-duration">{tr("Estancia:")}{" "}{tr(duration(plan.mission.surface_hours))}</div>
+          <div className="itinerary-item"><span className="itinerary-dot"/><div><small>{tr("Regreso estimado")}</small><strong>{tr(localDate(plan.mission.return_utc))}</strong></div></div>
+          <div className="total-trip"><span>{tr("Duración total estimada")}</span><strong>{tr(duration(plan.mission.total_hours))}</strong></div>
+          <p className="estimate-note">{tr("Estimación orbital simplificada desde una órbita terrestre de 200 km.")}</p>
         </div>}
-        <button className="evidence-link" onClick={()=>setEvidence(true)}><Layers size={13}/> Ver datos y supuestos</button>
+        <button className="evidence-link" onClick={()=>setEvidence(true)}><Layers size={13}/>{" "}{tr("Ver datos y supuestos")}</button>
       </aside>}
     </div>
     <MissionOperationsPanel command={operationsCommand} onCommandFeedback={(text,success)=>{if(!success)appendChatTurn('assistant',text)}} plan={plan} selected={selected} intent={intent} vehicle={vehicle} launchSite={launchSite} timezone={TIMEZONE} message={missionText||message} onApply={applyOperationalScenario} onInspect={sampleMap} onEvidence={receiveOperationsEvidence}/>
-    {(help||evidence)&&<div className="mission-modal-backdrop" onClick={()=>{setHelp(false);setEvidence(false)}}><section className="mission-modal" role="dialog" aria-modal="true" aria-label={help?'Cómo se planifica tu misión':'Datos del plan de misión'} onClick={e=>e.stopPropagation()} onKeyDown={e=>{if(e.key==='Escape'){setHelp(false);setEvidence(false)}}}><div className="modal-top"><h2>{help?'Escribe tu viaje. Nosotros calculamos.':'Los datos detrás de tu recomendación.'}</h2><button autoFocus aria-label="Cerrar información" onClick={()=>{setHelp(false);setEvidence(false)}}><X size={17}/></button></div>
-      {help?<><p>Escribe la fecha y hora de salida y pulsa <strong>Planificar mi misión</strong>. Gemini interpreta tu petición; el motor científico consulta NASA y compara el polo sur automáticamente. Si la fecha no produce candidatos favorables, busca automáticamente otras fechas manteniendo los requisitos y te permite comparar antes de aplicar.</p><p>Puedes adjuntar un perfil JSON o metadatos glTF y comparar parámetros hipotéticos del vehículo. El catálogo no constituye una ficha técnica verificada. El estudio operativo recalcula horizontes nativos para las alturas declaradas en el punto elegido. La clasificación regional conserva sus horizontes preparados de 2 m; otras alturas se estudian localmente.</p><p>La evaluación cubre todo el polo sur visible. Verde indica sectores favorables en el modelo, amarillo indica sensibilidad al muestreo, rojo indica que no cumplen los criterios y gris indica datos insuficientes. Haz clic en cualquier área para consultar su pendiente, Sol, Tierra y motivos. La estrella destaca el mejor centro candidato; los colores no certifican cada punto de un sector.</p><p>Si dices «alunizar el…», esa fecha se interpreta como llegada. Si dices «viajar el…», se interpreta como salida. La hora se interpreta en el centro espacial elegido, con su horario de verano, o en UTC si lo indicas. Kennedy LC-39B es la referencia inicial para Artemis. El centro no convierte la estimación orbital en una ventana real de lanzamiento.</p><p>La ida y vuelta usan una estimación orbital simplificada. La estancia se declara como supuesto editable. Una misión real requiere diseñar la trayectoria, la nave y sus operaciones.</p></>:<><p>{plan?'Datos del cálculo actual:':'Escribe y calcula una misión para obtener las consultas y mediciones de tu caso.'}</p>{(rescueReport||adopted)&&<details open><summary>Evidencia de la búsqueda de alternativas</summary><p>Se proponen cambios de fecha conservando las restricciones. El resultado sólo cubre los escenarios examinados.</p><pre>{JSON.stringify(rescueReport??adopted,null,2)}</pre></details>}<ul>{assumptions.map(a=><li key={a}>{a}</li>)}{plan?.mission.assumptions?.map(a=><li key={a}>{a}</li>)}</ul><p>Terreno: NASA LOLA de 80 m. Comparación regional por sectores de 4,75 km y perfiles de horizonte propios por centro. Los intervalos amarillo/verde comparan los azimuts vecinos del horizonte; no representan toda la incertidumbre del terreno. Los sectores del borde sin mediciones se conservan en gris. Las superficies se calculan sobre la esfera lunar y se recortan al casquete 80–90°S.</p><ul>{plan?.meta.limitations.map(note=><li key={note}>{note}</li>)}</ul><details><summary>Consultas y procedencia completas</summary><pre>{JSON.stringify(plan?.meta.sources??[],null,2)}</pre></details>{plan&&<button className="download-plan" onClick={exportPlan}><Download size={14}/> Descargar evidencia completa</button>}</>}
+    {(help||evidence)&&<div className="mission-modal-backdrop" onClick={()=>{setHelp(false);setEvidence(false)}}><section className="mission-modal" role="dialog" aria-modal="true" aria-label={tr(help?'Cómo se planifica tu misión':'Datos del plan de misión')} onClick={e=>e.stopPropagation()} onKeyDown={e=>{if(e.key==='Escape'){setHelp(false);setEvidence(false)}}}><div className="modal-top"><h2>{tr(help?'Escribe tu viaje. Nosotros calculamos.':'Los datos detrás de tu recomendación.')}</h2><button autoFocus aria-label={tr("Cerrar información")} onClick={()=>{setHelp(false);setEvidence(false)}}><X size={17}/></button></div>
+      {help?<><p>{tr("Escribe la fecha y hora de salida y pulsa")}{" "}<strong>{tr("Planificar mi misión")}</strong>{tr(". Gemini interpreta tu petición; el motor científico consulta NASA y compara el polo sur automáticamente. Si la fecha no produce candidatos favorables, busca automáticamente otras fechas manteniendo los requisitos y te permite comparar antes de aplicar.")}</p><p>{tr("Puedes adjuntar un perfil JSON o metadatos glTF y comparar parámetros hipotéticos del vehículo. El catálogo no constituye una ficha técnica verificada. El estudio operativo recalcula horizontes nativos para las alturas declaradas en el punto elegido. La clasificación regional conserva sus horizontes preparados de 2 m; otras alturas se estudian localmente.")}</p><p>{tr("La evaluación cubre todo el polo sur visible. Verde indica sectores favorables en el modelo, amarillo indica sensibilidad al muestreo, rojo indica que no cumplen los criterios y gris indica datos insuficientes. Haz clic en cualquier área para consultar su pendiente, Sol, Tierra y motivos. La estrella destaca el mejor centro candidato; los colores no certifican cada punto de un sector.")}</p><p>{tr("Si dices «alunizar el…», esa fecha se interpreta como llegada. Si dices «viajar el…», se interpreta como salida. La hora se interpreta en el centro espacial elegido, con su horario de verano, o en UTC si lo indicas. Kennedy LC-39B es la referencia inicial para Artemis. El centro no convierte la estimación orbital en una ventana real de lanzamiento.")}</p><p>{tr("La ida y vuelta usan una estimación orbital simplificada. La estancia se declara como supuesto editable. Una misión real requiere diseñar la trayectoria, la nave y sus operaciones.")}</p></>:<><p>{tr(plan?'Datos del cálculo actual:':'Escribe y calcula una misión para obtener las consultas y mediciones de tu caso.')}</p>{(rescueReport||adopted)&&<details open><summary>{tr("Evidencia de la búsqueda de alternativas")}</summary><p>{tr("Se proponen cambios de fecha conservando las restricciones. El resultado sólo cubre los escenarios examinados.")}</p><pre>{tr(JSON.stringify(rescueReport??adopted,null,2))}</pre></details>}<ul>{assumptions.map(a=><li key={a}>{tr(a)}</li>)}{plan?.mission.assumptions?.map(a=><li key={a}>{tr(a)}</li>)}</ul><p>{tr("Terreno: NASA LOLA de 80 m. Comparación regional por sectores de 4,75 km y perfiles de horizonte propios por centro. Los intervalos amarillo/verde comparan los azimuts vecinos del horizonte; no representan toda la incertidumbre del terreno. Los sectores del borde sin mediciones se conservan en gris. Las superficies se calculan sobre la esfera lunar y se recortan al casquete 80–90°S.")}</p><ul>{plan?.meta.limitations.map(note=><li key={note}>{tr(note)}</li>)}</ul><details><summary>{tr("Consultas y procedencia completas")}</summary><pre>{tr(JSON.stringify(plan?.meta.sources??[],null,2))}</pre></details>{plan&&<button className="download-plan" onClick={exportPlan}><Download size={14}/>{" "}{tr("Descargar evidencia completa")}</button>}</>}
 
     </section></div>}
   </div>

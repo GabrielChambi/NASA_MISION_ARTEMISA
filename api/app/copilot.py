@@ -1,3 +1,4 @@
+from .localization import normalize_language,localize_payload,language_instruction
 """Grounded mission copilot with Gemini, OpenAI-compatible or Ollama inference.
 No model configured => explicitly named guide mode, never synthetic AI output.
 """
@@ -230,6 +231,8 @@ async def status():
 
 @router.post('')
 async def copilot(request:Request):
+    language=normalize_language(request.headers.get('x-lunar-language'))
+    respond_local=lambda body,status=200:respond(localize_payload(body,language),status)
     try:
         if 'application/json' not in request.headers.get('content-type',''):raise CopilotError('Usa application/json.',415)
         content=b''
@@ -239,14 +242,14 @@ async def copilot(request:Request):
         try:raw=json.loads(content)
         except (ValueError,UnicodeDecodeError) as exc:raise CopilotError('JSON inválido.') from exc
         value=validate_input(raw);config=configuration()
-        if not config:return respond(guide_reply(value))
+        if not config:return respond_local(guide_reply(value))
         try:
             reply=await inference(value,config)
-            return respond({'status':'ok','mode':'ai','model':config['model'],**reply,'evidence':evidence(value['context']),'sources':SOURCES})
+            return respond_local({'status':'ok','mode':'ai','model':config['model'],**reply,'evidence':evidence(value['context']),'sources':SOURCES})
         except Exception as exc:
-            return respond(guide_reply(value,provider_reason(exc)))
+            return respond_local(guide_reply(value,provider_reason(exc)))
     except CopilotError as exc:
-        return respond({'status':'unavailable','message':str(exc)},exc.status)
+        return respond_local({'status':'unavailable','message':str(exc)},exc.status)
 
 LANDER_REVIEW_SCHEMA={
     'type':'object','additionalProperties':False,
@@ -449,15 +452,17 @@ def validate_lander_review_reply(reply,value):
                       r'riesgo critico de vuelco|mecanica dentro de margen|estabilidad (?:validada|garantizada)|'
                       r'pendiente local (?:compatible|segura|es|de)|aterrizaje seguro|zona segura|(?:sin|no hay) riesgo|certificad|aprobado por nasa',normalized)):
             raise CopilotError('La revisión generada excede la evidencia.',503,'invalid_model_reply')
+        if re.search(r'\b(?:two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|twenty|thirty|forty|fifty|hundred|thousand|percent)\b|guarantee|certif|NASA.approved|approved by NASA|safe landing|safe zone|risk.free|no risk|will survive|survives|sufficient (?:energy|power)|(?:guaranteed|continuous|stable|reliable) (?:communications?|link|energy|power)',text,re.I):
+            raise CopilotError('La revisión generada excede la evidencia.',503,'invalid_model_reply')
         clean[key]=text
     if sum(len(v) for v in clean.values())>5000:raise CopilotError('Respuesta demasiado grande.',503,'invalid_model_reply')
     risk=clean['risk_alert'].lower()
-    if not any(word in risk for word in ('no ','desconoc','falta','pendiente de')):
+    if not any(word in risk for word in ('no ','desconoc','falta','pendiente de','unknown','missing','pending','not ','unresolved','insufficient')):
         raise CopilotError('Faltan los límites de la revisión.',503,'invalid_model_reply')
     hardware=clean['hardware_recommendation'].lower()
-    if 'recalcul' not in hardware or 'horizont' not in hardware:
+    if 'recalcul' not in hardware or 'horizon' not in hardware:
         raise CopilotError('El cambio de hardware necesita horizontes propios.',503,'invalid_model_reply')
-    if value['alternative'] is None and not any(word in clean['site_recommendation'].lower() for word in ('no ','sin ','falta')):
+    if value['alternative'] is None and not any(word in clean['site_recommendation'].lower() for word in ('no ','sin ','falta','none','without','missing','not ')):
         raise CopilotError('El modelo inventó una alternativa.',503,'invalid_model_reply')
     return clean
 
@@ -483,6 +488,8 @@ def _lander_model_reply(payload):
 
 @router.post('/lander-review')
 async def lander_review(request:Request):
+    language=normalize_language(request.headers.get('x-lunar-language'))
+    respond_local=lambda body,status=200:respond(localize_payload(body,language),status)
     try:
         if 'application/json' not in request.headers.get('content-type',''):raise CopilotError('Usa application/json.',415)
         content=b''
@@ -498,22 +505,24 @@ async def lander_review(request:Request):
         if config and config['provider']=='gemini':
             try:
                 url=config['base']+'/models/'+quote(config['model'],safe='')+':generateContent'
-                body={'systemInstruction':{'parts':[{'text':LANDER_REVIEW_SYSTEM}]},
+                body={'systemInstruction':{'parts':[{'text':LANDER_REVIEW_SYSTEM+language_instruction(language)}]},
                       'contents':[{'role':'user','parts':[{'text':json.dumps({'KNOWN_FACTS':common['evidence'],'BASELINE':baseline,'LIMITATIONS':LANDER_REVIEW_LIMITATIONS},ensure_ascii=False)}]}],
                       'generationConfig':{'responseMimeType':'application/json','responseJsonSchema':LANDER_REVIEW_SCHEMA,'maxOutputTokens':900}}
                 payload=await provider_json(url,config,body,timeout=15)
                 reply=validate_lander_review_reply(_lander_model_reply(payload),value)
-                return respond({'status':'ok','mode':'ai','model':config['model'],**reply,**common})
+                return respond_local({'status':'ok','mode':'ai','model':config['model'],**reply,**common})
             except Exception as exc:
-                return respond({'status':'ok','mode':'guide','model':None,'reason':provider_reason(exc),**baseline,**common})
-        return respond({'status':'ok','mode':'guide','model':None,'reason':'model_not_configured',**baseline,**common})
+                return respond_local({'status':'ok','mode':'guide','model':None,'reason':provider_reason(exc),**baseline,**common})
+        return respond_local({'status':'ok','mode':'guide','model':None,'reason':'model_not_configured',**baseline,**common})
     except CopilotError as exc:
-        return respond({'status':'unavailable','message':str(exc)},exc.status)
+        return respond_local({'status':'unavailable','message':str(exc)},exc.status)
 
 
 # Conversational questions use a separate, bounded evidence contract.
 @router.post('/chat')
 async def copilot_chat(request:Request):
+    language=normalize_language(request.headers.get('x-lunar-language'))
+    respond_local=lambda body,status=200:respond(localize_payload(body,language),status)
     from .chat_science import SYSTEM,validate_chat,baseline_chat,validate_chat_reply
     try:
         if 'application/json' not in request.headers.get('content-type',''):raise CopilotError('Usa application/json.',415)
@@ -528,11 +537,11 @@ async def copilot_chat(request:Request):
             try:
                 url=config['base']+'/models/'+quote(config['model'],safe='')+':generateContent'
                 content={'QUESTION':value['question'],'KNOWN_FACTS':value['facts'],'HISTORY':value['history']}
-                payload=await provider_json(url,config,{'systemInstruction':{'parts':[{'text':SYSTEM}]},'contents':[{'role':'user','parts':[{'text':json.dumps(content,ensure_ascii=False)}]}],'generationConfig':{'temperature':0.1,'maxOutputTokens':650}},timeout=20)
+                payload=await provider_json(url,config,{'systemInstruction':{'parts':[{'text':SYSTEM+language_instruction(language)}]},'contents':[{'role':'user','parts':[{'text':json.dumps(content,ensure_ascii=False)}]}],'generationConfig':{'temperature':0.1,'maxOutputTokens':650}},timeout=20)
                 parts=payload.get('candidates',[{}])[0].get('content',{}).get('parts',[])
                 reply=''.join(p.get('text','') for p in parts if isinstance(p,dict))
-                return respond({'status':'ok','mode':'ai','model':config['model'],'explanation':validate_chat_reply(reply,value['facts']),'evidence':value['facts']})
+                return respond_local({'status':'ok','mode':'ai','model':config['model'],'explanation':validate_chat_reply(reply,value['facts']),'evidence':value['facts']})
             except Exception as exc:
-                return respond({'status':'ok','mode':'guide','reason':provider_reason(exc),'explanation':baseline,'evidence':value['facts']})
-        return respond({'status':'ok','mode':'guide','reason':'model_not_configured','explanation':baseline,'evidence':value['facts']})
-    except CopilotError as exc:return respond({'status':'unavailable','message':str(exc)},exc.status)
+                return respond_local({'status':'ok','mode':'guide','reason':provider_reason(exc),'explanation':baseline,'evidence':value['facts']})
+        return respond_local({'status':'ok','mode':'guide','reason':'model_not_configured','explanation':baseline,'evidence':value['facts']})
+    except CopilotError as exc:return respond_local({'status':'unavailable','message':str(exc)},exc.status)

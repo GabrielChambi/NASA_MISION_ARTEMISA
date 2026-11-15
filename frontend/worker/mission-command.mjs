@@ -14,7 +14,7 @@ const imperative=text=>/\b(cambia|cambiar|pon|poner|usa|usar|fija|ajusta|reduce|
 export function resolveMissionCommand(message,context={}){
  if(typeof message!=='string'||!message.trim()||message.length>1600)return clarification('Escribe tu misión o el cambio que quieres estudiar, hasta 1600 caracteres.')
  const text=normalizeMissionText(message),mission=context.mission??null,zone=context.timezone??'America/New_York'
- if(/\b(?:no|nunca|jamas)\s+(?:me\s+)?(?:cambies|cambiar|reduzcas|reducir|apliques|aplicar|retrases|retrasar|modifiques|uses|usar|utilices|utilizar|quiero|quieras)\b/.test(text))return result('question')
+ if(/\b(?:no|nunca|jamas)\s+(?:me\s+)?(?:cambies|cambia|cambiar|reduzcas|reduce|reducir|apliques|aplica|aplicar|retrases|retrasa|retrasar|modifiques|uses|usa|usar|utilices|utiliza|utilizar|quiero|quieras)\b/.test(text))return result('question')
  if(/\b(?:restaura|restaurar|quita|quitar|elimina|eliminar)\b/.test(text)&&/fallo|corte|perdida solar/.test(text))return mission?result('operations',{operations:{fault:{solar_loss_fraction:0,solar_fault_start_hour:0,earth_outage_hours:0,earth_outage_start_hour:0}},changes:['Retirar los fallos introducidos; misma misión y hardware']}):clarification('Primero planifica una misión.')
  const defaults=mission??context.defaults??{}
  if(context.pending_command_text&&/^(?:wh|kwh|w|kw|horas?|dias?|\d+(?:[.,]\d+)?\s*(?:wh|kwh|w|kw|%|horas?|dias?))$/i.test(text))return resolveMissionCommand(context.pending_command_text+' '+message,{...context,pending_command_text:null})
@@ -23,7 +23,18 @@ export function resolveMissionCommand(message,context={}){
   const joined=context.pending_text+' '+message
   const joinedText=normalizeMissionText(joined)
   if(hasYear(joinedText)){
-   const parsed=parseMissionIntent({message:joined,timezone:zone,defaults})
+   let parsed=parseMissionIntent({message:joined,timezone:zone,defaults})
+   if(parsed.needs_clarification){
+    // A short answer can supply the year after an already stated clock. Place it next to the
+    // explicit day/month only for parsing; retain both original messages in the audit.
+    const years=[...new Set(joinedText.match(/\b(?:19\d{2}|20\d{2}|2100)\b/g)??[])]
+    if(years.length===1){
+     const year=years[0]
+     let completed=joinedText.replace(new RegExp('\\b('+months+')\\s+(\\d{1,2})\\b(?!\\s*,?\\s*\\d{4})'),'$2 de $1 de '+year)
+     if(completed===joinedText)completed=joinedText.replace(new RegExp('(\\b\\d{1,2}\\s+(?:de\\s+)?(?:'+months+'))\\b(?!\\s+(?:de\\s+)?\\d{4})'),'$1 de '+year)
+     if(completed!==joinedText)parsed=parseMissionIntent({message:completed,timezone:zone,defaults})
+    }
+   }
    if(!parsed.needs_clarification)return result('plan',{message:joined,source_message:message,parsed:parsed.intent,context_used:true})
   }
  }

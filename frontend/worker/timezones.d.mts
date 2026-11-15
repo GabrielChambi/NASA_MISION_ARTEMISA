@@ -3,4 +3,4 @@ export const TIMEZONES:string[]
 export const LAUNCH_SITES:LaunchSite[]
 export function wallTime(utc:string,timezone?:string):string
 export function wallToUtc(local:string,timezone?:string):string
-export function formatMissionDate(utc:string,timezone?:string):string
+export function formatMissionDate(utc:string,timezone?:string,language?:'es'|'en'):string

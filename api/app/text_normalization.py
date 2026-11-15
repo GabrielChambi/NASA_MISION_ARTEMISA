@@ -3,6 +3,7 @@
 No calendar correction, missing-year guessing or inference of mission measurements.
 """
 import re,unicodedata
+from .english_input import normalize_english_input
 MONTHS=('enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre')
 ALIASES={'ene':'enero','feb':'febrero','mar':'marzo','abr':'abril','may':'mayo','jun':'junio','jul':'julio','ago':'agosto','sep':'septiembre','sept':'septiembre','setiembre':'septiembre','oct':'octubre','nov':'noviembre','dic':'diciembre',
  'january':'enero','february':'febrero','march':'marzo','april':'abril','june':'junio','july':'julio','august':'agosto','september':'septiembre','october':'octubre','november':'noviembre','december':'diciembre'}
@@ -28,6 +29,7 @@ def number_words(match):
 
 def normalize_mission_text(value):
  text=''.join(c for c in unicodedata.normalize('NFD',value) if unicodedata.category(c)!='Mn').lower().replace('−','-').replace('\u00a0',' ')
+ text=normalize_english_input(text)
  text=re.sub(r'\b(viaje|viajar|el|de|del|al|las|hora|durante|estar|necesito|quiero|reserva|bateria|solar|carga|consumo|desde|salida|lanzamiento|retraso)(?=\d)',r'\1 ',text)
  # Only date connectors; ISO timestamps, offsets, decimals and unit suffixes remain intact.
  text=re.sub(r'(?<=\d)(?=(?:de|del)(?:\s|[a-z]))',' ',text)

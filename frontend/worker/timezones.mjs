@@ -24,6 +24,6 @@ export function wallToUtc(local,timezone='America/New_York'){
  if(matches.length>1)throw new Error('Esa hora local ocurre dos veces por el cambio de horario. Indica UTC o un desplazamiento explícito.')
  return matches[0]
 }
-export function formatMissionDate(utc,timezone='America/New_York'){
- return new Intl.DateTimeFormat('es',{timeZone:timezone,day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(utc))
+export function formatMissionDate(utc,timezone='America/New_York',language='es'){
+ return new Intl.DateTimeFormat(language==='en'?'en-US':'es',{timeZone:timezone,day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(utc))
 }

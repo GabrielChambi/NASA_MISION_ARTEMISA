@@ -1,3 +1,4 @@
+from .localization import normalize_language,localize_payload
 from .launch_context import ALLOWED_TIMEZONES,local_to_utc
 from .text_normalization import normalize_mission_text
 """Extract mission parameters; the planning engine performs every scientific calculation."""
@@ -34,7 +35,7 @@ SCHEMA = {
     "required": ["local_date", "local_time", "timezone", "date_kind", "date_explicit", "time_explicit", *FIELDS],
 }
 SYSTEM = (
-    "Extrae sólo parámetros de una petición de viaje lunar en español, permitiendo errores de escritura. "
+    "Extrae sólo parámetros de una petición de viaje lunar en español o inglés, permitiendo errores de escritura. "
     "No expliques ni rechaces la planificación: otro motor calculará destinos y tiempos con NASA. "
     "Devuelve JSON según el esquema. No inventes fecha, año ni hora. date_explicit/time_explicit sólo son "
     "true si aparecen en la petición. Convierte horas am/pm a 24h:12am=00 y12pm=12. Usa la timezone "
@@ -72,7 +73,7 @@ def validate_input(value):
         defaults.update({key: value["defaults"][key] for key in FIELDS if key in value["defaults"]})
     if not finite(defaults["surface_hours"], 1, 336) or defaults["surface_hours"] % 1 or not finite(defaults["max_slope_deg"], 0, 45) or not all(finite(defaults[key], 0, 336) for key in ("min_sun_hours", "min_earth_hours")):
         raise IntentError("Revisa estancia y límites predeterminados.")
-    return dict(message=value["message"].strip(), timezone="UTC" if tz == "Etc/UTC" else tz, defaults=defaults,
+    return dict(language=normalize_language(value.get("language")),message=value["message"].strip(), timezone="UTC" if tz == "Etc/UTC" else tz, defaults=defaults,
                 now_utc=value["now_utc"][:30] if isinstance(value.get("now_utc"), str) else None)
 
 
@@ -228,7 +229,7 @@ def finish(value, raw, mode="parser", reason=None):
 
 def parse_mission_intent(value):
     parsed = validate_input(value)
-    return finish(parsed, raw_parse(parsed))
+    return localize_payload(finish(parsed, raw_parse(parsed)),parsed["language"])
 
 
 def validate_model(value, request, baseline):
@@ -284,6 +285,8 @@ def respond(body, status=200):
 
 @router.post("")
 async def mission_intent(request: Request):
+    language=normalize_language(request.headers.get('x-lunar-language'))
+    respond_local=lambda body,status=200:respond(localize_payload(body,language),status)
     try:
         if "application/json" not in request.headers.get("content-type", ""):
             raise IntentError("Usa application/json.", 415)
@@ -300,13 +303,13 @@ async def mission_intent(request: Request):
         value = validate_input(value)
         baseline, config = raw_parse(value), configuration()
         if baseline.get("fatal"):
-            return respond(finish(value, baseline, "parser", "invalid_explicit_input"))
+            return respond_local(finish(value, baseline, "parser", "invalid_explicit_input"))
         if config and config["provider"] == "gemini" and config["key"]:
             try:
                 extracted = validate_model(await infer(value, config), value, baseline)
-                return respond(finish(value, extracted, "ai"))
+                return respond_local(finish(value, extracted, "ai"))
             except Exception:
-                return respond(finish(value, baseline, "parser", "provider_or_extraction_unavailable"))
-        return respond(finish(value, baseline, "parser", "model_not_configured"))
+                return respond_local(finish(value, baseline, "parser", "provider_or_extraction_unavailable"))
+        return respond_local(finish(value, baseline, "parser", "model_not_configured"))
     except IntentError as error:
-        return respond(dict(status="unavailable", message=str(error)), error.status)
+        return respond_local(dict(status="unavailable", message=str(error)), error.status)

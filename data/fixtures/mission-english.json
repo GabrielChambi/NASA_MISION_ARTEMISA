@@ -1,0 +1,42 @@
+[
+  {
+    "message": "I want to travel on December 25, 2026 at 8am and stay 72 hours",
+    "timezone": "America/New_York",
+    "utc": "2026-12-25T13:00:00Z",
+    "date_kind": "departure"
+  },
+  {
+    "message": "I want to land on 25 December 2026 at 8am",
+    "timezone": "America/New_York",
+    "utc": "2026-12-25T13:00:00Z",
+    "date_kind": "landing"
+  },
+  {
+    "message": "Depart on July 1, 2026 at 8am and stay for 48 hours",
+    "timezone": "America/New_York",
+    "utc": "2026-07-01T12:00:00Z",
+    "date_kind": "departure"
+  },
+  {
+    "message": "Landing on January 2nd, 2027 at 10pm UTC",
+    "timezone": "America/New_York",
+    "utc": "2027-01-02T22:00:00Z",
+    "date_kind": "landing"
+  },
+  {
+    "message": "Travel on December twenty five, 2026 at eight am",
+    "timezone": "America/New_York",
+    "utc": "2026-12-25T13:00:00Z",
+    "date_kind": "departure"
+  },
+  {
+    "message": "I want to travel on February 30, 2026 at 8am",
+    "timezone": "America/New_York",
+    "invalid": true
+  },
+  {
+    "message": "I want to travel on December 25 at 8am",
+    "timezone": "America/New_York",
+    "invalid": true
+  }
+]

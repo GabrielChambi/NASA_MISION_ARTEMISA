@@ -1,0 +1,364 @@
+{
+  "rules": [
+    [
+      "\\b(?:do not|don't)\\s+change\\b",
+      "no cambies"
+    ],
+    [
+      "\\b(?:do not|don't)\\s+use\\b",
+      "no uses"
+    ],
+    [
+      "\\b(?:do not|don't)\\s+apply\\b",
+      "no apliques"
+    ],
+    [
+      "\\b(?:do not|don't)\\s+delay\\b",
+      "no retrases"
+    ],
+    [
+      "\\bnever\\b",
+      "nunca"
+    ],
+    [
+      "\\bfirst (?:alternative|option|proposal)\\b",
+      "primera alternativa"
+    ],
+    [
+      "\\bsecond (?:alternative|option|proposal)\\b",
+      "segunda alternativa"
+    ],
+    [
+      "\\bthird (?:alternative|option|proposal)\\b",
+      "tercera alternativa"
+    ],
+    [
+      "\\b(?:i would like to|i want to|i need to|i'd like to|i want)\\b",
+      "quiero"
+    ],
+    [
+      "\\bi need\\b",
+      "necesito"
+    ],
+    [
+      "\\bwhat (?:happens )?if\\b",
+      "que pasa si"
+    ],
+    [
+      "\\b(?:how long|how much)\\b",
+      "cuanto"
+    ],
+    [
+      "\\bwhy\\b",
+      "por que"
+    ],
+    [
+      "\\bwhat does\\b",
+      "que significa"
+    ],
+    [
+      "\\bwhen\\b",
+      "cuando"
+    ],
+    [
+      "\\b(?:starting|beginning) (?:at|from) (?:the )?hour\\b",
+      "desde la hora"
+    ],
+    [
+      "\\bfrom (?:the )?hour\\b",
+      "desde la hora"
+    ],
+    [
+      "\\b(?:earth )?communications? (?:outage|blackout|loss)\\b",
+      "corte de comunicaciones"
+    ],
+    [
+      "\\b(?:loss of|without) communications?\\b",
+      "sin comunicaciones"
+    ],
+    [
+      "\\b(?:initial state of charge|initial charge|initial soc)\\b",
+      "carga inicial"
+    ],
+    [
+      "\\bessential (?:power|load|consumption)\\b",
+      "consumo esencial"
+    ],
+    [
+      "\\b(?:minimum )?reserve\\b",
+      "reserva"
+    ],
+    [
+      "\\bbattery(?: capacity)?\\b",
+      "bateria"
+    ],
+    [
+      "\\bsolar (?:array|panel) area\\b",
+      "area solar"
+    ],
+    [
+      "\\bsolar (?:array|panel) efficiency\\b",
+      "eficiencia solar"
+    ],
+    [
+      "\\bsolar production\\b",
+      "produccion solar"
+    ],
+    [
+      "\\bsolar (?:array|panels?)\\b",
+      "paneles"
+    ],
+    [
+      "\\b(?:produce|produces|generate|generates)\\b",
+      "producen"
+    ],
+    [
+      "\\b(?:less|lower)\\b",
+      "menos"
+    ],
+    [
+      "\\b(?:reduce|decrease)\\b",
+      "reduce"
+    ],
+    [
+      "\\b(?:maximum|max) slope\\b",
+      "pendiente maxima"
+    ],
+    [
+      "\\b(?:at least|minimum|min)\\b",
+      "minimo"
+    ],
+    [
+      "\\b(?:surface stay)(?: of| for)?\\b",
+      "estancia en superficie"
+    ],
+    [
+      "\\bstay(?: on the (?:moon|surface))?(?: for| of)?\\b",
+      "estancia"
+    ],
+    [
+      "\\b(?:take off|takeoff|launching|launch|departure|departing|depart)\\b",
+      "salida"
+    ],
+    [
+      "\\b(?:landing|land|touchdown|touch down)\\b",
+      "alunizar"
+    ],
+    [
+      "\\b(?:arrival|arrive|arriving)\\b",
+      "llegada"
+    ],
+    [
+      "\\b(?:travel|go)\\b",
+      "viajar"
+    ],
+    [
+      "\\btrip\\b",
+      "viaje"
+    ],
+    [
+      "\\bmission\\b",
+      "mision"
+    ],
+    [
+      "\\b(?:earth visibility|visible earth)\\b",
+      "tierra visible"
+    ],
+    [
+      "\\bearth\\b",
+      "tierra"
+    ],
+    [
+      "\\b(?:sunlight|illumination|sun)\\b",
+      "sol"
+    ],
+    [
+      "\\bon the moon\\b",
+      "en la luna"
+    ],
+    [
+      "\\b(?:landing footprint|footprint)\\b",
+      "huella"
+    ],
+    [
+      "\\b(?:support radius|footprint radius)\\b",
+      "radio de huella"
+    ],
+    [
+      "\\b(?:inspect|study|examine)\\b",
+      "estudia"
+    ],
+    [
+      "\\b(?:find|search for|search)\\b",
+      "busca"
+    ],
+    [
+      "\\bcompare\\b",
+      "compara"
+    ],
+    [
+      "\\balternatives?\\b",
+      "alternativas"
+    ],
+    [
+      "\\boptions?\\b",
+      "opciones"
+    ],
+    [
+      "\\bsolutions?\\b",
+      "soluciones"
+    ],
+    [
+      "\\bproposal\\b",
+      "propuesta"
+    ],
+    [
+      "\\bapply\\b",
+      "aplica"
+    ],
+    [
+      "\\bchoose\\b",
+      "elige"
+    ],
+    [
+      "\\buse\\b",
+      "usa"
+    ],
+    [
+      "\\b(?:delay|postpone)\\b",
+      "retrasa"
+    ],
+    [
+      "\\bchange\\b",
+      "cambia"
+    ],
+    [
+      "\\bset\\b",
+      "pon"
+    ],
+    [
+      "\\bplan\\b",
+      "planifica"
+    ],
+    [
+      "\\b(?:simulate|test|try)\\b",
+      "simula"
+    ],
+    [
+      "\\bcancel\\b",
+      "cancela"
+    ],
+    [
+      "\\b(?:remove|clear) (?:the )?(?:faults?|failures?)\\b",
+      "quita los fallos"
+    ],
+    [
+      "\\bscience(?: activities)?\\b",
+      "ciencia"
+    ],
+    [
+      "\\b(?:hours?|hrs?)\\b",
+      "horas"
+    ],
+    [
+      "\\bdays?\\b",
+      "dias"
+    ],
+    [
+      "\\bminutes?\\b",
+      "minutos"
+    ],
+    [
+      "\\bdegrees?\\b",
+      "grados"
+    ],
+    [
+      "\\bmeters?\\b",
+      "metros"
+    ],
+    [
+      "\\bkilo(?:watt[- ]?hours?)\\b",
+      "kwh"
+    ],
+    [
+      "\\bwatt[- ]?hours?\\b",
+      "wh"
+    ],
+    [
+      "\\bwatts?\\b",
+      "w"
+    ],
+    [
+      "\\b(?:during|for)\\b",
+      "durante"
+    ],
+    [
+      "\\bon\\b",
+      "el"
+    ],
+    [
+      "\\bat\\b",
+      "a las"
+    ],
+    [
+      "\\bby\\b",
+      "de"
+    ],
+    [
+      "\\bwith\\b",
+      "con"
+    ],
+    [
+      "\\bof\\b",
+      "de"
+    ],
+    [
+      "\\band\\b",
+      "y"
+    ],
+    [
+      "\\bthe\\b",
+      "la"
+    ],
+    [
+      "\\bto\\b",
+      "a"
+    ],
+    [
+      "\\bnow\\b",
+      "ahora"
+    ]
+  ],
+  "numbers": {
+    "zero": 0,
+    "one": 1,
+    "two": 2,
+    "three": 3,
+    "four": 4,
+    "five": 5,
+    "six": 6,
+    "seven": 7,
+    "eight": 8,
+    "nine": 9,
+    "ten": 10,
+    "eleven": 11,
+    "twelve": 12,
+    "thirteen": 13,
+    "fourteen": 14,
+    "fifteen": 15,
+    "sixteen": 16,
+    "seventeen": 17,
+    "eighteen": 18,
+    "nineteen": 19,
+    "twenty": 20,
+    "thirty": 30,
+    "forty": 40,
+    "fifty": 50,
+    "sixty": 60,
+    "seventy": 70,
+    "eighty": 80,
+    "ninety": 90,
+    "hundred": 100,
+    "thousand": 1000
+  }
+}

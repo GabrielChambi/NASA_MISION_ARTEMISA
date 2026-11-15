@@ -142,6 +142,8 @@ try{
  page.off('request',invalidCounter)
  await page.getByLabel('Horas mínimas de Sol',{exact:true}).fill('12')
  await page.getByLabel('Estancia en la Luna',{exact:true}).selectOption('72')
+ // Main now keeps manual controls in a popover; close it before returning to the chat.
+ await page.getByRole('button',{name:'Cerrar ajustes',exact:true}).click()
  await page.route('**/api/automatic-plan',route=>route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({status:'unavailable',message:'NASA temporalmente no disponible. No se ha calculado un destino.'})}))
  await page.getByLabel('Describe tu misión',{exact:true}).fill(example)
  const outage=apiResponse(page,'/api/automatic-plan')

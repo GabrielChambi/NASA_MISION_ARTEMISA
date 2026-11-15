@@ -1,3 +1,4 @@
+from .localization import normalize_language,localize_payload
 """Optional semantic rewrite into the same restricted mission-command grammar.
 
 The LLM cannot call APIs, set arbitrary fields, invent input numbers, or report science.
@@ -32,28 +33,30 @@ def validate_rewrite(raw,reply):
 
 @router.post('/command')
 async def command(request:Request):
+ language=normalize_language(request.headers.get('x-lunar-language'))
+ respond_local=lambda body,status=200:respond(localize_payload(body,language),status)
  try:
-  if 'application/json' not in request.headers.get('content-type',''):return respond({'status':'unavailable','message':'Usa application/json.'},415)
+  if 'application/json' not in request.headers.get('content-type',''):return respond_local({'status':'unavailable','message':'Usa application/json.'},415)
   raw=b''
   async for part in request.stream():
    raw+=part
-   if len(raw)>12288:return respond({'status':'unavailable','message':'Petición demasiado grande.'},413)
+   if len(raw)>12288:return respond_local({'status':'unavailable','message':'Petición demasiado grande.'},413)
   try:value=json.loads(raw)
-  except (ValueError,TypeError):return respond({'status':'unavailable','message':'JSON inválido.'},422)
-  if not isinstance(value,dict) or not isinstance(value.get('message'),str) or not 1<=len(value['message'])<=1600:return respond({'status':'unavailable','message':'Petición inválida.'},422)
+  except (ValueError,TypeError):return respond_local({'status':'unavailable','message':'JSON inválido.'},422)
+  if not isinstance(value,dict) or not isinstance(value.get('message'),str) or not 1<=len(value['message'])<=1600:return respond_local({'status':'unavailable','message':'Petición inválida.'},422)
   config=configuration()
   fallback={'status':'ok','mode':'guide','needs_clarification':True,'question':'Indica el cambio con su valor y unidad; por ejemplo, «batería de 1000 Wh» o «retrasa la salida 12 horas». No he cambiado tu misión.'}
-  if not config or config['provider']!='gemini':return respond(fallback)
+  if not config or config['provider']!='gemini':return respond_local(fallback)
   try:
    # Context is a declaration only. Arbitrary UI state and API keys are excluded.
    context=value.get('context',{})
    if not isinstance(context,dict):context={}
    safe={k:context[k] for k in ('has_mission','timezone') if isinstance(context.get(k),(str,bool))}
    url=config['base']+'/models/'+quote(config['model'],safe='')+':generateContent'
-   body={'systemInstruction':{'parts':[{'text':SYSTEM}]},'contents':[{'role':'user','parts':[{'text':json.dumps({'USER_MESSAGE':value['message'],'CONTEXT':safe},ensure_ascii=False)}]}],'generationConfig':{'responseMimeType':'application/json','responseJsonSchema':SCHEMA,'maxOutputTokens':450,'temperature':0}}
+   body={'systemInstruction':{'parts':[{'text':SYSTEM+(' If clarification is needed, write question in English; keep normalized_message in Spanish.' if language=='en' else '')}]},'contents':[{'role':'user','parts':[{'text':json.dumps({'USER_MESSAGE':value['message'],'CONTEXT':safe},ensure_ascii=False)}]}],'generationConfig':{'responseMimeType':'application/json','responseJsonSchema':SCHEMA,'maxOutputTokens':450,'temperature':0}}
    result=await provider_json(url,config,body,timeout=15)
    text=''.join(p.get('text','') for p in result.get('candidates',[{}])[0].get('content',{}).get('parts',[]) if isinstance(p,dict))
    normalized=validate_rewrite(value['message'],json.loads(text))
-   return respond({'status':'ok','mode':'ai','model':config['model'],**normalized})
-  except Exception as exc:return respond(fallback|{'reason':provider_reason(exc)})
- except (ValueError,TypeError):return respond({'status':'unavailable','message':'No se pudo interpretar la orden.'},422)
+   return respond_local({'status':'ok','mode':'ai','model':config['model'],**normalized})
+  except Exception as exc:return respond_local(fallback|{'reason':provider_reason(exc)})
+ except (ValueError,TypeError):return respond_local({'status':'unavailable','message':'No se pudo interpretar la orden.'},422)
