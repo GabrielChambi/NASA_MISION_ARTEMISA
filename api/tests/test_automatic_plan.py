@@ -55,7 +55,7 @@ def test_delta_and_circular_interpolation():
 
 def test_whole_cap_and_unknown_coverage_never_becomes_green():
     polar,h,sky=fixture();result=plan.evaluate_global_plan(Q,polar,h,sky,TRANSFER)
-    assert result['counts']=={'green':1,'red':2,'unknown':1}
+    assert result['counts']=={'green':1,'yellow':0,'red':2,'unknown':1}
     assert result['total_cells']==4
     assert result['best']['id']=='flat'
     assert result['best']['sun_hours']==2
@@ -63,7 +63,7 @@ def test_whole_cap_and_unknown_coverage_never_becomes_green():
     assert result['best']['time_series'][-1]['sun_elevation_deg']==-20
     assert next(c for c in result['cells'] if c['id']=='blocked')['sun_hours']==0
     assert '20 km' in next(c for c in result['cells'] if c['id']=='unknown')['reason']
-    assert next(c for c in result['cells'] if c['id']=='steep')['sun_hours'] is None
+    assert next(c for c in result['cells'] if c['id']=='steep')['sun_hours']==2
 
 def test_no_green_preserves_closest_failed_candidate():
     polar,h,sky=fixture();h['profiles_int'][0]=[1000]+[0]*71
@@ -111,4 +111,83 @@ def test_actual_nasa_christmas_example_runs_from_exact_cache():
     assert result['total_cells']==12892
     assert len(result['best']['time_series'])==73
     assert all(s['cache_hit'] and 'QUANTITIES=%274%2C20%27' in s['query_url'] for s in result['meta']['sources'])
-    assert len(json.dumps(result).encode())<5000000
+    assert len(json.dumps(result).encode())<20000000
+
+def test_angular_sampling_sensitivity_retains_nominal_candidate_as_yellow():
+    polar,h,sky=fixture()
+    h['profile_encoding']='absolute';h['profiles_int'][0]=[0,160]+[0]*70
+    result=plan.evaluate_global_plan(Q,polar,h,sky,TRANSFER)
+    cell=next(c for c in result['cells'] if c['id']=='flat')
+    assert cell['risk']=='yellow'
+    assert cell['nominal_pass'] is True
+    assert cell['sensitivity_pass'] is False
+    assert cell['sun_hours']==2
+    assert cell['sun_hours_sensitivity']=={'lower':0,'upper':2}
+    assert cell['arrival_margin_sensitivity']['sun_lower_deg']<0
+    assert result['best'] is None
+    assert result['closest_candidate']['risk']=='yellow'
+    assert 'not physical uncertainty bounds' in result['meta']['sensitivity_method']
+
+def test_neighboring_bin_envelope_and_maximum_slope_do_not_redefine_regional_p95():
+    profile=[20,60]+[0]*70
+    assert plan.horizon_sensitivity(profile,2.5)=={'nominal':2,'lower':.95,'upper':3}
+    assert plan.horizon_sensitivity(profile,357.5)=={'nominal':.5,'lower':-.05,'upper':1}
+    assert plan.horizon_sensitivity(None,0) is None
+    polar,h,sky=fixture();polar['cells'][0]['max_slope_deg']=40
+    result=plan.evaluate_global_plan(Q,polar,h,sky,TRANSFER)
+    assert result['best']['risk']=='green'
+    assert result['best']['max_slope_deg']==40
+    assert 'not a resolved landing footprint' in result['meta']['screening_unit']
+
+def test_inspect_any_cell_has_independent_series_and_no_full_cap_recalculation(monkeypatch):
+    polar,h,sky=fixture()
+    original=plan.evaluate_cell;calls=[]
+    def count(*args):
+        calls.append(args[0]['id'])
+        return original(*args)
+    monkeypatch.setattr(plan,'evaluate_cell',count)
+    result=plan.evaluate_plan_cell(Q,polar,h,sky,TRANSFER,'steep')
+    assert calls==['steep']
+    assert result['cell']['risk']=='red'
+    assert result['cell']['sun_hours']==2
+    assert len(result['cell']['time_series'])==3
+    assert 'cells' not in result
+    assert any('Pendiente' in reason for reason in result['cell']['reasons'])
+    unknown=plan.evaluate_plan_cell(Q,polar,h,sky,TRANSFER,'unknown')
+    assert unknown['cell']['risk']=='unknown'
+    assert unknown['cell']['time_series']==[]
+    with pytest.raises(ValueError,match='catálogo'):plan.evaluate_plan_cell(Q,polar,h,sky,TRANSFER,'no-cell')
+    polar['cells'].append({'id':'fringe','latitude_deg':-79.99,'longitude_deg':0,'x_m':0,'y_m':304000,'elevation_m':None,'known':False})
+    fringe=plan.evaluate_plan_cell(Q,polar,h,sky,TRANSFER,'fringe')
+    assert fringe['cell']['risk']=='unknown'
+    assert fringe['cell']['time_series']==[]
+
+def test_inverse_projection_area_matches_independent_cap_quadrature_and_reserves_unknown_border():
+    polar=plan.surface()
+    cap=2*math.pi*1737400**2*(1-math.sin(math.radians(80)))/1e6
+    actual=sum(plan.stereographic_cell_area(c['x_m'],c['y_m'],4750) for c in polar['cells'])
+    assert abs(actual-(cap-.054393))<.01
+    p,h,sky=fixture();result=plan.evaluate_global_plan(Q,p,h,sky,TRANSFER)
+    assert sum(v['area_km2'] for v in result['coverage']['by_class'].values())==pytest.approx(result['coverage']['cap_area_km2'],abs=.003)
+    assert result['coverage']['unrepresented_area_km2']>0
+    unknown=next(c for c in result['cells'] if c['risk']=='unknown')
+    assert result['coverage']['by_class']['unknown']['area_km2']>unknown['area_km2']
+    assert plan.stereographic_cell_area(0,0,4750)>plan.stereographic_cell_area(200000,0,4750)
+    assert plan.stereographic_cell_area(700000,0,4750)==0
+    assert plan.stereographic_cell_area(0,304000,4750)>0
+
+def test_cell_endpoint_rejects_unknown_cell_before_nasa(monkeypatch):
+    async def never(*args,**kwargs):raise AssertionError('Unknown cell reached NASA.')
+    monkeypatch.setattr(plan,'get_sky',never)
+    result=client().post('/api/automatic-plan/cell',json=Q|{'cell_id':'no-cell'})
+    assert result.status_code==404
+
+def test_cell_endpoint_returns_real_prepared_non_suggestion():
+    example=json.loads((ROOT/'data/prepared/automatic_example.json').read_text(encoding='utf-8'))
+    response=client().post('/api/automatic-plan/cell',json=example['request']|{'cell_id':'polar:64:64'})
+    assert response.status_code==200
+    result=response.json()
+    assert result['cell']['id']=='polar:64:64'
+    assert len(result['cell']['time_series'])==73
+    assert 'cells' not in result
+    assert all(s['cache_hit'] for s in result['meta']['sources'])

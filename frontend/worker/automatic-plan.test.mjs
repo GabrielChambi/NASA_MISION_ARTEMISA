@@ -1,7 +1,7 @@
 import {test} from 'node:test'
 import assert from 'node:assert/strict'
 import {readFile,readdir} from 'node:fs/promises'
-import {validatePlanRequest,bodyPosition,estimateTransfer,missionTiming,evaluateGlobalPlan,decodeProfile,horizonValue,createAutomaticPlanApi} from './automatic-plan.mjs'
+import {validatePlanRequest,bodyPosition,estimateTransfer,missionTiming,evaluateGlobalPlan,decodeProfile,horizonValue,createAutomaticPlanApi,evaluatePlanCell,stereographicCellArea,horizonSensitivity} from './automatic-plan.mjs'
 const read=async name=>JSON.parse(await readFile(new URL('../../data/'+name,import.meta.url),'utf8'))
 const q={departure_utc:'2026-12-25T12:00:00Z',date_kind:'landing',surface_hours:2,min_sun_hours:2,min_earth_hours:2}
 const transfer={transfer_hours:107.4,method:'TWO_BODY_ESTIMATE',assumptions:['Ideal, no launch solution.']}
@@ -42,11 +42,11 @@ test('Delta profiles preserve integer geometry and circular interpolation',()=>{
 })
 test('Whole-cap classification uses each terrain horizon, preserves unknowns, and excludes endpoint duration',()=>{
  const {resources,sky}=fixtures(),r=evaluateGlobalPlan(q,resources,sky,transfer)
- assert.deepEqual(r.counts,{green:1,red:2,unknown:1});assert.equal(r.total_cells,4);assert.equal(r.best.id,'flat')
+ assert.deepEqual(r.counts,{green:1,yellow:0,red:2,unknown:1});assert.equal(r.total_cells,4);assert.equal(r.best.id,'flat')
  assert.equal(r.best.sun_hours,2);assert.equal(r.best.time_series.length,3);assert.equal(r.best.time_series[2].sun_elevation_deg,-20)
  assert.equal(r.cells.find(c=>c.id==='blocked').sun_hours,0)
  assert.match(r.cells.find(c=>c.id==='unknown').reason,/20 km/)
- assert.equal(r.cells.find(c=>c.id==='steep').sun_hours,null)
+ assert.equal(r.cells.find(c=>c.id==='steep').sun_hours,2)
  assert.equal(r.closest_candidate,null)
 })
 test('No candidate passes: failed site stays red and appears only as closest_candidate',()=>{
@@ -75,5 +75,78 @@ test('Actual NASA Christmas departure runs offline through the complete Worker p
  assert.equal(result.total_cells,12892);assert.equal(result.best.sun_hours,expected.best.sun_hours);assert.equal(result.best.earth_hours,expected.best.earth_hours)
  assert.equal(result.meta.sources.length,3);assert.ok(result.meta.sources.every(s=>s.cache_hit&&s.query_url.includes('QUANTITIES=%274%2C20%27')))
  assert.equal(result.best.time_series.length,73);assert.equal(result.best.horizon_quality,'sampled-regional-partial')
- assert.ok(JSON.stringify(result).length<4000000)
+ assert.ok(JSON.stringify(result).length<18000000)
+})
+
+test('Angular sampling sensitivity preserves nominal passes as yellow instead of claiming robustness',()=>{
+ const {resources,sky}=fixtures()
+ resources.globalHorizons.profile_encoding='absolute'
+ resources.globalHorizons.profiles_int[0]=[0,160,...Array(70).fill(0)]
+ const result=evaluateGlobalPlan(q,resources,sky,transfer),cell=result.cells.find(c=>c.id==='flat')
+ assert.equal(cell.risk,'yellow')
+ assert.equal(cell.nominal_pass,true)
+ assert.equal(cell.sensitivity_pass,false)
+ assert.equal(cell.sun_hours,2)
+ assert.deepEqual(cell.sun_hours_sensitivity,{lower:0,upper:2})
+ assert.ok(cell.arrival_margin_sensitivity.sun_lower_deg<0)
+ assert.equal(result.best,null)
+ assert.equal(result.closest_candidate.risk,'yellow')
+ assert.match(result.meta.sensitivity_method,/scenario sensitivity, not physical uncertainty bounds/)
+})
+test('Quantization and circular adjacent bins expose a bounded sampling scenario without hiding narrow-peak limitations',()=>{
+ const profile=Array(72).fill(0);profile[0]=20;profile[1]=60
+ assert.deepEqual(horizonSensitivity(profile,2.5),{nominal:2,lower:.95,upper:3})
+ assert.deepEqual(horizonSensitivity(profile,357.5),{nominal:.5,lower:-.05,upper:1})
+ assert.equal(horizonSensitivity(null,0),null)
+ const {resources,sky}=fixtures();resources.polar.cells[0].max_slope_deg=40
+ const r=evaluateGlobalPlan(q,resources,sky,transfer)
+ assert.equal(r.best.risk,'green','A P95 regional criterion must not silently become a maximum-slope criterion')
+ assert.equal(r.best.max_slope_deg,40,'The local-refinement warning must have the maximum native slope available')
+ assert.match(r.meta.screening_unit,/not a resolved landing footprint/)
+})
+test('Inspecting a nonsuggested cell computes that cell only and includes its own complete time series',()=>{
+ const {resources,sky}=fixtures(),cellId='steep'
+ const result=evaluatePlanCell(q,resources,sky,transfer,cellId)
+ assert.equal(result.cell.id,cellId)
+ assert.equal(result.cell.risk,'red')
+ assert.equal(result.cell.sun_hours,2)
+ assert.equal(result.cell.time_series.length,3)
+ assert.equal(result.cells,undefined)
+ assert.ok(result.cell.reasons.some(reason=>reason.includes('Pendiente')))
+ const unknown=evaluatePlanCell(q,resources,sky,transfer,'unknown')
+ assert.equal(unknown.cell.risk,'unknown')
+ assert.deepEqual(unknown.cell.time_series,[])
+ assert.throws(()=>evaluatePlanCell(q,resources,sky,transfer,'no-cell'),/catálogo/)
+ resources.polar.cells.push({id:'fringe',latitude_deg:-79.99,longitude_deg:0,x_m:0,y_m:304000,elevation_m:null,known:false})
+ const edge=evaluatePlanCell(q,resources,sky,transfer,'fringe')
+ assert.equal(edge.cell.risk,'unknown')
+ assert.deepEqual(edge.cell.time_series,[])
+})
+test('Spherical clipped-cell area conserves cap area and keeps the unrepresented edge unknown',async()=>{
+ const polar=await read('prepared/polar_screening.json')
+ const cap=2*Math.PI*1737400**2*(1-Math.sin(80*Math.PI/180))/1e6
+ const actual=polar.cells.reduce((sum,c)=>sum+stereographicCellArea(c.x_m,c.y_m,polar.cell_spacing_m),0)
+ assert.ok(Math.abs(actual-(cap-.054393))<.01,'Clipped area matches independent high-order quadrature including the tiny cardinal gaps')
+ const {resources,sky}=fixtures(),result=evaluateGlobalPlan(q,resources,sky,transfer)
+ const areaSum=Object.values(result.coverage.by_class).reduce((sum,c)=>sum+c.area_km2,0)
+ assert.ok(Math.abs(areaSum-result.coverage.cap_area_km2)<.003)
+ assert.ok(result.coverage.unrepresented_area_km2>0)
+ assert.ok(result.coverage.by_class.unknown.area_km2>result.cells.find(c=>c.risk==='unknown').area_km2)
+ assert.ok(stereographicCellArea(0,0,4750)>stereographicCellArea(200000,0,4750))
+ assert.equal(stereographicCellArea(700000,0,4750),0)
+ assert.ok(stereographicCellArea(0,304000,4750)>0)
+})
+test('Cell endpoint rejects unknown catalog IDs before NASA and returns a prepared real cell independently',async()=>{
+ const resources={polar:await read('prepared/polar_screening.json'),globalHorizons:await read('prepared/global_horizons.json'),ephemeris:[]}
+ for(const name of await readdir(new URL('../../data/prepared/ephemeris/',import.meta.url)))if(name.endsWith('.json'))resources.ephemeris.push(await read('prepared/ephemeris/'+name))
+ const api=createAutomaticPlanApi(resources),example=await read('prepared/automatic_example.json')
+ const request=body=>new Request('https://test/api/automatic-plan/cell',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)})
+ assert.equal((await api(request({...example.request,cell_id:'not-in-catalog'}))).status,404)
+ const response=await api(request({...example.request,cell_id:'polar:64:64'}))
+ assert.equal(response.status,200)
+ const result=await response.json()
+ assert.equal(result.cell.id,'polar:64:64')
+ assert.equal(result.cell.time_series.length,73)
+ assert.equal(result.cells,undefined)
+ assert.ok(result.meta.sources.every(s=>s.cache_hit))
 })

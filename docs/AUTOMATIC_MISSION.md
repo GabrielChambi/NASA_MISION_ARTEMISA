@@ -9,8 +9,8 @@
 1. `POST /api/mission-intent` extrae fecha, hora, significado de la fecha y restricciones. Gemini interpreta; no decide coordenadas ni inventa mediciones.
 2. La interfaz llama automáticamente a `POST /api/automatic-plan` con la intención validada.
 3. El motor obtiene de JPL la distancia Tierra–Luna para estimar el tránsito y solicita Sol/Tierra para la llegada y estancia calculadas.
-4. Compara las 12.892 zonas del casquete 80–90°S. Descarta primero el terreno que excede la pendiente; para las zonas restantes comprueba su propio horizonte y las condiciones del intervalo.
-5. Devuelve la clasificación completa, el mejor candidato disponible, hasta tres alternativas separadas y hasta ocho ejemplos descartados. Aparecen sobre el mismo relieve 3D.
+4. Recorre las 12.892 celdas con centro preparado del casquete 80–90°S. Evalúa pendiente P95 y máxima, cobertura y horizonte propio. Calcula Sol/Tierra para cada celda con datos suficientes, incluidas las descartadas por pendiente, de modo que la inspección no se limite a los candidatos.
+5. Devuelve la tabla completa de mediciones y una capa continua de clasificación con contornos sobre el relieve 3D. Los marcadores del mejor candidato y sus alternativas son referencias adicionales. Cualquier sector se puede seleccionar directamente o por coordenadas.
 
 Los visitantes no necesitan iniciar sesión con ChatGPT ni Google. La clave del proveedor pertenece al servidor.
 
@@ -18,7 +18,7 @@ Los visitantes no necesitan iniciar sesión con ChatGPT ni Google. La clave del 
 
 «Viaje» o «salida» significa partida de la Tierra; «alunizar» o «llegar» significa llegada a la Luna. La zona predeterminada es `America/La_Paz`, UTC−04:00. UTC o un desplazamiento ISO explícito tiene prioridad y la interpretación queda visible.
 
-Si no indicas estancia, se utilizan **72 horas en la superficie como hipótesis editable**. Preguntar cuánto dura la misión no fija esa estancia. Los valores predeterminados de pendiente y visibilidad también son editables. Los requisitos explícitos del texto tienen prioridad sobre los predeterminados. Cambiar la solicitud o sus requisitos invalida los resultados y requiere recalcular.
+Si no indicas estancia, se utilizan **72 horas en la superficie como hipótesis editable**. Preguntar cuánto dura la misión no fija esa estancia. Los valores predeterminados de pendiente y visibilidad también son editables. Los requisitos explícitos del texto tienen prioridad sobre los predeterminados. Cambiar la solicitud o sus requisitos invalida los resultados y requiere recalcular. Los requisitos explícitos incompatibles con la estancia se muestran para corregirlos: no se recortan en silencio para obtener una solución.
 
 Si falta fecha completa u hora, se pide ese dato. Fechas imposibles y requisitos contradictorios no se corrigen en silencio. Si Gemini falta, falla o devuelve una extracción inválida, se usa el parser determinista y se informa `mode: "parser"`; no se simula IA.
 
@@ -37,7 +37,7 @@ Si falta fecha completa u hora, se pide ese dato. Fechas imposibles y requisitos
 | Cobertura distante | Parcial y variable; no se extrapola fuera del DEM |
 | Desconocidos | Se conservan; nunca se sustituyen por un horizonte plano |
 
-Fuente: [NASA LOLA/PGDA, producto 78](https://pgda.gsfc.nasa.gov/products/78). `global_horizons.json` conserva URL y SHA-256 del DEM, que debe coincidir con el catálogo regional. `prepare_global_horizons.py` genera horizontes distintos desde el TIFF original; no copia un horizonte central a todo el casquete.
+Fuente regional: [DEM NASA LOLA de 80 m](https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/LDEM_80S_80MPP_ADJ.TIF). Los [productos locales de 5 m](https://pgda.gsfc.nasa.gov/products/78) son conjuntos distintos y sus errores no se trasladan como barras de error al DEM regional. `global_horizons.json` conserva URL y SHA-256 del DEM, que debe coincidir con el catálogo regional. `prepare_global_horizons.py` genera horizontes distintos desde el TIFF original; no copia un horizonte central a todo el casquete.
 
 El umbral de 20 km no prueba que se conozcan todos los obstáculos lejanos. Los rayos que salen del casquete pierden cobertura y las muestras pueden omitir obstáculos intermedios. Tampoco se resuelven peligros menores de 80 m. Una zona favorable necesita estudio local y análisis de la nave.
 
@@ -47,22 +47,66 @@ Las series de [NASA/JPL Horizons](https://ssd-api.jpl.nasa.gov/doc/horizons.html
 
 El ejemplo usa tres series originales: Tierra para el tránsito y Sol/Tierra para la estancia. La caché sólo se reutiliza si coincide la petición; otra fecha o intervalo puede requerir conexión a NASA. Se conservan parámetros, URL, fecha de recuperación y respuesta original.
 
-Para ser favorable, una zona debe respetar la pendiente, tener más de 0,3° de despeje del centro del Sol y la Tierra al llegar y cumplir las horas mínimas durante la estancia. Los intervalos horarios son `[inicio, fin)`; la muestra final sirve para la gráfica y no añade una hora. Las transiciones tienen incertidumbre de hasta una muestra.
+El criterio nominal exige pendiente P95 bajo el límite configurado, más de 0,3° de despeje del centro del Sol y la Tierra al llegar y las horas mínimas durante la estancia. El máximo nativo de pendiente se conserva y se muestra, pero no sustituye silenciosamente el criterio P95. Por ejemplo, el candidato `polar:5:56` tiene P95 de 9,4889° y máximo de 16,1644°: cumplir P95 ≤ 10° no demuestra que todo el sector esté por debajo de 10°.
 
-El orden prioriza cumplimiento y después la peor fracción de horas Sol/Tierra, interrupciones, margen de llegada y pendiente. Las alternativas se separan al menos 30 km. Si ninguna cumple, se informa sin forzar un candidato verde ni relajar requisitos.
+Los intervalos horarios son `[inicio, fin)`; la muestra final sirve para la gráfica y no añade una hora. El paso temporal limita la resolución de las transiciones. La iluminación del mapa base es ilustrativa; las variables de misión proceden de las series calculadas.
+
+### Clases y sensibilidad angular
+
+Para cada azimut del Sol o la Tierra se evalúan:
+
+- Horizonte nominal: interpolación entre los dos azimuts de horizonte vecinos.
+- Escenario con mayor obstrucción: máximo de esas dos muestras.
+- Escenario con menor obstrucción: mínimo de las muestras menos el paso de cuantización de 0,05°, porque el archivo redondea hacia arriba.
+
+Se calculan horas nominales, intervalos de sensibilidad de horas, despeje al llegar e interrupciones. La clasificación utiliza:
+
+| Clase | Regla |
+| --- | --- |
+| Verde | Cumple terreno y visibilidad incluso con el escenario de mayor obstrucción muestreada |
+| Amarillo | El cumplimiento cambia entre los escenarios angulares, o sólo cumple el escenario nominal |
+| Rojo | Falla la pendiente P95 o los requisitos tampoco se satisfacen con el escenario de menor obstrucción |
+| Gris | Faltan terreno o perfiles de horizonte suficientes, sin un descarte estático concluyente |
+
+Estos escenarios **no son intervalos estadísticos ni cotas completas de incertidumbre física**. No acotan picos entre azimuts, obstáculos entre muestras radiales, error del DEM, huella, energía ni enlace de radio. Una región verde sigue siendo candidata a un estudio local.
+
+El orden prioriza verdes; después compara la peor fracción nominal de horas Sol/Tierra, interrupciones, margen de llegada y pendiente. Las alternativas se separan al menos 30 km. Si no hay verdes, no se fuerza una recomendación de esa clase ni se relajan los requisitos; el resultado más próximo puede seguir siendo amarillo o rojo.
+
+### Área física y borde sin resolver
+
+Para coordenadas proyectadas x, y y radio R, el elemento de área es:
+
+~~~text
+dA = dx dy / [1 + (x² + y²)/(4R²)]²
+~~~
+
+El motor integra el jacobiano mediante cuadratura Gauss de ocho puntos y recorta los cuadrados contra el límite circular de 80°S. Contar cuadrados completos como si todos estuvieran dentro del casquete daría una cobertura incorrecta.
+
+| Magnitud | Área del caso actual |
+| --- | --- |
+| Casquete teórico 80–90°S | 288.138,649 km² |
+| Cuadrados recortados con centro preparado | 287.392,894 km² |
+| Borde sin centro preparado | 745,754 km² |
+| Verde en el ejemplo | 198,092 km² |
+| Amarillo en el ejemplo | 34,029 km² |
+| Rojo en el ejemplo | 285.153,531 km² |
+| Desconocido, incluidos centros y borde | 2.752,996 km² |
+
+Las cifras se redondean para presentación. `coverage.by_class` conserva fracciones respecto al casquete; el área gris incluye el borde no representado. El contador sigue indicando **12.892 centros**, de los que 95 tienen datos insuficientes para la evaluación de misión del ejemplo. El borde no se convierte en una recomendación por copiar una celda vecina.
+
+El [estudio completo](SOUTH_POLE_SURFACE_ANALYSIS.md) desarrolla esta geometría y relaciona el criterio con fuentes primarias de NASA.
 
 ## Qué se ve en la Luna
 
-El relieve gris es continuo en todo el casquete. Su color describe terreno, no aptitud. Acercar destino añade detalle visual del mismo terreno sin insertar una pequeña superficie blanca sobre otra amarilla o azul.
+El relieve NASA cubre el casquete y la vista **Evaluación** superpone el campo de clases completo mediante colores y contornos. La vista **Relieve** permite ver el terreno sin esa clasificación. El color de evaluación depende de los requisitos y de la fecha; no se deduce de la altura o del aspecto del terreno.
 
-- **Círculo destacado:** mejor candidato bajo los criterios calculados.
-- **Círculos verdes:** hasta tres alternativas favorables.
-- **Círculos rojos:** hasta ocho ejemplos descartados; el contador incluye todos los descartes.
-- **Desconocidos:** se cuentan por separado; no se declaran favorables.
+Los marcadores destacan centros recomendados. Las clases rojas y amarillas se muestran sobre la superficie, en vez de quedar representadas por una lista de círculos aislados. El gris identifica datos insuficientes y el borde sin evaluación preparada.
 
-Los círculos son ubicaciones regionales, no huellas certificadas ni límites físicos de una zona segura. Tocar un destino muestra razones y mediciones. La descarga incluye todos los resultados, aunque el mapa sólo muestre una selección.
+Un clic en cualquier sector usa su fila y columna de la rejilla; no escoge el marcador cercano. También se pueden introducir coordenadas exactas en el inspector. La inspección conserva elevación, P95 y máximo de pendiente, área, cobertura, clase y razones. Si hay un perfil suficiente, obtiene la serie temporal de ese centro mediante `POST /api/automatic-plan/cell`.
 
-**Condiciones durante tu estancia** permite recorrer cada hora y observar el despeje del Sol y la Tierra. **Simular llegada a este destino** anima un descenso vertical con gravedad, masa, empuje y combustible de una nave hipotética. No sustituye el diseño orbital ni el estudio de peligros.
+Ese endpoint valida el identificador, descodifica sólo su perfil y evalúa **una celda**, sin repetir el estudio de las 12.892. Devuelve `{status, mission, cell, meta}`, donde `cell.time_series` pertenece al sector solicitado. Sin un perfil suficiente, la serie queda vacía y el sector no se presenta como favorable. Puede seguir rojo si la pendiente conocida basta para descartarlo; en otro caso queda desconocido. Nunca se reemplaza por la serie del mejor candidato.
+
+**Condiciones durante tu estancia** permite recorrer cada hora y observar el despeje del Sol y la Tierra. **Simular llegada a este destino** anima un descenso vertical con gravedad, masa, empuje y combustible de una nave hipotética. No sustituye el diseño orbital ni el estudio de peligros. La descarga incluye la tabla completa y la procedencia de los cálculos.
 
 ## Duración estimada y caso reproducible
 
@@ -86,7 +130,7 @@ Datos de [automatic_example.json](../data/prepared/automatic_example.json):
 | Retorno ideal simétrico | 107,5649 h |
 | Regreso estimado | `2027-01-06T11:33:53Z` |
 | Total estimado | 287,5649 h ≈ 12 días |
-| Favorables / descartadas / desconocidas | 11 / 12.786 / 95 |
+| Verde / amarillo / rojo / centros desconocidos | 9 / 2 / 12.786 / 95 |
 | Mejor candidato | `polar:5:56`, −80,78120657°, −7,30575953° |
 | Visibilidad del candidato | 46 h de Sol; 72 h de Tierra |
 
@@ -96,34 +140,27 @@ La duración no incluye preparación, esperas, maniobras detalladas, ascenso lun
 
 ## Validación y reproducción
 
-Desde la raíz, con dependencias instaladas:
+Con las dependencias instaladas y `npm.cmd run dev:full` iniciado:
 
 ~~~powershell
 npm.cmd run test:science
 api/.venv/Scripts/python.exe -m pytest api/tests -q
-npm.cmd run build:hosted
-npm.cmd --prefix frontend run preview:hosted
-~~~
-
-Las suites Node y Python cubren datos regionales, perfiles, efemérides, ventanas, tránsito, clasificación, fechas, requisitos y fallos del proveedor.
-
-Con Chrome y Gemini configurado en el servidor, ejecuta en otra terminal:
-
-~~~powershell
+$env:LUNAR_ORACLE_TEST_URL='http://127.0.0.1:5173/'
+node frontend/scripts/test-surface-coverage.mjs
+node frontend/scripts/validate-surface-parity.mjs
 node frontend/scripts/test-automatic-mission.mjs
-~~~
-
-Para comprobar consultas NASA de una fecha no incluida en los ejemplos preparados:
-
-~~~powershell
-$env:LUNAR_ORACLE_TEST_URL='http://127.0.0.1:4173/'
 node frontend/scripts/test-live-plan.mjs
 ~~~
 
-La prueba usa el 26 de diciembre de 2026 y exige tres consultas trazables. Para comprobar producción, cambia la URL al sitio publicado. La caché del alojamiento es opcional: permisos denegados o fallos de lectura/escritura no bloquean una consulta nueva a JPL.
+Las pruebas de navegador requieren Chrome. Verifican el campo de superficie, selección de sectores sin marcador, inspector de coordenadas, fuentes, cambio de fecha y variables, condiciones, descenso y móvil. `test-live-plan.mjs` usa el 26 de diciembre de 2026, fuera del ejemplo incluido, y exige tres consultas trazables.
 
+El intérprete determinista es un respaldo explícito y válido cuando Gemini no está disponible. Para una prueba que exija inferencia real de Gemini, configura `LUNAR_ORACLE_REQUIRE_AI=1` además de la clave del servidor. La prueba no presenta el respaldo como IA.
 
-La URL predeterminada es `http://127.0.0.1:4173/`; usa `LUNAR_ORACLE_TEST_URL` para cambiarla. El test exige Gemini real y comprueba análisis automático posterior, fuentes NASA, 12.892 zonas, círculos renderizados, selección, tiempo y vista móvil.
+Las suites científicas cubren conservación de área, borde desconocido, sensibilidad angular, series en sectores descartados, selección de una celda y requisitos contradictorios. Los resultados de Python y Worker se han comparado en las 12.892 celdas, incluidos clase, horas y sensibilidad.
+
+La API local comprime las respuestas grandes cuando el navegador admite gzip; se conservan filas de datos legibles y completas. No es necesario publicar para probar este flujo. La vista previa Worker sigue disponible con `npm.cmd run build:hosted` y `npm.cmd --prefix frontend run preview:hosted`, en el puerto 4173.
+
+La caché de JPL es opcional y exige parámetros exactos. Si falla por permisos, lectura o escritura, se consulta NASA; si NASA no responde, se informa sin fabricar resultados.
 
 ~~~powershell
 api/.venv/Scripts/python.exe api/scripts/prepare_automatic_example.py
@@ -140,13 +177,17 @@ La comprobación valida esa muestra de traslación del observador. No valida tod
 | --- | --- |
 | Interfaz única | `frontend/src/features/mission/UnifiedMissionPlanner.tsx` |
 | Tipos | `frontend/src/features/mission/automaticTypes.ts` |
+| Campo de superficie | `frontend/src/features/tactical/PolarCoverageLayer.tsx` |
+| Inspección individual | `POST /api/automatic-plan/cell` |
 | Intérprete | `api/app/mission_intent.py`, `frontend/worker/mission-intent.mjs` |
 | Planificador | `api/app/automatic_plan.py`, `frontend/worker/automatic-plan.mjs` |
 | Horizontes | `api/scripts/prepare_global_horizons.py`, `data/prepared/global_horizons.json` |
 | Ejemplo | `api/scripts/prepare_automatic_example.py`, `data/prepared/automatic_example.json`, `data/prepared/ephemeris/` |
 | Comparación JPL | `api/scripts/validate_global_reference.py`, `docs/validation/global-reference-validation.json` |
-| Navegador | `frontend/scripts/test-automatic-mission.mjs` |
+| Navegador | `frontend/scripts/test-surface-coverage.mjs`, `frontend/scripts/test-automatic-mission.mjs`, `frontend/scripts/test-live-plan.mjs` |
 
 Las APIs anteriores se conservan para compatibilidad y auditoría; no forman un segundo flujo de la interfaz principal.
 
 El siguiente trabajo científico consiste en ampliar y validar horizontes, propagar incertidumbres y añadir peligros locales, energía, temperatura, radio y trayectorias completas. El sistema usa datos reales con modelos regionales acotados: **no es un gemelo digital certificado**.
+
+La [verificación de paridad](validation/surface-parity.json) compara las 12.892 celdas y diez campos entre Python y JavaScript usando las mismas tres respuestas originales de NASA, sin conexión. Comprueba consistencia de implementaciones y cierre de áreas; no es una certificación independiente de seguridad.

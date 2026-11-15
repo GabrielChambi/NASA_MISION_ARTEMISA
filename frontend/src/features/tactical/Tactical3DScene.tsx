@@ -10,10 +10,13 @@ import { LunarRocketLanderModel } from './LunarLanderModel'
 import type { CellAssessment, Risk } from './landingScience'
 import { loadLunarShading } from '../sites/lunarDetail'
 import { findPolarCell,type PolarSurface,type PolarAssessment,type PolarCell } from './polarScience'
+import {PolarCoverageLayer,type PolarCoverage} from './PolarCoverageLayer'
+import {polarCellAtWorld} from './polarCoverage'
 
 export type PlanMapMarker={id:string;latitude_deg:number;longitude_deg:number;kind:'best'|'alternative'|'rejected'|'unknown';label?:string}
 export interface Tactical3DSceneProps {
   missionMarkers?:PlanMapMarker[];onMarkerSelect?:(id:string)=>void
+  missionCoverage?:PolarCoverage;onCoverageSelect?:(cellId:string)=>void;onCoverageHover?:(cellId:string|null)=>void
   showSurfaceVehicle?:boolean
   latDeg:number;lonDeg:number;observerHeightM:number
   sunAzimuthDeg:number;sunElevationDeg:number;earthAzimuthDeg:number;earthElevationDeg:number
@@ -110,6 +113,7 @@ function visualGeometry(data:AtlasData,stride:number,props:Tactical3DSceneProps,
 }
 function Terrain(props:Tactical3DSceneProps&{dragging:boolean;onHover:(v:[number,number]|null)=>void}){
   const {gl,size}=useThree()
+  const coverageHovered=useRef<string|null>(null)
   const regional=props.atlasData!,detail=props.detailAtlasData,context=props.contextAtlasData
   const stride=props.overview&&size.width>=650?1:2
   const [shading,setShading]=useState<THREE.Texture|null>(null)
@@ -180,22 +184,29 @@ function Terrain(props:Tactical3DSceneProps&{dragging:boolean;onHover:(v:[number
   const planes=useMemo(()=>clipBox(context??detail??focus,(context||detail)?0.002:0.25),[context,detail,focus])
   const localPlanes=useMemo(()=>clipBox(detail),[detail])
   const direction=props.scienceReady?bodyDirection({latitude_deg:props.latDeg,longitude_deg:props.lonDeg} as never,props.sunAzimuthDeg,props.sunElevationDeg):new THREE.Vector3(-1,1,0.2).normalize()
+  const hasCoverage=Boolean(props.missionCoverage&&props.polarSurface&&!props.showSurfaceVehicle)
   function hit(e:ThreeEvent<PointerEvent|MouseEvent>,place:boolean){
-    if(!props.placementMode&&!props.dragging&&!place)return
+    if(props.showSurfaceVehicle)return
+    if(!props.placementMode&&!props.dragging&&!place&&!hasCoverage)return
     // Three.js raycasters do not apply shader clipping planes.
     const clip=e.object.name==='regional-lola-terrain'?planes:e.object.name==='local-context-terrain'?localPlanes:[]
     if(clip.length&&clip.every(p=>p.distanceToPoint(e.point)<0))return
     e.stopPropagation()
     const vector=e.point.clone().add(new THREE.Vector3(0,regional.manifest.radius_m/1000,0)).normalize()
     const lat=-Math.asin(THREE.MathUtils.clamp(vector.y,-1,1))*180/Math.PI,lon=Math.atan2(-vector.x,vector.z)*180/Math.PI
-    props.onHover([lat,lon])
-    if(place||props.dragging)props.onSurfacePlace?.(lat,lon)
+    if(!props.overview)props.onHover([lat,lon])
+    const cell=hasCoverage&&props.polarSurface?polarCellAtWorld(props.polarSurface,e.point):null
+    if(coverageHovered.current!==(cell?.id??null)){coverageHovered.current=cell?.id??null;props.onCoverageHover?.(cell?.id??null)}
+    if(place&&cell&&props.onCoverageSelect)props.onCoverageSelect(cell.id)
+    else if(place||props.dragging)props.onSurfacePlace?.(lat,lon)
   }
-  const handlers={onPointerMove:(e:ThreeEvent<PointerEvent>)=>hit(e,false),onClick:(e:ThreeEvent<MouseEvent>)=>{if(props.placementMode&&e.delta<=5)hit(e,true)},onDoubleClick:(e:ThreeEvent<MouseEvent>)=>hit(e,true),onPointerOut:()=>props.onHover(null)}
+  const handlers={onPointerMove:(e:ThreeEvent<PointerEvent>)=>hit(e,false),onClick:(e:ThreeEvent<MouseEvent>)=>{if((props.placementMode||hasCoverage)&&e.delta<=5)hit(e,true)},onDoubleClick:(e:ThreeEvent<MouseEvent>)=>hit(e,true),onPointerOut:()=>{props.onHover(null);if(coverageHovered.current!==null){coverageHovered.current=null;props.onCoverageHover?.(null)}}}
   return <group>
     <directionalLight position={direction.clone().multiplyScalar(300)} color="#fff1d4" intensity={props.scienceReady?2:1.4}/>
     <directionalLight position={[70,100,-90]} color="#809fac" intensity={0.35}/>
     <mesh name="regional-lola-terrain" geometry={geometry} {...handlers}><meshStandardMaterial vertexColors map={shading} roughness={1} clippingPlanes={planes} clipIntersection/></mesh>
+    {hasCoverage&&props.polarSurface&&props.missionCoverage&&<PolarCoverageLayer geometry={geometry} surface={props.polarSurface} coverage={props.missionCoverage} clippingPlanes={planes}/>}
+    {focusGeometry&&hasCoverage&&props.polarSurface&&props.missionCoverage&&<PolarCoverageLayer geometry={focusGeometry} surface={props.polarSurface} coverage={props.missionCoverage}/>}
     {focusGeometry&&<mesh name="lunar-detail-tile" geometry={focusGeometry} {...handlers}><meshStandardMaterial vertexColors map={focusedTexture??shading} roughness={1}/></mesh>}
     {middle&&<mesh name="local-context-terrain" geometry={middle} {...handlers}><meshStandardMaterial color="#99a8ae" roughness={1} clippingPlanes={localPlanes} clipIntersection/></mesh>}
     {local&&<mesh name="native-5m-lola-terrain" geometry={local} {...handlers}><meshStandardMaterial color="#a6afb6" roughness={1}/></mesh>}
@@ -276,10 +287,23 @@ function Camera(props:Tactical3DSceneProps&{dragging:boolean}){
   const data=props.detailAtlasData??(props.showSurfaceVehicle?props.focusTerrainData:null)??props.atlasData
   const target=useMemo(()=>data?surfacePoint(data,props.latDeg,props.lonDeg).position:new THREE.Vector3(),[data,props.latDeg,props.lonDeg])
   useEffect(()=>{
-    if(!data||!controls.current||!Number.isFinite(target.y))return
+    // Whole-cap framing must remain available even when the selected edge cell
+    // has no measured center height. Only close/local views need a valid target.
+    const wholeCapView=props.overview&&props.cameraView==='polar'&&!props.focusZone
+    if(!data||!controls.current||(!wholeCapView&&!Number.isFinite(target.y)))return
+    // Flush residual orbit/pan inertia before applying a deliberate reset or view.
+    // Otherwise OrbitControls adds the previous drag to the newly assigned pose.
+    const damping=controls.current.enableDamping
+    controls.current.enableDamping=false;controls.current.update();controls.current.enableDamping=damping
     camera.near=props.showSurfaceVehicle?.001:props.overview?.1:.001;camera.updateProjectionMatrix()
     if(props.cameraView==='polar'&&props.focusZone){camera.position.copy(target).add(new THREE.Vector3(16,20,26));controls.current.target.copy(target)}
-    else if(props.cameraView==='polar'){const fit=props.overview?Math.max(850,760/(size.width/Math.max(size.height,1))):400;camera.position.copy(new THREE.Vector3(.6,.7,.65).normalize().multiplyScalar(fit));controls.current.target.set(0,-8,0)}
+    else if(props.cameraView==='polar'){
+      // The oblique cap projects below its pole: center the projected footprint.
+      // A width-dependent lower bound preserves the full 80 S rim on mobile.
+      const fit=props.overview?Math.max(680,800/(size.width/Math.max(size.height,1))):400
+      camera.position.copy(new THREE.Vector3(.6,.7,.65).normalize().multiplyScalar(fit))
+      controls.current.target.set(0,props.overview?-80:-8,0)
+    }
     else if(props.cameraView==='top'){const height=Math.max(1.7,1.4/(2*Math.tan(Math.PI/8)*(size.width/Math.max(size.height,1))));camera.position.copy(target).add(new THREE.Vector3(.05,height,.01));controls.current.target.copy(target)}
     else if(props.cameraView==='mast'){
       const direction=bodyDirection({latitude_deg:props.latDeg,longitude_deg:props.lonDeg} as never,props.sunAzimuthDeg,props.sunElevationDeg)

@@ -3,6 +3,7 @@ import json
 from fastapi import FastAPI, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from .core.sites import DATA, catalog, datasets, get_site
 from .core.horizon import profiles, HorizonUnavailable
@@ -17,6 +18,7 @@ from .automatic_plan import router as automatic_plan_router
 from .mission_intent import router as mission_intent_router
 
 app=FastAPI(title='Lunar Oracle scientific API',version='1.0.0',description='NASA LOLA catalog and JPL Horizons geometric visibility. No simulated science.')
+app.add_middleware(GZipMiddleware,minimum_size=1024,compresslevel=5)
 app.add_middleware(CORSMiddleware,allow_origins=['http://127.0.0.1:5173','http://localhost:5173'],allow_credentials=False,allow_methods=['GET','POST','OPTIONS'],allow_headers=['*'])
 
 @app.exception_handler(RequestValidationError)

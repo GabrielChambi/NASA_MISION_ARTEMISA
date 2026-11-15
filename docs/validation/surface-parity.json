@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "status": "ok",
+  "generated_at": "2026-11-15T13:10:12.702Z",
+  "scope": "Implementation consistency for one prepared mission; not independent NASA validation, uncertainty propagation, or landing certification.",
+  "request": {
+    "departure_utc": "2026-12-25T12:00:00Z",
+    "date_kind": "departure",
+    "surface_hours": 72,
+    "max_slope_deg": 10,
+    "min_sun_hours": 12,
+    "min_earth_hours": 12,
+    "observer_height_m": 2
+  },
+  "terrain_source_sha256": "82030dcbdd7c4bb0c7d858e9b4b293b9f2cda5a543ba31ec0f42784bd6beee5a",
+  "horizon_source_sha256": "82030dcbdd7c4bb0c7d858e9b4b293b9f2cda5a543ba31ec0f42784bd6beee5a",
+  "source_resolution_m": 80,
+  "cell_spacing_m": 4750,
+  "sources": [
+    {
+      "source": "JPL Horizons",
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-30+00%3A00%3A00%27&STOP_TIME=%272027-01-02+00%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "retrieved_at": "2026-11-15T11:29:23.816203+00:00"
+    },
+    {
+      "source": "JPL Horizons",
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-30+00%3A00%3A00%27&STOP_TIME=%272027-01-02+00%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "retrieved_at": "2026-11-15T11:29:24.665719+00:00"
+    },
+    {
+      "source": "JPL Horizons",
+      "query_url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&MAKE_EPHEM=%27YES%27&OBJ_DATA=%27NO%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-90%2C0.002000000%27&START_TIME=%272026-12-25+12%3A00%3A00%27&STOP_TIME=%272026-12-25+13%3A00%3A00%27&STEP_SIZE=%2760+m%27&QUANTITIES=%274%2C20%27&TIME_TYPE=%27UT%27&TIME_DIGITS=%27SECONDS%27&CSV_FORMAT=%27YES%27&ANG_FORMAT=%27DEG%27&APPARENT=%27AIRLESS%27&CAL_TYPE=%27GREGORIAN%27",
+      "retrieved_at": "2026-11-15T11:29:22.953362+00:00"
+    }
+  ],
+  "expected_cells": 12892,
+  "cells_compared": 12892,
+  "fields_compared": [
+    "risk",
+    "sun_hours",
+    "earth_hours",
+    "joint_hours",
+    "sun_hours_sensitivity",
+    "earth_hours_sensitivity",
+    "nominal_pass",
+    "sensitivity_pass",
+    "longest_dark_hours",
+    "longest_earth_hidden_hours"
+  ],
+  "unavailable_field_normalization": "Absent fields and null both denote unavailable measurements.",
+  "mismatch_count": 0,
+  "field_mismatch_count": 0,
+  "duplicate_id_count": 0,
+  "mismatch_samples": [],
+  "missing_ids": [],
+  "counts": {
+    "green": 9,
+    "yellow": 2,
+    "red": 12786,
+    "unknown": 95
+  },
+  "python_version": "3.11.9",
+  "area": {
+    "cap_area_km2": 288138.649,
+    "represented_area_km2": 287392.894,
+    "unrepresented_area_km2": 745.754,
+    "by_class": {
+      "green": {
+        "cells": 9,
+        "area_km2": 198.092,
+        "fraction_of_cap": 0.0006874895191097997
+      },
+      "yellow": {
+        "cells": 2,
+        "area_km2": 34.029,
+        "fraction_of_cap": 0.00011810078293550144
+      },
+      "red": {
+        "cells": 12786,
+        "area_km2": 285153.531,
+        "fraction_of_cap": 0.9896399971547841
+      },
+      "unknown": {
+        "cells": 95,
+        "area_km2": 2752.996,
+        "fraction_of_cap": 0.009554412543171159
+      }
+    },
+    "max_engine_difference_km2": 0,
+    "worker_conservation_error_km2": 0.0009999999892897904,
+    "python_conservation_error_km2": 0.0009999999892897904,
+    "engine_tolerance_km2": 0.001,
+    "conservation_tolerance_km2": 0.003,
+    "unknown_boundary_included": true
+  }
+}

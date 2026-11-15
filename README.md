@@ -1,6 +1,6 @@
 # LUNAR ORACLE · Lunar Landing Site Navigator
 
-Escribe cuándo quieres viajar y el sistema calcula una recomendación sobre **todo el polo sur lunar, de 80°S a 90°S**. Una sola pantalla reúne la pregunta, el mapa 3D, los destinos, las condiciones durante la estancia y la duración estimada. Los visitantes entran directamente, sin iniciar sesión con ChatGPT ni Google.
+Escribe cuándo quieres viajar y el sistema calcula una **clasificación continua de toda la superficie del polo sur lunar, de 80°S a 90°S**. Una sola pantalla reúne la pregunta, el mapa 3D, los destinos, las condiciones durante la estancia y la duración estimada. Los visitantes entran directamente, sin iniciar sesión con ChatGPT ni Google.
 
 ![Planificación automática sobre todo el polo sur](docs/images/automatic-mission.png)
 
@@ -12,11 +12,20 @@ Escribe cuándo quieres viajar y el sistema calcula una recomendación sobre **t
 
 1. Escribe fecha y hora y pulsa **Planificar mi misión**, o prueba el ejemplo. La hora predeterminada es Bolivia, `America/La_Paz` / UTC−04:00; puedes indicar UTC.
 2. El sistema interpreta salida o alunizaje, estima el tránsito y compara automáticamente **12.892 zonas** de todo el casquete. No necesitas abrir otro estudio ni elegir capas.
-3. El mapa conserva un **relieve gris continuo**, sin un pequeño parche blanco superpuesto. Un círculo destacado señala el mejor candidato; hasta tres círculos verdes muestran alternativas y hasta ocho rojos muestran ejemplos descartados. Son una selección visible del análisis completo.
-4. Toca un destino para conocer sus razones. Reproduce **Condiciones durante tu estancia** para ver los cambios del Sol y la Tierra respecto al horizonte del lugar. **Acercar destino** mantiene el mismo mapa y carga más detalle visual.
-5. Cambia fecha, estancia y requisitos en **Preferencias del viaje** y recalcula. **Descargar plan y evidencia** guarda resultados, supuestos y consultas NASA. La animación de descenso usa una nave hipotética y no certifica el terreno.
+3. La **capa de evaluación cubre todo el casquete visible** con colores y contornos verdes, amarillos, rojos y grises sobre el relieve NASA. No se limita a unos puntos. Los marcadores destacan centros recomendados, pero no sustituyen el campo completo de resultados.
+4. Haz clic en **cualquier sector de la superficie**, aunque no tenga marcador, o introduce coordenadas en el inspector. Se muestran su clase, pendiente P95 y máxima, área, cobertura y razones. Cuando dispone de horizonte válido, el sistema obtiene su serie temporal propia; no copia la del mejor candidato. Reproduce **Condiciones durante tu estancia** para ver los cambios del Sol y la Tierra.
+5. Cambia fecha, estancia y requisitos en **Preferencias del viaje** y recalcula. Los resultados anteriores se invalidan; los requisitos explícitos no se reducen para hacerlos encajar. **Descargar plan y evidencia** guarda el resultado completo, supuestos y consultas NASA. La animación de descenso usa una nave hipotética y no certifica el terreno.
 
-El gris del relieve no indica aptitud. Los datos insuficientes se conservan como desconocidos y se cuentan por separado; no se sustituyen con un horizonte plano ni se convierten en zonas favorables. Verde significa que cumple los criterios del modelo regional en el intervalo analizado.
+La vista **Relieve** conserva el terreno gris sin confundir elevación con aptitud. En la vista **Evaluación**, los colores representan resultados del modelo:
+
+| Clase | Interpretación regional |
+| --- | --- |
+| Verde | Cumple los requisitos incluso al variar entre los horizontes angulares muestreados |
+| Amarillo | Resultado sensible a ese muestreo; requiere refinar el estudio |
+| Rojo | Incumple el umbral regional P95 o los requisitos de visibilidad del escenario evaluado |
+| Gris | Datos insuficientes, incluido el borde sin centro de evaluación preparado |
+
+El algoritmo conserva la diferencia entre un **centro regional evaluado** y cada metro del sector. No declara toda una celda apta para apoyar la nave. Un P95 bajo el umbral puede coexistir con pendientes máximas mayores; ambas cifras se muestran.
 
 ## Ejecutar
 
@@ -77,44 +86,50 @@ El caso de [automatic_example.json](data/prepared/automatic_example.json) usa sa
 | Estancia | 72 h |
 | Regreso estimado | 6 ene 2027 · 11:33:53 UTC |
 | Duración total estimada | 287,56 h, aproximadamente 12 días |
-| Clasificación regional | 11 favorables, 12.786 descartadas, 95 desconocidas |
+| Clasificación regional | 9 verdes, 2 amarillas, 12.786 rojas y 95 centros desconocidos |
 | Mejor candidato | −80,78120657°, −7,30575953°; `polar:5:56` |
 | Visibilidad del mejor candidato | 46 h de Sol y 72 h de Tierra |
 
 Estos valores dependen de la fecha, los requisitos y los derivados. El tránsito es una transferencia elíptica ideal de dos cuerpos desde una órbita terrestre de 200 km; el regreso usa la misma duración ideal. No se ha diseñado una trayectoria Artemis ni una ventana real de lanzamiento.
 
-El [DEM NASA LOLA/PGDA](https://pgda.gsfc.nasa.gov/products/78) de 80 m se agrega en zonas de 4,75 km. Cada zona tiene su **propio** horizonte con muestras cada 5°; no se reutiliza el de un punto para toda la Luna. El motor requiere alcance válido de al menos 20 km por dirección muestreada y conserva la cobertura distante como parcial, incluso con rayos hasta 250 km.
+El [DEM regional NASA LOLA de 80 m](https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/LDEM_80S_80MPP_ADJ.TIF) se agrega en sectores de 4,75 km. Cada zona tiene su **propio** horizonte con muestras cada 5°; no se reutiliza el de un punto para toda la Luna. El motor requiere alcance válido de al menos 20 km por dirección muestreada y conserva la cobertura distante como parcial, incluso con rayos hasta 250 km.
+
+El cálculo de área usa el jacobiano inverso de la proyección estereográfica sobre la esfera lunar, con cuadratura y recorte al límite de 80°S. El casquete teórico tiene **288.138,649 km²**; los cuadrados con centros preparados representan **287.392,894 km²**. Los **745,754 km² restantes** se conservan como borde desconocido y se suman al área gris. Los 95 centros desconocidos son un recuento distinto de esa franja: no se incrementa artificialmente el número de centros a 12.892 más el borde.
+
+La clase amarilla utiliza mínimos y máximos de los dos azimuts vecinos del horizonte y el intervalo de cuantización de 0,05°. Es un **escenario de sensibilidad**, no una probabilidad ni una cota completa del error físico. Pueden quedar obstáculos entre rayos y errores del DEM sin resolver.
 
 Las posiciones y distancias del Sol y la Tierra provienen de [NASA/JPL Horizons](https://ssd-api.jpl.nasa.gov/doc/horizons.html). Se trasladan geométricamente desde un observador lunar de referencia a cada zona, con cadencia horaria. El modelo regional no resuelve rocas pequeñas, huella, energía, temperatura ni presupuesto de radio. La validación independiente completa de marcos con SPICE sigue pendiente.
 
-La metodología, los endpoints y los límites están en [Misión automática](docs/AUTOMATIC_MISSION.md).
+La metodología y los endpoints están en [Misión automática](docs/AUTOMATIC_MISSION.md). El [estudio de superficie completa](docs/SOUTH_POLE_SURFACE_ANALYSIS.md) documenta proyección, cobertura, sensibilidad y fuentes primarias de NASA.
 
 ## Verificar y reproducir
+
+Con la aplicación local iniciada mediante `npm.cmd run dev:full`:
 
 ~~~powershell
 npm.cmd run test:science
 api/.venv/Scripts/python.exe -m pytest api/tests -q
+$env:LUNAR_ORACLE_TEST_URL='http://127.0.0.1:5173/'
+node frontend/scripts/test-surface-coverage.mjs
+node frontend/scripts/validate-surface-parity.mjs
+node frontend/scripts/test-automatic-mission.mjs
+node frontend/scripts/test-live-plan.mjs
+~~~
+
+Las pruebas de navegador requieren Google Chrome. Comprueban la superficie completa, selección fuera de los marcadores, coordenadas, clases, áreas, fuentes NASA, cambios temporales, errores y móvil. El respaldo determinista es válido cuando se identifica como tal; para exigir que la interpretación se haya realizado mediante Gemini, usa `LUNAR_ORACLE_REQUIRE_AI=1`.
+
+`test-live-plan.mjs` consulta una fecha distinta de los ejemplos preparados, el 26 de diciembre de 2026, y exige tres consultas trazables. La caché es opcional: los fallos de acceso, lectura o escritura no bloquean una consulta nueva a JPL.
+
+Las suites Node y Python incluyen sensibilidad angular, conservación del área y el endpoint de una celda. Ambos motores producen el mismo resultado en las 12.892 celdas. Las pruebas unitarias del proveedor usan respuestas controladas y cubren sus fallos; las comprobaciones de navegador pueden usar la configuración privada real del servidor.
+
+Para verificar también la compilación Worker en una vista previa local independiente:
+
+~~~powershell
 npm.cmd run build:hosted
 npm.cmd --prefix frontend run preview:hosted
 ~~~
 
-En otra terminal, con Google Chrome y Gemini configurado en el servidor:
-
-~~~powershell
-node frontend/scripts/test-automatic-mission.mjs
-~~~
-
-Para comprobar consultas NASA de una fecha no incluida en los ejemplos preparados:
-
-~~~powershell
-$env:LUNAR_ORACLE_TEST_URL='http://127.0.0.1:4173/'
-node frontend/scripts/test-live-plan.mjs
-~~~
-
-La prueba usa el 26 de diciembre de 2026 y exige tres consultas trazables. Para comprobar producción, cambia la URL al sitio publicado. La caché del alojamiento es opcional: permisos denegados o fallos de lectura/escritura no bloquean una consulta nueva a JPL.
-
-
-Las suites Node y Python verifican los motores y las APIs. El recorrido de navegador verifica pregunta → interpretación Gemini real → análisis NASA → mapa con círculos, selección, cambios temporales y vista móvil. Usa `LUNAR_ORACLE_TEST_URL` para probar otra dirección. Los tests unitarios del proveedor utilizan respuestas controladas y comprueban también los fallos y el respaldo determinista.
+La vista previa escucha en `http://127.0.0.1:4173/`; configura `LUNAR_ORACLE_TEST_URL` con esa dirección para probarla. El trabajo actual se concentra en ejecución local.
 
 Para reproducir el ejemplo y la comparación independiente con consultas directas a JPL en tres puntos:
 
@@ -144,5 +159,8 @@ Los TIFF se guardan en `data/raw`, ignorado por Git. Los derivados registran fue
 - [automatic_plan.py](api/app/automatic_plan.py) y [automatic-plan.mjs](frontend/worker/automatic-plan.mjs): planificación automática Python y Worker.
 - [prepare_global_horizons.py](api/scripts/prepare_global_horizons.py): perfiles propios desde el DEM nativo.
 - [AUTOMATIC_MISSION.md](docs/AUTOMATIC_MISSION.md): metodología, evidencia y limitaciones.
+- [SOUTH_POLE_SURFACE_ANALYSIS.md](docs/SOUTH_POLE_SURFACE_ANALYSIS.md): estudio de cobertura espacial y criterio científico.
 
 Las APIs científicas anteriores se conservan para compatibilidad y auditoría. El recorrido principal utiliza la interfaz unificada y no envía al visitante a pantallas antiguas.
+
+La [verificación de paridad](docs/validation/surface-parity.json) compara las 12.892 celdas y diez campos entre Python y JavaScript usando las mismas tres respuestas originales de NASA, sin conexión. Comprueba consistencia de implementaciones y cierre de áreas; no es una certificación independiente de seguridad.
