@@ -14,9 +14,9 @@ try{
  check('Chat Lunar Objects opens the new 3D studio',await studio.locator('canvas').isVisible())
  await studio.getByRole('button',{name:'Pausar giro',exact:true}).click()
  check('Automatic rotation can be paused',await studio.getByRole('button',{name:'Girar 360°',exact:true}).count()===1)
- await studio.getByRole('button',{name:'Cotas',exact:true}).click()
+ check('The simplified viewer omits the old dimension controls',await studio.getByRole('button',{name:'Cotas',exact:true}).count()===0)
  await studio.getByRole('button',{name:'Centrar',exact:true}).click()
- check('Rulers and camera reset respond',true)
+ check('Camera reset responds in the simplified viewer',await studio.locator('canvas').isVisible())
  const objects=await studio.locator('.dock-item-btn').count()
  check('The new carousel includes all reference and vehicle examples',objects>=10)
  for(const name of ['Starship HLS','Rover VIPER (NASA)','Blue Moon MK2']){
@@ -36,16 +36,15 @@ try{
  await studio.waitFor()
  check('The map toolbar also opens the studio',await studio.locator('canvas').isVisible())
  for(let i=0;i<4;i++){
-  await studio.getByRole('button',{name:'Cotas',exact:true}).click()
-  await studio.getByRole('button',{name:'Cotas',exact:true}).click()
+  await studio.getByRole('button',{name:'Centrar',exact:true}).click()
   await studio.getByRole('button',{name:'Volver al mapa',exact:true}).click()
   await page.getByRole('button',{name:'Vehículo 3D',exact:true}).click()
   await studio.waitFor()
  }
  await page.waitForTimeout(300)
- check('Repeated ruler and scene changes preserve a working viewer',await studio.locator('canvas').isVisible())
+ check('Repeated camera resets and scene changes preserve a working viewer',await studio.locator('canvas').isVisible())
  check('No uncaught application errors',errors.length===0)
- const report={status:'ok',base_commit:'5b917ee',checks,errors}
+ const report={status:'ok',base_commit:'eb30fb2',checks,errors}
  await writeFile('artifacts/sync-main-studio-report.json',JSON.stringify(report,null,2))
  console.log(JSON.stringify({status:'ok',checks:checks.length,errors}))
 }catch(e){await page.screenshot({path:'artifacts/sync-main-studio-failure.png',fullPage:true}).catch(()=>{});console.error(JSON.stringify({error:String(e),checks,errors}));process.exitCode=1}finally{await browser.close()}
