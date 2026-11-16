@@ -8,9 +8,15 @@ The static/Worker build is a different, limited distribution. It does not replac
 
 https://lunar-oracle-7wcq.onrender.com/
 
-The existing service is named lunar-oracle in Rudy Gabriel's workspace. Its last verified live compute plan is Free; the user has authorized an upgrade to Starter, pending activation in Render. It was created directly as one Docker web service, using main. The render.yaml is a reproducible reference, not an automatically synchronized Blueprint for this existing service. Do not create duplicate services to publish updates. Use its existing Render Dashboard and a manual deploy after checking the new commit.
+The existing service is named lunar-oracle in Rudy Gabriel's workspace. The live compute plan has been verified as Starter (0.5c-512mb: 0.5 CPU, 512 MB), with exactly one instance. It was created directly as one Docker web service, using main. The render.yaml is a reproducible reference, not an automatically synchronized Blueprint for this existing service. Do not create duplicate services to publish updates. Use its existing Render Dashboard and a manual deploy after checking the new commit.
 
 The scientific data verification and public frontend/API checks passed for application commit 9005dc6. The key is configured as a server-side secret. A separate real-generation test returned Google HTTP 429: configured credentials do not remove Google's daily free-tier quota. Paying the web host does not change Google's quota.
+
+## Checks after Starter activation
+
+The public frontend, versioned assets, API readiness and rejection of hidden files passed after the compute-plan update. Startup verified all thirteen scientific source files and the Gemini secret remained configured.
+
+The same real NASA Site01 evaluation resolved 2,515 footprint sample centers from 5 m data and preserved the three source hashes. One measured request took 4.71 seconds on Starter versus the earlier 9.23 seconds on Free. Three active-server HTML responses took 0.394, 0.252 and 0.277 seconds. These observations include request/network effects and are not a speed guarantee; HTML timings exclude the 3D viewer and mission calculations. No physics or source resolution was changed for this comparison.
 
 ## What the image includes
 
@@ -49,7 +55,7 @@ Current references: https://render.com/pricing.md and https://render.com/docs/co
 
 ## Free-tier behavior
 
-Until the upgrade is activated, Render Free suspends after 15 minutes without incoming traffic and needs approximately one minute to wake. The included hours, bandwidth and build minutes are limited. Do not promise uninterrupted availability or production capacity on this tier.
+If the service is explicitly moved back to Free, Render Free suspends after 15 minutes without incoming traffic and needs approximately one minute to wake. The included hours, bandwidth and build minutes are limited. Do not promise uninterrupted availability or production capacity on this tier.
 
 Scientific raster access reads original pixels in 256-pixel windows with at most eight cached tiles per source. It does not resample the NASA data. GDAL cache and BLAS threads are bounded. This removes the peak allocation from reading and masking an entire regional raster into RAM. The native 5 m products remain available only in their actual original footprints.
 
