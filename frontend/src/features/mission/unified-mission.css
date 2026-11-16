@@ -31,7 +31,7 @@ button:disabled{cursor:default;opacity:.43}
 .unified-header .language-picker button{padding:5px 9px;font-size:11px;height:27px}
 .unified-header .help-button{height:33px;font-size:11px;padding:6px 11px;white-space:nowrap}
 .unified-layout{display:grid;grid-template-columns:var(--chat-width,340px) minmax(380px,1fr) 310px;min-height:calc(100vh - var(--header-h,64px))}
-.chat-resize-handle{position:absolute;top:0;right:-6px;width:12px;height:100%;cursor:col-resize;z-index:70;display:flex;align-items:center;justify-content:center;user-select:none;touch-action:none}
+.chat-resize-handle{position:absolute;top:0;right:0;width:12px;height:100%;cursor:col-resize;z-index:70;display:flex;align-items:center;justify-content:center;user-select:none;touch-action:none}
 .chat-resize-handle::after{content:'';width:3px;height:44px;border-radius:3px;background:rgba(255,255,255,0.18);transition:all .15s ease}
 .chat-resize-handle:hover::after,body.is-resizing-chat .chat-resize-handle::after{width:4px;height:72px;background:var(--green,#94edbb);box-shadow:0 0 14px rgba(148,237,187,0.7)}
 body.is-resizing-chat{cursor:col-resize!important;user-select:none!important}
