@@ -825,7 +825,7 @@ export default function UnifiedMissionPlanner(){
     }
   }
 
-  function clearResult(){setAdopted(null);request.current?.abort();requestId.current++;setBusy(null);setPlan(null);setError('');setFlight(null);setFlying(false);setPlaying(false)}
+  function clearResult(){setAdopted(null);request.current?.abort();requestId.current++;setBusy(null);setPlan(null);setIntent(null);setError('');setFlight(null);setFlying(false);setPlaying(false)}
   async function calculate(text=message,reuseIntent?:MissionIntent,overrideVehicle?:VehicleProfile,skipUserBubble=false,alternative?:AdoptedAlternative,preferredCellId?:string){
     const detectedVehicle=!overrideVehicle&&text?matchCatalogVehicleFromText(text):null
     const activeVehicle=overrideVehicle??detectedVehicle??vehicle
@@ -975,10 +975,13 @@ export default function UnifiedMissionPlanner(){
     return Array.from(groups.entries())
   },[])
 
+  const hasMission = Boolean(plan || intent)
+  const isRightPanelVisible = Boolean(hasMission && !hideRightPanel && !mapFullscreen)
+
   const layoutClass=[
     'unified-layout',
     (mapFullscreen||hideLeftPanel)?'hide-left':'',
-    (mapFullscreen||hideRightPanel)?'hide-right':'',
+    (!isRightPanelVisible)?'hide-right':'',
     hideTimelinePanel?'hide-timeline':''
   ].filter(Boolean).join(' ')
 
@@ -1054,16 +1057,16 @@ export default function UnifiedMissionPlanner(){
           >
             <PanelBottom size={14}/>
           </button>}
-          <button
+          {hasMission&&<button
             type="button"
             className="panel-toggle-btn"
-            aria-pressed={!hideRightPanel&&!mapFullscreen}
+            aria-pressed={isRightPanelVisible}
             onClick={()=>{setMapFullscreen(false);setHideRightPanel(v=>!v);setTimeout(()=>setCameraRevision(r=>r+1),60)}}
             title={tr(hideRightPanel?'Mostrar panel derecho':'Ocultar panel derecho')}
             aria-label={tr("Alternar panel derecho")}
           >
             <PanelRight size={14}/>
-          </button>
+          </button>}
         </div>
       </div>
 
@@ -1640,7 +1643,7 @@ export default function UnifiedMissionPlanner(){
         </div>}
       </main>
 
-      {!hideRightPanel&&<aside className="mission-decisions">
+      {isRightPanelVisible&&<aside className="mission-decisions">
         <MissionDecisionBrief intent={intent} plan={plan} operations={operationsSnapshot} rescue={rescueReport} rescueBusy={rescueBusy} busy={Boolean(busy)} timezone={TIMEZONE} onStudy={()=>document.querySelector('.mission-operations')?.scrollIntoView({behavior:'smooth',block:'start'})} onBest={()=>{if(plan?.best)choose(plan.best.id)}}/>
 
         {!plan?<div className="decision-welcome"><MapPin size={28}/><h2>{tr("Aquí encontrarás tu mejor opción.")}</h2><p>{tr("El sistema relacionará la fecha de tu viaje y el objeto lunar elegido con el terreno, la luz y la visibilidad de la Tierra.")}</p><ul><li><Check size={13}/>{" "}{tr("Un destino recomendado y sus razones")}</li><li><Check size={13}/>{" "}{tr("Clasificación de toda la superficie")}</li><li><Check size={13}/>{" "}{tr("Diagnóstico conversacional en el chat izquierdo")}</li></ul><small>{tr("Los resultados corresponden a un modelo regional de planificación, no a una autorización de vuelo.")}</small></div>:<>
