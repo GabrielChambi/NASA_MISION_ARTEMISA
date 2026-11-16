@@ -906,7 +906,6 @@ export default function UnifiedMissionPlanner(){
     if(cell.latitude_deg> -80){
       setPinnedTarget({lat,lon,id:cell.id,elevation_m:null,regional_slope_deg:null,label:num(Math.abs(lat),3)+'°S, '+longitude(lon,3)})
       if(plan)choose(cell.id)
-      appendChatTurn('assistant','La coordenada está en una franja del borde sin centro evaluado. Sus condiciones permanecen desconocidas; no se ha desplazado al interior ni declarado favorable.')
       return cell.id
     }
     const latStr=`${num(Math.abs(cell.latitude_deg),2)}°S`
@@ -920,10 +919,6 @@ export default function UnifiedMissionPlanner(){
       label:`${latStr}, ${lonStr}`
     }
     setPinnedTarget(pin)
-    appendChatTurn(
-      'assistant',
-      `**Lugar fijado en el mapa lunar:** ${latStr}, ${lonStr} (Sector \`${cell.id}\`)\n* **Elevación LOLA:** ${cell.elevation_m!=null?Math.round(cell.elevation_m)+' m':'Desconocida'}\n* **Pendiente regional:** ${cell.regional_slope_deg!=null?cell.regional_slope_deg.toFixed(1)+'°':'Desconocida'}\n\n*Escribe una fecha para evaluar este destino y comparar el polo sur. Las condiciones se calculan con datos NASA para ese escenario; fijar un punto no implica que sea apto.*`
-    )
     if(plan&&polarById.has(cell.id)){
       choose(cell.id)
     }
