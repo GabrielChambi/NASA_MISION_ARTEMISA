@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, useEffect } from 'react'
+import { useState, useRef, useMemo } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls, Stars } from '@react-three/drei'
 import * as THREE from 'three'
@@ -6,7 +6,6 @@ import {
   Pause,
   Play,
   RotateCcw,
-  Ruler,
   Compass,
   Sun,
   Globe2,
@@ -27,26 +26,7 @@ type Props = {
   onClose?: () => void
 }
 
-function MetricCallout({position,label,color}:{position:[number,number,number];label:string;color:string}){
-  const {tr}=useI18n()
-  const text=tr(label)
-  const texture=useMemo(()=>{
-    const canvas=document.createElement('canvas');canvas.width=512;canvas.height=96
-    const context=canvas.getContext('2d')
-    if(context){
-      context.fillStyle='#101b29';context.fillRect(0,0,512,96)
-      context.strokeStyle=color;context.lineWidth=4;context.strokeRect(2,2,508,92)
-      context.fillStyle=color;context.font='28px sans-serif';context.textAlign='center';context.textBaseline='middle'
-      context.fillText(text,256,48,480)
-    }
-    const map=new THREE.CanvasTexture(canvas);map.colorSpace=THREE.SRGBColorSpace
-    return map
-  },[text,color])
-  useEffect(()=>()=>texture.dispose(),[texture])
-  return <sprite position={position} scale={[3.2,.6,1]}><spriteMaterial map={texture} transparent depthTest={false}/></sprite>
-}
-
-/** Dynamic Camera Framing: smoothly lerps camera and target to fit each 3D object's scale,
+/** Dynamic Camera Framing: smoothly lerps camera and target to fit each 3D object's scale with generous breathing room,
  * then yields 100% control to the user so mouse wheel zoom in/out works completely unrestricted. */
 function CameraFramer({
   vehicle,
@@ -64,30 +44,30 @@ function CameraFramer({
 
   const targetConfig = useMemo(() => {
     const name = vehicle.lander_name.toLowerCase()
-    // Distances increased generously ("un poco más lejos") for wide, cinematic framing
+    // Generous camera distances and optimized framing to prevent cramped models
     if (name.includes('starship')) {
-      return { target: new THREE.Vector3(0, 3.8, 0), pos: new THREE.Vector3(11.2, 7.6, 12.2) }
+      return { target: new THREE.Vector3(0, 4.0, 0), pos: new THREE.Vector3(14.0, 9.0, 15.0) }
     }
     if (name.includes('vsat') || name.includes('torre')) {
-      return { target: new THREE.Vector3(0, 3.3, 0), pos: new THREE.Vector3(9.6, 6.4, 10.6) }
+      return { target: new THREE.Vector3(0, 3.4, 0), pos: new THREE.Vector3(11.5, 7.2, 12.5) }
     }
     if (name.includes('hábitat') || name.includes('base artemis')) {
-      return { target: new THREE.Vector3(0, 1.4, 0), pos: new THREE.Vector3(7.8, 4.6, 8.4) }
+      return { target: new THREE.Vector3(0, 1.3, 0), pos: new THREE.Vector3(9.2, 5.2, 9.8) }
     }
     if (name.includes('cruiser') || name.includes('presurizado')) {
-      return { target: new THREE.Vector3(0, 1.2, 0), pos: new THREE.Vector3(7.0, 4.0, 7.6) }
+      return { target: new THREE.Vector3(0, 1.2, 0), pos: new THREE.Vector3(9.5, 5.4, 10.2) }
     }
     if (name.includes('viper') || name.includes('ltv') || vehicle.is_rover) {
-      return { target: new THREE.Vector3(0, 0.85, 0), pos: new THREE.Vector3(5.2, 3.2, 5.6) }
+      return { target: new THREE.Vector3(0, 0.75, 0), pos: new THREE.Vector3(7.6, 4.4, 8.2) }
     }
     if (name.includes('blue moon')) {
-      return { target: new THREE.Vector3(0, 2.2, 0), pos: new THREE.Vector3(8.0, 5.2, 8.8) }
+      return { target: new THREE.Vector3(0, 2.2, 0), pos: new THREE.Vector3(9.6, 5.8, 10.4) }
     }
     if (name.includes('alpaca') || name.includes('griffin')) {
-      return { target: new THREE.Vector3(0, 1.2, 0), pos: new THREE.Vector3(6.6, 3.8, 7.2) }
+      return { target: new THREE.Vector3(0, 1.2, 0), pos: new THREE.Vector3(8.0, 4.6, 8.6) }
     }
     // Default landers (Nova-C, Blue Ghost, etc.)
-    return { target: new THREE.Vector3(0, 1.3, 0), pos: new THREE.Vector3(6.5, 3.8, 7.0) }
+    return { target: new THREE.Vector3(0, 1.3, 0), pos: new THREE.Vector3(8.0, 4.6, 8.6) }
   }, [vehicle.lander_name, vehicle.is_rover])
 
   // Detect vehicle changes or reset click to restart smooth transition
@@ -154,7 +134,7 @@ function RoverModel({ vehicle }: { vehicle: VehicleProfile }) {
         {/* Front Cockpit Observation Dome */}
         <mesh position={[0, 1.45, 2.2]}>
           <boxGeometry args={[1.9, 0.85, 0.4]} />
-          <meshStandardMaterial color="#0284c7" emissive="#0369a1" emissiveIntensity={0.35} metalness={0.9} roughness={0.1} />
+          <meshStandardMaterial color="#1e293b" emissive="#0f172a" emissiveIntensity={0.2} metalness={0.9} roughness={0.15} />
         </mesh>
         {/* Rear Air-lock / Equipment bay */}
         <mesh position={[0, 1.35, -2.25]}>
@@ -186,7 +166,7 @@ function RoverModel({ vehicle }: { vehicle: VehicleProfile }) {
           </mesh>
           <mesh rotation={[0.4, 0, 0]}>
             <sphereGeometry args={[0.35, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.5]} />
-            <meshStandardMaterial color="#8ddfe9" side={THREE.DoubleSide} metalness={0.85} roughness={0.2} />
+            <meshStandardMaterial color="#cbd5e1" side={THREE.DoubleSide} metalness={0.85} roughness={0.2} />
           </mesh>
         </group>
       </group>
@@ -254,7 +234,7 @@ function RoverModel({ vehicle }: { vehicle: VehicleProfile }) {
           </mesh>
           <mesh rotation={[0.3, 0, 0]}>
             <sphereGeometry args={[0.22, 14, 12, 0, Math.PI * 2, 0, Math.PI * 0.5]} />
-            <meshStandardMaterial color="#8ddfe9" side={THREE.DoubleSide} metalness={0.85} roughness={0.2} />
+            <meshStandardMaterial color="#cbd5e1" side={THREE.DoubleSide} metalness={0.85} roughness={0.2} />
           </mesh>
         </group>
       </group>
@@ -335,7 +315,7 @@ function RoverModel({ vehicle }: { vehicle: VehicleProfile }) {
         </mesh>
         <mesh rotation={[0.3, 0, 0]}>
           <sphereGeometry args={[0.24, 14, 12, 0, Math.PI * 2, 0, Math.PI * 0.5]} />
-          <meshStandardMaterial color="#8ddfe9" side={THREE.DoubleSide} metalness={0.85} roughness={0.2} />
+          <meshStandardMaterial color="#cbd5e1" side={THREE.DoubleSide} metalness={0.85} roughness={0.2} />
         </mesh>
       </group>
     </group>
@@ -406,7 +386,7 @@ function LanderModel({ vehicle }: { vehicle: VehicleProfile }) {
           </mesh>
           <mesh position={[0.25, 0, 0]}>
             <sphereGeometry args={[0.25, 14, 14]} />
-            <meshBasicMaterial color="#8ddfe9" />
+            <meshStandardMaterial color="#cbd5e1" metalness={0.85} roughness={0.2} />
           </mesh>
         </group>
       </group>
@@ -425,7 +405,7 @@ function LanderModel({ vehicle }: { vehicle: VehicleProfile }) {
         {/* Front EVA Hatch and Windows */}
         <mesh position={[0, 1.15, 1.12]}>
           <boxGeometry args={[0.8, 0.8, 0.05]} />
-          <meshStandardMaterial color="#0284c7" emissive="#0369a1" emissiveIntensity={0.3} metalness={0.8} roughness={0.15} />
+          <meshStandardMaterial color="#1e293b" emissive="#0f172a" emissiveIntensity={0.25} metalness={0.9} roughness={0.15} />
         </mesh>
         {/* EVA Steps to Lunar Surface */}
         <mesh position={[0, 0.35, 1.15]}>
@@ -499,7 +479,7 @@ function LanderModel({ vehicle }: { vehicle: VehicleProfile }) {
           </mesh>
           <mesh rotation={[0.3, 0, 0]}>
             <sphereGeometry args={[0.26, 14, 12, 0, Math.PI * 2, 0, Math.PI * 0.5]} />
-            <meshStandardMaterial color="#8ddfe9" side={THREE.DoubleSide} metalness={0.85} roughness={0.2} />
+            <meshStandardMaterial color="#cbd5e1" side={THREE.DoubleSide} metalness={0.85} roughness={0.2} />
           </mesh>
         </group>
       </group>
@@ -563,7 +543,7 @@ function LanderModel({ vehicle }: { vehicle: VehicleProfile }) {
           </mesh>
           <mesh rotation={[0.3, 0, 0]}>
             <sphereGeometry args={[0.3, 14, 12, 0, Math.PI * 2, 0, Math.PI * 0.5]} />
-            <meshStandardMaterial color="#8ddfe9" side={THREE.DoubleSide} metalness={0.85} roughness={0.2} />
+            <meshStandardMaterial color="#cbd5e1" side={THREE.DoubleSide} metalness={0.85} roughness={0.2} />
           </mesh>
         </group>
       </group>
@@ -619,7 +599,7 @@ function LanderModel({ vehicle }: { vehicle: VehicleProfile }) {
           </mesh>
           <mesh rotation={[0.3, 0, 0]}>
             <sphereGeometry args={[0.24, 12, 12, 0, Math.PI * 2, 0, Math.PI * 0.5]} />
-            <meshStandardMaterial color="#8ddfe9" side={THREE.DoubleSide} metalness={0.85} roughness={0.2} />
+            <meshStandardMaterial color="#cbd5e1" side={THREE.DoubleSide} metalness={0.85} roughness={0.2} />
           </mesh>
         </group>
       </group>
@@ -684,7 +664,7 @@ function LanderModel({ vehicle }: { vehicle: VehicleProfile }) {
         </mesh>
         <mesh rotation={[0.3, 0, 0]}>
           <sphereGeometry args={[0.24, 12, 12, 0, Math.PI * 2, 0, Math.PI * 0.5]} />
-          <meshStandardMaterial color="#8ddfe9" side={THREE.DoubleSide} metalness={0.85} roughness={0.2} />
+          <meshStandardMaterial color="#cbd5e1" side={THREE.DoubleSide} metalness={0.85} roughness={0.2} />
         </mesh>
       </group>
     </group>
@@ -768,11 +748,9 @@ function InfrastructureModel({ vehicle }: { vehicle: VehicleProfile }) {
 function RotatingStudio({
   vehicle,
   autoRotate,
-  showRulers,
 }: {
   vehicle: VehicleProfile
   autoRotate: boolean
-  showRulers: boolean
 }) {
   const groupRef = useRef<THREE.Group>(null)
   const isRover = Boolean(vehicle.is_rover || vehicle.category === 'Rover y Movilidad')
@@ -784,23 +762,6 @@ function RotatingStudio({
     }
   })
 
-  // Dynamic label positions based on vehicle
-  const solarLabelY = useMemo(() => {
-    const name = vehicle.lander_name.toLowerCase()
-    if (name.includes('starship')) return 5.4
-    if (name.includes('vsat')) return 4.5
-    if (name.includes('blue moon')) return 3.2
-    return 2.0
-  }, [vehicle.lander_name])
-
-  const antennaLabelY = useMemo(() => {
-    const name = vehicle.lander_name.toLowerCase()
-    if (name.includes('starship')) return 6.0
-    if (name.includes('vsat')) return 6.2
-    if (name.includes('blue moon')) return 3.5
-    return 2.4
-  }, [vehicle.lander_name])
-
   return (
     <group ref={groupRef}>
       {isRover ? (
@@ -810,12 +771,6 @@ function RotatingStudio({
       ) : (
         <LanderModel vehicle={vehicle} />
       )}
-
-      {/* GPU sprites keep callouts inside the canvas lifecycle when rulers or views change. */}
-      {showRulers&&<group>
-        <MetricCallout position={[2.1,solarLabelY,0]} label={'Paneles: '+vehicle.solar_panel_height+' m'} color="#f5cb67"/>
-        <MetricCallout position={[-2.1,antennaLabelY,0]} label={'Antena: '+vehicle.antenna_height+' m'} color="#8ddfe9"/>
-      </group>}
     </group>
   )
 }
@@ -827,7 +782,6 @@ export default function LunarObject3DViewer({
 }: Props) {
   const { tr } = useI18n()
   const [autoRotate, setAutoRotate] = useState(true)
-  const [showRulers, setShowRulers] = useState(true)
   const [resetTrigger, setResetTrigger] = useState(0)
   const controlsRef = useRef<any>(null)
 
@@ -859,7 +813,7 @@ export default function LunarObject3DViewer({
     <div className="lunar-object-studio-container" data-testid="lunar-object-3d-viewer">
       {/* 3D Canvas Studio */}
       <Canvas
-        camera={{ position: [7.0, 4.5, 7.5], fov: 42 }}
+        camera={{ position: [8.0, 4.6, 8.6], fov: 38 }}
         gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
       >
         <color attach="background" args={['#060a10']} />
@@ -868,25 +822,25 @@ export default function LunarObject3DViewer({
         {/* Studio Space & Sun Lighting */}
         <ambientLight intensity={0.45} />
         <directionalLight position={[12, 16, 10]} intensity={2.4} color="#fffcf2" castShadow />
-        <directionalLight position={[-10, 4, -8]} intensity={0.65} color="#8ddfe9" />
+        <directionalLight position={[-10, 4, -8]} intensity={0.4} color="#94a3b8" />
         <pointLight position={[0, -2, 0]} intensity={0.25} color="#64748b" />
 
         {/* Lunar Regolith Studio Platform with Distance Rings */}
         <mesh position={[0, 0, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-          <circleGeometry args={[4.2, 48]} />
-          <meshStandardMaterial color="#0b131d" roughness={0.85} metalness={0.2} />
+          <circleGeometry args={[4.5, 48]} />
+          <meshStandardMaterial color="#090f17" roughness={0.88} metalness={0.15} />
         </mesh>
         <mesh position={[0, 0.005, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <ringGeometry args={[1.98, 2.02, 48]} />
-          <meshBasicMaterial color="#38bdf8" transparent opacity={0.3} side={THREE.DoubleSide} />
+          <meshBasicMaterial color="#475569" transparent opacity={0.3} side={THREE.DoubleSide} />
         </mesh>
         <mesh position={[0, 0.005, 0]} rotation={[-Math.PI / 2, 0, 0]}>
           <ringGeometry args={[3.98, 4.02, 48]} />
-          <meshBasicMaterial color="#38bdf8" transparent opacity={0.15} side={THREE.DoubleSide} />
+          <meshBasicMaterial color="#334155" transparent opacity={0.2} side={THREE.DoubleSide} />
         </mesh>
 
         {/* Centered Rotating Model */}
-        <RotatingStudio vehicle={activeVehicle} autoRotate={autoRotate} showRulers={showRulers} />
+        <RotatingStudio vehicle={activeVehicle} autoRotate={autoRotate} />
 
         {/* Camera Framer adapts dynamically to object scale with full user zoom/scroll freedom */}
         <CameraFramer vehicle={activeVehicle} controlsRef={controlsRef} resetTrigger={resetTrigger} />
@@ -904,10 +858,11 @@ export default function LunarObject3DViewer({
       {/* Top Header Overlay inside the Studio */}
       <div className="studio-top-overlay">
         <div className="studio-title-badge">
-          <span className="micro-title">{tr("ESTUDIO 3D DE VEHÍCULO · POLO SUR LUNAR")}</span>
+          <div className="studio-title-heading">
+            <span className="micro-title">{tr("ESTUDIO 3D · POLO SUR")}</span>
+            <span className="studio-category-tag">{tr(activeVehicle.category ?? 'Vehículo')}</span>
+          </div>
           <h3>{tr(activeVehicle.lander_name)}</h3>
-          <span className="studio-category-tag">{tr(activeVehicle.category ?? 'Vehículo')}</span>
-          <small className="studio-model-scope">{tr("Modelo visual y parámetros hipotéticos; no es una ficha técnica ni una validación de vuelo.")}</small>
         </div>
 
         <div className="studio-actions-bar">
@@ -919,16 +874,6 @@ export default function LunarObject3DViewer({
           >
             {autoRotate ? <Pause size={13} /> : <Play size={13} />}
             <span>{tr(autoRotate ? "Pausar giro" : "Girar 360°")}</span>
-          </button>
-
-          <button
-            type="button"
-            className={'studio-tool-btn' + (showRulers ? ' active' : '')}
-            onClick={() => setShowRulers(v => !v)}
-            title={tr("Mostrar/ocultar cotas métricas")}
-          >
-            <Ruler size={13} />
-            <span>{tr("Cotas")}</span>
           </button>
 
           <button
@@ -955,10 +900,10 @@ export default function LunarObject3DViewer({
         </div>
       </div>
 
-      {/* HUD Telemetry Specifications Card on Top-Right (No overlap with bottom dock) */}
+      {/* HUD Telemetry Specifications Card on Top-Right (Compact, non-intrusive) */}
       <div className="studio-hud-telemetry" data-testid="studio-hud-telemetry">
         <div className="hud-metric-row">
-          <div className="hud-metric-icon sun"><Sun size={13} /></div>
+          <div className="hud-metric-icon sun"><Sun size={12} /></div>
           <div className="hud-metric-data">
             <small>{tr("Paneles solares")}</small>
             <strong>{activeVehicle.solar_panel_height} m</strong>
@@ -966,7 +911,7 @@ export default function LunarObject3DViewer({
         </div>
 
         <div className="hud-metric-row">
-          <div className="hud-metric-icon earth"><Globe2 size={13} /></div>
+          <div className="hud-metric-icon earth"><Globe2 size={12} /></div>
           <div className="hud-metric-data">
             <small>{tr("Antena DTE")}</small>
             <strong>{activeVehicle.antenna_height} m</strong>
@@ -974,18 +919,18 @@ export default function LunarObject3DViewer({
         </div>
 
         <div className="hud-metric-row">
-          <div className="hud-metric-icon warn"><ShieldAlert size={13} /></div>
+          <div className="hud-metric-icon warn"><ShieldAlert size={12} /></div>
           <div className="hud-metric-data">
-            <small>{tr("Umbral de pendiente configurado")}</small>
+            <small>{tr("Pendiente límite")}</small>
             <strong>{activeVehicle.center_of_gravity_tolerance}°</strong>
           </div>
         </div>
 
         {isRover && (
           <div className="hud-metric-row rover-accent">
-            <div className="hud-metric-icon rover"><Compass size={13} /></div>
+            <div className="hud-metric-icon rover"><Compass size={12} /></div>
             <div className="hud-metric-data">
-              <small>{tr("Radio geométrico declarado")}</small>
+              <small>{tr("Radio declarado")}</small>
               <strong>{activeVehicle.nominal_range_km ?? 15} km</strong>
               <span>({activeVehicle.speed_km_h ?? 2.5} km/h)</span>
             </div>
