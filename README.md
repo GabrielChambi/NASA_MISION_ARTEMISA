@@ -1,5 +1,7 @@
 # LUNAR ORACLE · Lunar Landing Site Navigator
 
+**Demo pública:** [Abrir Lunar Oracle](https://lunar-oracle-7wcq.onrender.com/). Alojamiento Render Free, sin cuenta para visitantes; puede tardar en despertar tras inactividad.
+
 Escribe cuándo quieres viajar y el sistema calcula una **clasificación continua de toda la superficie del polo sur lunar, de 80°S a 90°S**. Una sola pantalla reúne la pregunta, el mapa 3D, los destinos, las condiciones durante la estancia y la duración estimada. Los visitantes entran directamente, sin iniciar sesión con ChatGPT ni Google.
 
 ![Planificación automática sobre todo el polo sur](docs/images/automatic-mission.png)

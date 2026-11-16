@@ -4,6 +4,14 @@ Deploy the repository's root Dockerfile to a Linux AMD64 **web service**. The sa
 
 The static/Worker build is a different, limited distribution. It does not replace this container when native terrain, SPICE or the coupled engineering study is required.
 
+## Current public service
+
+https://lunar-oracle-7wcq.onrender.com/
+
+The existing service is named lunar-oracle in Rudy Gabriel's workspace, on Render Free. It was created directly as one Docker web service, using main. The render.yaml is a reproducible reference, not an automatically synchronized Blueprint for this existing service. Do not create duplicate services to publish updates. Use its existing Render Dashboard and a manual deploy after checking the new commit.
+
+The scientific data verification and public frontend/API checks passed for application commit 9005dc6. The key is configured as a server-side secret. A separate real-generation test returned Google HTTP 429: configured credentials do not remove Google's daily free-tier quota. Paying the web host does not change Google's quota.
+
 ## What the image includes
 
 - The frontend built with Node 22 and the Python 3.11 scientific API.
