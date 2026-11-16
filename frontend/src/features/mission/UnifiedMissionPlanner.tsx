@@ -972,16 +972,9 @@ export default function UnifiedMissionPlanner(){
       <div className="unified-header-left">
         <div className="unified-logo">
           <Orbit size={26}/>
-          <div>
-            LUNAR ORACLE
-            <small>{tr("PLANIFICA TU LLEGADA A LA LUNA")}</small>
-          </div>
+          <span>LUNAR ORACLE</span>
         </div>
-        <div className="unified-header-title">
-          <span className="micro-title">{tr("POLO SUR LUNAR · 80°S — 90°S")}</span>
-          <h2>{tr('Una Luna. Todos los destinos.')}</h2>
-          {(vehicle.is_rover||vehicle.category==='Rover y Movilidad')&&<span className="rover-range-indicator"><Compass size={11}/>{" "}{tr("Radio:")}{" "}<b>{vehicle.nominal_range_km??15} km</b></span>}
-        </div>
+        {(vehicle.is_rover||vehicle.category==='Rover y Movilidad')&&<span className="rover-range-indicator"><Compass size={11}/>{" "}{tr("Radio:")}{" "}<b>{vehicle.nominal_range_km??15} km</b></span>}
       </div>
 
       <div className="one-map-actions">
