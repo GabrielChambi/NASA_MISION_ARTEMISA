@@ -432,6 +432,10 @@ body.is-resizing-chat iframe,body.is-resizing-chat canvas{pointer-events:none!im
 /* Compact map inspection hint pill (not full-width) */
 .surface-inspection-hint{position:absolute;left:18px;right:auto;width:fit-content;max-width:calc(100% - 36px);bottom:12px;z-index:38;background:#101822d9;border:1px solid #303e4b;border-radius:6px;padding:5px 10px;font-size:10px;color:#b8c7d1;display:inline-flex;align-items:center;gap:6px;pointer-events:none;flex-wrap:wrap}
 .surface-inspection-hint>span{font-size:10px;color:#a5b6c3}.surface-inspection-hint svg{flex-shrink:0}.surface-inspection-hint b{font-weight:500}
+.surface-hover-pin-hint{left:50%!important;right:auto!important;transform:translateX(-50%);animation:fadeInHint .18s ease-out;box-shadow:0 6px 20px rgba(0,0,0,0.5);border-color:rgba(148,237,187,0.35);color:#d1fae5}
+.surface-hover-pin-hint svg{color:#86efac}
+.surface-hover-pin-hint span{color:#ecfdf5;font-weight:500}
+@keyframes fadeInHint{from{opacity:0;transform:translate(-50%,4px)}to{opacity:1;transform:translate(-50%,0)}}
 .sampling-sensitivity{background:#0d151d;border:1px solid #31414c;border-radius:7px;padding:12px;margin:15px 0}
 .sampling-sensitivity strong{display:block;font-weight:500;font-size:11px;color:#c9d9e4}
 .sampling-sensitivity span{display:block;font:10px/1.7 'IBM Plex Mono',monospace;color:#aec9b9;margin-top:7px}

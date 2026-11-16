@@ -349,6 +349,7 @@ export default function UnifiedMissionPlanner(){
     window.addEventListener('mousemove',onMove);window.addEventListener('mouseup',onEnd)
     window.addEventListener('touchmove',onMove);window.addEventListener('touchend',onEnd)
   },[])
+  const [isHoveringMoon,setIsHoveringMoon]=useState(false)
   const [hideLeftPanel,setHideLeftPanel]=useState(false),[hideRightPanel,setHideRightPanel]=useState(false),[hideTimelinePanel,setHideTimelinePanel]=useState(false)
   const [chatTurns,setChatTurns]=useState<ChatTurn[]>([])
   const fileInputRef=useRef<HTMLInputElement|null>(null)
@@ -1381,7 +1382,7 @@ export default function UnifiedMissionPlanner(){
             onClose={() => setViewMode('map')}
           />
         ) : (
-          <div className="one-moon-map" data-testid="mission-map">
+          <div className="one-moon-map" data-testid="mission-map" onPointerEnter={()=>setIsHoveringMoon(true)} onPointerLeave={()=>setIsHoveringMoon(false)}>
             <Tactical3DScene latDeg={selected?.latitude_deg??pinnedTarget?.lat??-90} lonDeg={selected?.longitude_deg??pinnedTarget?.lon??0} observerHeightM={2} sunAzimuthDeg={current?.sun_azimuth_deg??0} sunElevationDeg={current?.sun_elevation_deg??0} earthAzimuthDeg={current?.earth_azimuth_deg??0} earthElevationDeg={current?.earth_elevation_deg??0} minSolarElevation={0} maxSlopeDeg={vehicle.center_of_gravity_tolerance} currentSlopeDeg={selected?.regional_slope_deg??pinnedTarget?.regional_slope_deg??NaN}
               atlasData={atlas} focusTerrainData={detail} scientificSurfaceElevationM={selected?.elevation_m} sunRaycast={ray(current?.sun_elevation_deg,current?.sun_horizon_deg)} earthRaycast={ray(current?.earth_elevation_deg,current?.earth_horizon_deg)} cameraView="polar" siteName={selected?`${vehicle.lander_name} · Destino`:pinnedTarget?`${pinnedTarget.label}`:'Polo sur'}
               overview focusZone={focus} onShadingStatus={setShadingStatus} cameraResetKey={cameraRevision+(focus?1:0)} missionMarkers={flight?[]:markers} onMarkerSelect={choose} polarSurface={polar} missionCoverage={coverageLayer} onCoverageSelect={choose} onCoverageHover={setHoveredId}
@@ -1512,7 +1513,7 @@ export default function UnifiedMissionPlanner(){
               </div>
             </div>}
 
-
+            {!plan&&!pinnedTarget&&isHoveringMoon&&<div className="surface-inspection-hint surface-hover-pin-hint"><MapPin size={12}/><span>{tr("Haz clic para tener un pin")}</span></div>}
             {!plan&&pinnedTarget&&<div className="surface-inspection-hint"><MapPin size={12}/><b>{tr("Lugar fijado:")}{" "}{tr(pinnedTarget.label)}</b><span>{tr("Elevación")}{" "}{tr(pinnedTarget.elevation_m!=null?Math.round(pinnedTarget.elevation_m)+' m':'—')}{" "}{tr("· Pendiente")}{" "}{tr(pinnedTarget.regional_slope_deg!=null?pinnedTarget.regional_slope_deg.toFixed(1)+'°':'—')}{" "}{tr("· Escribe una fecha para calcular sus condiciones")}</span></div>}
             {plan&&!flight&&<div className="surface-inspection-hint"><MapPin size={12}/>{hovered?<><b className={'risk-text '+hovered.risk}>{tr(SURFACE_CLASS_LABELS[hovered.risk])}</b><span>{tr(num(Math.abs(hovered.latitude_deg),2))}°S · {tr(longitude(hovered.longitude_deg))}{" "}{tr("· pendiente P95")}{" "}{tr(num(hovered.regional_slope_deg))}°</span></>:<span>{tr("Haz clic en cualquier área para ver sus mediciones y motivos.")}</span>}</div>}
           </div>
