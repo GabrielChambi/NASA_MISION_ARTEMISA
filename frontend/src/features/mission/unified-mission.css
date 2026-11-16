@@ -562,48 +562,51 @@ body.is-resizing-chat iframe,body.is-resizing-chat canvas{pointer-events:none!im
 /* 3D Lunar Object Studio Viewer */
 .lunar-object-studio-container{position:relative;width:100%;height:100%;min-height:510px;flex:1;background:#05090f;overflow:hidden}
 .lunar-object-studio-container canvas{display:block;outline:none;touch-action:none}
-.studio-top-overlay{position:absolute;top:16px;left:20px;right:20px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;z-index:20}
-.studio-title-badge{background:#0c1520dd;border:1px solid #283a4c;border-radius:9px;padding:12px 16px;backdrop-filter:blur(8px);pointer-events:auto;box-shadow:0 8px 24px #000a}
-.studio-title-badge h3{font:500 24px/1.1 'Barlow Condensed',sans-serif;margin:4px 0 6px;color:#f0f6fa}
-.studio-category-tag{display:inline-block;font:9px 'IBM Plex Mono',monospace;color:#7dd3fc;background:#0284c724;border:1px solid #0284c744;padding:2px 7px;border-radius:4px}
-.studio-actions-bar{display:flex;gap:7px;pointer-events:auto}
-.studio-tool-btn{border:1px solid #314354;background:#111b26;color:#cbdbe6;border-radius:7px;padding:8px 12px;font-size:11px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:background .15s,border-color .15s}
-.studio-tool-btn:hover{background:#1a2837;border-color:#536f87;color:#fff}
-.studio-tool-btn.active{background:#1e3a34;border-color:#4ade80;color:#86efac}
+.studio-top-overlay{position:absolute;top:14px;left:18px;right:18px;display:flex;justify-content:space-between;align-items:center;pointer-events:none;z-index:20;gap:12px}
+.studio-title-badge{background:#0c1520e0;border:1px solid #243547;border-radius:8px;padding:8px 14px;backdrop-filter:blur(8px);pointer-events:auto;box-shadow:0 4px 16px #0008}
+.studio-title-heading{display:flex;align-items:center;gap:8px}
+.studio-title-badge h3{font:600 18px/1.2 'Barlow Condensed',sans-serif;margin:3px 0 0;color:#f1f5f9;letter-spacing:.3px}
+.studio-category-tag{display:inline-block;font:9px 'IBM Plex Mono',monospace;color:#94a3b8;background:#1e293b;border:1px solid #334155;padding:1px 6px;border-radius:4px}
+.studio-actions-bar{display:flex;gap:6px;pointer-events:auto;align-items:center}
+.studio-tool-btn{border:1px solid #2d3f52;background:#0f172a;color:#cbd5e1;border-radius:6px;padding:6px 11px;font-size:11px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:background .15s,border-color .15s}
+.studio-tool-btn:hover{background:#1e293b;border-color:#475569;color:#fff}
+.studio-tool-btn.active{background:#1e293b;border-color:#94a3b8;color:#f8fafc}
+.studio-close-btn{border-color:#475569;background:#1e293b}
+.studio-close-btn:hover{background:#334155;color:#fff}
 
-/* HUD Telemetry Specifications Card (Top-Right, cleanly separated from dock) */
-.studio-hud-telemetry{position:absolute;top:72px;right:20px;display:flex;flex-direction:column;gap:8px;pointer-events:auto;z-index:20;width:210px}
-.hud-metric-row{background:#0c1520ea;border:1px solid #233649;border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:11px;color:#d5e5ed;backdrop-filter:blur(8px);box-shadow:0 6px 18px #0009}
-.hud-metric-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:#13202e;border:1px solid #2b4054}
-.hud-metric-icon.sun{color:#f5cb67;background:#26200e;border-color:#785817}
-.hud-metric-icon.earth{color:#8ddfe9;background:#0d232b;border-color:#1c5666}
-.hud-metric-icon.warn{color:#f87171;background:#291414;border-color:#6e2929}
-.hud-metric-icon.rover{color:#38bdf8;background:#0c2538;border-color:#195d85}
-.hud-metric-data small{display:block;font-size:9px;color:#8fa7b9;line-height:1.3;letter-spacing:.3px}
-.hud-metric-data strong{display:block;font:500 15px 'IBM Plex Mono',monospace;color:#f0f8fc}
-.hud-metric-data span{font-size:9px;color:#7dd3fc;margin-left:4px}
-.hud-metric-row.rover-accent{border-color:#0284c788;background:#0b1d2fee}
+/* HUD Telemetry Specifications Card (Top-Right, sleek and non-intrusive) */
+.studio-hud-telemetry{position:absolute;top:66px;right:18px;display:flex;flex-direction:column;gap:5px;pointer-events:auto;z-index:20;width:180px}
+.hud-metric-row{background:#0c1520d8;border:1px solid #203142;border-radius:6px;padding:5px 9px;display:flex;align-items:center;gap:9px;color:#cbd5e1;backdrop-filter:blur(6px);box-shadow:0 3px 10px #0006}
+.hud-metric-icon{width:22px;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:#13202e;border:1px solid #25384a}
+.hud-metric-icon.sun{color:#f5cb67;background:#241f0e;border-color:#5c4412}
+.hud-metric-icon.earth{color:#cbd5e1;background:#1e293b;border-color:#334155}
+.hud-metric-icon.warn{color:#f87171;background:#241212;border-color:#522020}
+.hud-metric-icon.rover{color:#94a3b8;background:#1e293b;border-color:#334155}
+.hud-metric-data small{display:block;font-size:8.5px;color:#7c94a6;line-height:1.2;letter-spacing:.2px}
+.hud-metric-data strong{display:block;font:600 13px 'IBM Plex Mono',monospace;color:#f1f5f9;line-height:1.2}
+.hud-metric-data span{font-size:8.5px;color:#94a3b8;margin-left:3px}
+.hud-metric-row.rover-accent{border-color:#334155;background:#0c1520ea}
 
 /* Bottom Vehicle Carousel Dock */
-.studio-carousel-dock{position:absolute;bottom:12px;left:16px;right:16px;background:#09111bee;border:1px solid #25374b;border-radius:10px;padding:8px 14px 10px;backdrop-filter:blur(10px);z-index:20;box-shadow:0 8px 24px #000c}
-.dock-hint{display:block;font:9px 'IBM Plex Mono',monospace;color:#7c94a6;margin-bottom:6px;letter-spacing:.5px}
-.dock-scroll-row{display:flex;gap:8px;overflow-x:auto;scrollbar-width:thin;scrollbar-color:#334557 transparent;padding-bottom:6px}
-.dock-item-btn{display:flex;align-items:center;gap:8px;background:#101a26;border:1px solid #223446;border-radius:7px;padding:7px 12px;color:#c2d6e3;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:border-color .15s,background .15s}
-.dock-item-btn:hover{border-color:#486885;background:#182838;color:#fff}
-.dock-item-btn.active{border-color:#38bdf8;background:#0c283d;color:#e0f2fe;box-shadow:0 0 12px #38bdf833}
-.dock-item-icon{display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:5px;background:#172738;color:#38bdf8;flex-shrink:0}
-.dock-item-btn.active .dock-item-icon{background:#0369a1;color:#fff}
-.dock-item-text strong{display:block;font-size:11px;font-weight:500}
-.dock-item-text small{display:block;font-size:9px;color:#7ea2bb}
+.studio-carousel-dock{position:absolute;bottom:10px;left:14px;right:14px;background:#080e16e6;border:1px solid #1e2c3c;border-radius:8px;padding:6px 12px 8px;backdrop-filter:blur(10px);z-index:20;box-shadow:0 6px 20px #000b}
+.dock-hint{display:block;font:8.5px 'IBM Plex Mono',monospace;color:#64748b;margin-bottom:5px;letter-spacing:.4px}
+.dock-scroll-row{display:flex;gap:7px;overflow-x:auto;scrollbar-width:thin;scrollbar-color:#2a3a4c transparent;padding-bottom:4px}
+.dock-item-btn{display:flex;align-items:center;gap:7px;background:#0e1724;border:1px solid #1e2d3e;border-radius:6px;padding:5px 10px;color:#cbd5e1;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:border-color .15s,background .15s}
+.dock-item-btn:hover{border-color:#3b5066;background:#162333;color:#fff}
+.dock-item-btn.active{border-color:#94a3b8;background:#1e293b;color:#f8fafc;box-shadow:0 0 10px rgba(255,255,255,0.08)}
+.dock-item-icon{display:flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:4px;background:#152230;color:#94a3b8;flex-shrink:0}
+.dock-item-btn.active .dock-item-icon{background:#334155;color:#f8fafc}
+.dock-item-text strong{display:block;font-size:10.5px;font-weight:500}
+.dock-item-text small{display:block;font-size:8.5px;color:#64748b}
 
 /* 3D Ruler Badges */
 .studio-ruler-badge{background:#07121dda;border:1px solid #33485c;border-radius:5px;padding:4px 8px;font-size:10px;white-space:nowrap;display:flex;align-items:center;gap:5px;pointer-events:none;box-shadow:0 4px 12px #000a}
 .studio-ruler-badge.solar-badge{border-color:#f5cb67aa;color:#fef08a}
-.studio-ruler-badge.antenna-badge{border-color:#8ddfe9aa;color:#e0f2fe}
+.studio-ruler-badge.antenna-badge{border-color:#94a3b8aa;color:#e2e8f0}
 .studio-ruler-badge b{font-weight:600}
 
 /* Vehicle 3D Tab in map actions */
 .vehicle-3d-tab-btn{display:inline-flex;align-items:center;gap:6px;font-weight:500}
-.one-map-actions button.vehicle-3d-tab-btn[aria-pressed=true]{background:#0c2a3f;border-color:#38bdf8;color:#e0f2fe;box-shadow:0 0 10px #38bdf822}
+.one-map-actions button.vehicle-3d-tab-btn[aria-pressed=true]{background:#1e293b;border-color:#94a3b8;color:#f8fafc;box-shadow:0 1px 4px rgba(0,0,0,0.4)}
 
 .studio-model-scope{display:block;max-width:340px;font-size:10px;line-height:1.6;color:#b6c9d5;margin-top:7px}
