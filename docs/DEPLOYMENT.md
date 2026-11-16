@@ -7,7 +7,7 @@ The static/Worker build is a different, limited distribution. It does not replac
 ## What the image includes
 
 - The frontend built with Node 22 and the Python 3.11 scientific API.
-- Seven original NASA LOLA rasters and six NASA/JPL NAIF kernels, downloaded from the official source URLs. SHA-256 values come from the scientific manifests already committed in this repository.
+- Seven original NASA LOLA rasters and six NASA/JPL NAIF kernels. Large files are downloaded from the official source URLs; the small frozen Earth kernel whose dated source now returns 404 is included unchanged under data/pinned/naif/. SHA-256 values come from the scientific manifests already committed in this repository.
 - A build-time scientific layer cached separately from application edits. Every downloaded file must match its pinned digest. Truncated or altered responses are retried, never accepted or silently repinned.
 - Startup verification of all thirteen files. Missing data, a missing built frontend or a missing required Gemini key stops startup.
 - A single Uvicorn worker and one BLAS thread to constrain memory and preserve the scientific process's SPICE state.
@@ -16,14 +16,20 @@ The static/Worker build is a different, limited distribution. It does not replac
 
 ## Render setup
 
-The root render.yaml describes one Docker web service, branch main, health check /api/ready and the proposed 1 CPU / 2 GB compute plan. **Review the current price before applying it.** Creating the file or validating it does not buy compute. It creates no database, worker or disk. Automatic deploys are off so new commits can be reviewed before publication.
+The root render.yaml describes one Docker web service on Render Free (512 MB RAM, 0.1 CPU), branch main and health check /api/ready. It creates no database, worker or disk. Do not upgrade it to paid compute. Automatic deploys are off so new commits can be reviewed before publication.
 
 Connect GitHub from Render Account Settings > Account Security > Git Deployment Credentials > Add credential. Grant access to GabrielChambi/NASA_MISION_ARTEMISA. If the repo is absent, its owner must configure the Render GitHub application's repository access.
 
 After this configuration has been pushed to main, the Blueprint form is:
 https://dashboard.render.com/blueprint/new?repo=https://github.com/GabrielChambi/NASA_MISION_ARTEMISA
 
-Review the workspace, compute plan and bill. Enter GEMINI_API_KEY in Render's secret field, never in Git or a chat message. The proposed AI_PROVIDER and AI_MODEL values are non-secret and configurable. Apply only after accepting the displayed cost. The eventual HTTPS address is supplied by Render and normally ends in .onrender.com.
+Review the workspace and confirm that the compute plan is Free. Enter GEMINI_API_KEY in Render's secret field, never in Git or a chat message. The proposed AI_PROVIDER and AI_MODEL values are non-secret and configurable. Keep the account without a payment method to prevent usage overages from becoming charges; on the free plan, exceeding included usage can suspend service or builds. Never authorize a paid upgrade. The eventual HTTPS address is supplied by Render and normally ends in .onrender.com.
+
+## Free-tier behavior
+
+Render Free suspends after 15 minutes without incoming traffic and needs approximately one minute to wake. The included hours, bandwidth and build minutes are limited. Do not promise uninterrupted availability or production capacity on this tier.
+
+Scientific raster access reads original pixels in 256-pixel windows with at most eight cached tiles per source. It does not resample the NASA data. GDAL cache and BLAS threads are bounded. This removes the peak allocation from reading and masking an entire regional raster into RAM. The native 5 m products remain available only in their actual original footprints.
 
 ## Gemini
 
@@ -37,7 +43,7 @@ From the repository root:
 
 ~~~powershell
 docker build -t lunar-oracle:production .
-docker run --rm --name lunar-oracle-production --memory=2g --cpus=1 --env-file .env -p 127.0.0.1:8080:8000 lunar-oracle:production
+docker run --rm --name lunar-oracle-production --memory=512m --memory-swap=512m --cpus=0.1 --env-file .env -p 127.0.0.1:8080:8000 lunar-oracle:production
 ~~~
 
 Open http://127.0.0.1:8080/ and http://127.0.0.1:8080/api/ready. This is the production container, without Vite or a development proxy. Do not run a second container with the same name or port.

@@ -1,11 +1,11 @@
-# Review the paid compute plan in Render before applying this Blueprint.
+# Free-only deployment. Do not upgrade compute or add paid resources.
 services:
   - type: web
     name: lunar-oracle
     runtime: docker
     repo: https://github.com/GabrielChambi/NASA_MISION_ARTEMISA
     branch: main
-    plan: 1c-2g
+    plan: free
     dockerfilePath: ./Dockerfile
     dockerContext: .
     autoDeployTrigger: 'off'

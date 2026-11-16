@@ -6,7 +6,8 @@ const browser=await chromium.launch({channel:'chrome',headless:true})
 const page=await browser.newPage({locale:'es-BO',viewport:{width:1600,height:1100},reducedMotion:'reduce'})
 page.on('pageerror',e=>errors.push(e.stack))
 const check=(name,value)=>{assert.ok(value,name);checks.push(name);console.log(name)}
-const response=path=>page.waitForResponse(r=>r.request().method()==='POST'&&new URL(r.url()).pathname===path,{timeout:180000})
+const responseTimeout=Number(process.env.LUNAR_ORACLE_TEST_TIMEOUT_MS||180000)
+const response=path=>page.waitForResponse(r=>r.request().method()==='POST'&&new URL(r.url()).pathname===path,{timeout:responseTimeout})
 const nextStudy=()=>response('/api/engineering/analyze')
 const upload=(value,name)=>({name,mimeType:'application/json',buffer:Buffer.from(JSON.stringify(value))})
 let first,changed,trajectory

@@ -39,7 +39,9 @@ def verified_path(name):
 @lru_cache(maxsize=2)
 def native_array(name):
  p,_=verified_path(name)
- with rasterio.open(p) as ds:return ds.read(1,masked=True).filled(np.nan).astype(np.float32),ds.transform
+ from .raster_sampling import RasterPixels
+ pixels=RasterPixels(p)
+ return pixels,pixels.transform
 
 def nearest(array,tr,x,y):
  x,y=np.broadcast_arrays(x,y);col=np.floor((x-tr.c)/tr.a).astype(np.int32);row=np.floor((y-tr.f)/tr.e).astype(np.int32)

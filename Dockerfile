@@ -11,9 +11,9 @@ FROM python:3.11-slim-bookworm AS python_deps
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
     OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 \
     AI_PROVIDER=gemini AI_MODEL=gemini-3.5-flash-lite \
-    LUNAR_REQUIRE_GEMINI=1 PORT=8000
+    LUNAR_REQUIRE_GEMINI=1 PORT=8000 GDAL_CACHEMAX=16 MALLOC_ARENA_MAX=2
 WORKDIR /app
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates libgomp1 && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates libgomp1 libexpat1 && rm -rf /var/lib/apt/lists/*
 COPY api/requirements.txt /app/api/requirements.txt
 RUN pip install --no-cache-dir -r /app/api/requirements.txt
 
@@ -21,6 +21,7 @@ RUN pip install --no-cache-dir -r /app/api/requirements.txt
 FROM python_deps AS scientific_data
 COPY api/scripts/acquire_runtime_data.py /app/api/scripts/acquire_runtime_data.py
 COPY data/prepared/landing_surface.json data/prepared/spice_manifest.json /app/data/prepared/
+COPY data/pinned/ /app/data/pinned/
 RUN --mount=type=cache,id=lunar-oracle-pinned-sources-v1,target=/app/data/raw,sharing=locked python /app/api/scripts/acquire_runtime_data.py && cp -a /app/data/raw /app/pinned_raw
 
 FROM python_deps AS runtime

@@ -53,7 +53,7 @@ El algoritmo conserva la diferencia entre un **centro regional evaluado** y cada
 
 ## Publicar el sistema completo
 
-El [despliegue completo con Docker y Render](docs/DEPLOYMENT.md) sirve la web y toda la API Python en una sola dirección pública, sin inicio de sesión para visitantes. Incluye los rasters NASA originales y los kernels SPICE verificados. La clave Gemini se configura como secreto del alojamiento. El archivo render.yaml propone recursos de pago: revisa el precio antes de aplicarlo.
+El [despliegue completo con Docker y Render](docs/DEPLOYMENT.md) sirve la web y toda la API Python en una sola dirección pública, sin inicio de sesión para visitantes. Incluye los rasters NASA originales y los kernels SPICE verificados. La clave Gemini se configura como secreto del alojamiento. El archivo render.yaml usa exclusivamente Render Free, sin bases de datos ni discos de pago. El servicio gratuito se suspende por inactividad y conserva límites de uso.
 
 ## Ejecutar
 

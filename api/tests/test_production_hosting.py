@@ -69,3 +69,18 @@ def test_partial_http_source_is_rejected_even_when_its_hash_matches(monkeypatch,
  monkeypatch.setattr(data.urllib.request,'urlopen',lambda *args,**kwargs:Partial(b'original'))
  with pytest.raises(RuntimeError):data.acquire(False,tmp_path)
  assert not path.exists() and not path.with_suffix('.tif.part').exists()
+
+
+@pytest.mark.parametrize('altered',[False,True])
+def test_archived_kernel_is_used_only_when_its_pinned_digest_matches(monkeypatch,tmp_path,altered):
+ path=tmp_path/'data/raw/spice/source.bpc'
+ bundled=tmp_path/'data/pinned/naif/source.bpc';bundled.parent.mkdir(parents=True)
+ bundled.write_bytes(b'altered' if altered else b'original')
+ monkeypatch.setattr(data,'sources',lambda root:[(path,'https://example.invalid/archived-kernel',hashlib.sha256(b'original').hexdigest())])
+ monkeypatch.setattr(data.urllib.request,'urlopen',lambda *args,**kwargs:pytest.fail('The unchanged pinned archived product is available locally.'))
+ if altered:
+  with pytest.raises(RuntimeError):data.acquire(False,tmp_path)
+  assert not path.exists()
+ else:
+  data.acquire(False,tmp_path)
+  assert path.read_bytes()==b'original'

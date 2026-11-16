@@ -1,5 +1,5 @@
 """Acquire only the pinned original files required by the deployed scientific API."""
-import argparse,hashlib,json,re,urllib.request
+import argparse,hashlib,json,re,shutil,urllib.request
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
 REGIONAL='https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/LDEM_80S_80MPP_ADJ.TIF'
@@ -33,7 +33,13 @@ def acquire(verify_only=False,root=ROOT):
  for path,url,expected in items:
   if path.is_file() and digest(path)==expected:continue
   if verify_only:raise RuntimeError('Missing or altered pinned scientific file: '+path.name)
-  path.parent.mkdir(parents=True,exist_ok=True);temporary=path.with_suffix(path.suffix+'.part')
+  path.parent.mkdir(parents=True,exist_ok=True)
+  bundled=root/'data/pinned/naif'/path.name
+  if bundled.is_file():
+   if digest(bundled)!=expected:raise RuntimeError('Altered bundled scientific source: '+path.name)
+   shutil.copyfile(bundled,path)
+   continue
+  temporary=path.with_suffix(path.suffix+'.part')
   try:
    last_error=None
    for attempt in range(3):
