@@ -328,6 +328,7 @@ export default function UnifiedMissionPlanner(){
   const [visibilityModalTarget,setVisibilityModalTarget]=useState<'sun'|'earth'|null>(null)
   const [viewMode,setViewMode]=useState<'map'|'vehicle'>('map')
   const [mapFullscreen,setMapFullscreen]=useState(false)
+  const [chatExpanded,setChatExpanded]=useState(false)
   const [hideLeftPanel,setHideLeftPanel]=useState(false),[hideRightPanel,setHideRightPanel]=useState(false),[hideTimelinePanel,setHideTimelinePanel]=useState(false)
   const [chatTurns,setChatTurns]=useState<ChatTurn[]>([])
   const fileInputRef=useRef<HTMLInputElement|null>(null)
@@ -851,7 +852,7 @@ export default function UnifiedMissionPlanner(){
       if(!response.ok||data.status!=='ok'||!data.coverage||!Array.isArray(data.cells))throw new Error(data.message??'NASA no pudo completar el análisis; no se inventará una recomendación.')
       if(ac.signal.aborted||id!==requestId.current)return
       setCoverageVisible(true);setHoveredId(null);document.querySelector('.mission-decisions')?.scrollTo({top:0});setPlan(data);setSelectedId(preferredCellId??pinnedTarget?.id??data.best?.id??data.closest_candidate?.id??(data.cells.some((point:MissionPoint)=>point.id===selectedId)?selectedId:data.cells.find((point:MissionPoint)=>point.latitude_deg< -89&&point.elevation_m!=null)?.id??''));setPreferences(false)
-      if(window.innerWidth<=900)setTimeout(()=>{if(id===requestId.current)document.querySelector('.one-map-heading')?.scrollIntoView({behavior:'smooth',block:'start'})},100)
+      if(window.innerWidth<=900)setTimeout(()=>{if(id===requestId.current)document.querySelector('.one-moon-panel')?.scrollIntoView({behavior:'smooth',block:'start'})},100)
     }catch(e){
       if(!ac.signal.aborted){
         const msg=e instanceof Error?e.message:'No se pudo completar el cálculo.'
@@ -960,18 +961,127 @@ export default function UnifiedMissionPlanner(){
 
   const layoutClass=[
     'unified-layout',
+    chatExpanded?'chat-is-expanded':'',
     (mapFullscreen||hideLeftPanel)?'hide-left':'',
     (mapFullscreen||hideRightPanel)?'hide-right':'',
     hideTimelinePanel?'hide-timeline':''
   ].filter(Boolean).join(' ')
 
   return <div className={'unified-mission'+(mapFullscreen?' map-is-fullscreen':'')} data-testid="unified-mission">
-    <header className="unified-header"><div className="unified-logo"><Orbit size={30}/><div>LUNAR ORACLE<small>{tr("PLANIFICA TU LLEGADA A LA LUNA")}</small></div></div><span className="unified-data-status"><i/> NASA LOLA + JPL HORIZONS</span><div className="language-picker" role="group" aria-label={tr("Language / Idioma")}><button type="button" lang="es" aria-pressed={lang==='es'} onClick={()=>setLanguage('es')}>Español</button><button type="button" lang="en" aria-pressed={lang==='en'} onClick={()=>setLanguage('en')}>English</button></div><button onClick={()=>setHelp(true)}><CircleHelp size={15}/>{" "}{tr("Cómo funciona")}</button></header>
+    <header className="unified-header">
+      <div className="unified-header-left">
+        <div className="unified-logo">
+          <Orbit size={26}/>
+          <div>
+            LUNAR ORACLE
+            <small>{tr("PLANIFICA TU LLEGADA A LA LUNA")}</small>
+          </div>
+        </div>
+        <div className="unified-header-title">
+          <span className="micro-title">{tr("POLO SUR LUNAR · 80°S — 90°S")}</span>
+          <h2>{tr('Una Luna. Todos los destinos.')}</h2>
+          {(vehicle.is_rover||vehicle.category==='Rover y Movilidad')&&<span className="rover-range-indicator"><Compass size={11}/>{" "}{tr("Radio:")}{" "}<b>{vehicle.nominal_range_km??15} km</b></span>}
+        </div>
+      </div>
+
+      <div className="one-map-actions">
+        <button
+          type="button"
+          onClick={()=>{setViewMode('map');setFocus(false);setFlight(null);setFlying(false);setCameraRevision(r=>r+1)}}
+          aria-pressed={viewMode==='map'&&!focus}
+        >
+          {tr("Todo el polo")}
+        </button>
+        <button
+          type="button"
+          disabled={!selected||selected.latitude_deg> -80||selected.elevation_m==null}
+          onClick={()=>{setViewMode('map');setFocus(true);setCameraRevision(r=>r+1)}}
+          aria-pressed={viewMode==='map'&&focus}
+        >
+          {tr("Acercar destino")}
+        </button>
+        <button
+          type="button"
+          className="vehicle-3d-tab-btn"
+          onClick={()=>setViewMode(v=>v==='vehicle'?'map':'vehicle')}
+          aria-pressed={viewMode==='vehicle'}
+          title={tr("Visualizar nave o rover en 3D con giro automático")}
+        >
+          <Orbit size={13}/>{" "}{tr("Vehículo 3D")}
+        </button>
+        <button
+          type="button"
+          disabled={!plan}
+          onClick={()=>document.querySelector('.mission-operations')?.scrollIntoView({behavior:'smooth',block:'start'})}
+        >
+          {tr("Estudio de misión")}
+        </button>
+        <button
+          type="button"
+          onClick={()=>{setMapFullscreen(v=>!v);setTimeout(()=>setCameraRevision(r=>r+1),60)}}
+          aria-pressed={mapFullscreen}
+          title={tr(mapFullscreen?'Salir de pantalla grande (Esc)':'Ver vistazo de la Luna en pantalla grande')}
+        >
+          {mapFullscreen?<Minimize2 size={13}/>:<Maximize2 size={13}/>}
+          {tr(mapFullscreen?'Salir de pantalla grande':'Pantalla grande')}
+        </button>
+        <div className="workspace-panel-toggles" role="group" aria-label={tr("Ocultar o mostrar paneles")}>
+          <button
+            type="button"
+            className="panel-toggle-btn"
+            aria-pressed={!hideLeftPanel&&!mapFullscreen}
+            onClick={()=>{setMapFullscreen(false);setHideLeftPanel(v=>!v);setTimeout(()=>setCameraRevision(r=>r+1),60)}}
+            title={tr(hideLeftPanel?'Mostrar panel de chat izquierdo':'Ocultar panel de chat izquierdo')}
+            aria-label={tr("Alternar panel de chat")}
+          >
+            <PanelLeft size={14}/>
+          </button>
+          {plan&&<button
+            type="button"
+            className="panel-toggle-btn"
+            aria-pressed={!hideTimelinePanel}
+            onClick={()=>{setHideTimelinePanel(v=>!v);setTimeout(()=>setCameraRevision(r=>r+1),60)}}
+            title={tr(hideTimelinePanel?'Mostrar línea de tiempo':'Ocultar línea de tiempo')}
+            aria-label={tr("Alternar línea de tiempo")}
+          >
+            <PanelBottom size={14}/>
+          </button>}
+          <button
+            type="button"
+            className="panel-toggle-btn"
+            aria-pressed={!hideRightPanel&&!mapFullscreen}
+            onClick={()=>{setMapFullscreen(false);setHideRightPanel(v=>!v);setTimeout(()=>setCameraRevision(r=>r+1),60)}}
+            title={tr(hideRightPanel?'Mostrar panel derecho':'Ocultar panel derecho')}
+            aria-label={tr("Alternar panel derecho")}
+          >
+            <PanelRight size={14}/>
+          </button>
+        </div>
+      </div>
+
+      <div className="unified-header-right">
+        <span className="unified-data-status"><i/> NASA LOLA + JPL HORIZONS</span>
+        <div className="language-picker" role="group" aria-label={tr("Language / Idioma")}>
+          <button type="button" lang="es" aria-pressed={lang==='es'} onClick={()=>setLanguage('es')}>Español</button>
+          <button type="button" lang="en" aria-pressed={lang==='en'} onClick={()=>setLanguage('en')}>English</button>
+        </div>
+        <button className="help-button" onClick={()=>setHelp(true)}><CircleHelp size={15}/>{" "}{tr("Cómo funciona")}</button>
+      </div>
+    </header>
     <div className={layoutClass}>
       {!hideLeftPanel&&<aside className="trip-panel chat-linked-panel">
         <div className="chat-panel-top">
           <div className="chat-panel-top-bar">
             <span className="sr-only">{tr("Copiloto de misión")}</span>
+            <button
+              type="button"
+              className={'chat-settings-gear-btn'+(chatExpanded?' active':'')}
+              onClick={()=>setChatExpanded(v=>!v)}
+              aria-label={tr(chatExpanded?'Reducir ancho del chat':'Expandir ancho del chat')}
+              title={tr(chatExpanded?'Reducir ancho del chat':'Expandir ancho del chat')}
+            >
+              {chatExpanded ? <Minimize2 size={15}/> : <Maximize2 size={15}/>}
+            </button>
             <button
               type="button"
               className={'chat-settings-gear-btn'+(preferences?' active':'')}
@@ -1224,7 +1334,7 @@ export default function UnifiedMissionPlanner(){
                 onClick={()=>{
                   setViewMode('vehicle')
                   setCatalogOpen(false)
-                  const el = document.querySelector('.lunar-object-studio-container') || document.querySelector('.one-map-heading')
+                  const el = document.querySelector('.lunar-object-studio-container') || document.querySelector('.one-moon-panel')
                   el?.scrollIntoView({ behavior:'smooth', block:'start' })
                 }}
                 aria-expanded={viewMode==='vehicle'}
@@ -1253,87 +1363,6 @@ export default function UnifiedMissionPlanner(){
 
 
       <main className="one-moon-panel">
-        <div className="one-map-heading">
-          <div>
-            <span className="micro-title">{tr("POLO SUR LUNAR · 80°S — 90°S")}</span>
-            <h2>{tr('Una Luna. Todos los destinos.')}</h2>
-            {(vehicle.is_rover||vehicle.category==='Rover y Movilidad')&&<span className="rover-range-indicator"><Compass size={12}/>{" "}{tr("Radio geométrico:")}{" "}<b>{vehicle.nominal_range_km??15} km</b>{" "}<small>({tr("no es una ruta validada")})</small></span>}
-          </div>
-          <div className="one-map-actions">
-            <button
-              type="button"
-              onClick={()=>{setViewMode('map');setFocus(false);setFlight(null);setFlying(false);setCameraRevision(r=>r+1)}}
-              aria-pressed={viewMode==='map'&&!focus}
-            >
-              {tr("Todo el polo")}
-            </button>
-            <button
-              type="button"
-              disabled={!selected||selected.latitude_deg> -80||selected.elevation_m==null}
-              onClick={()=>{setViewMode('map');setFocus(true);setCameraRevision(r=>r+1)}}
-              aria-pressed={viewMode==='map'&&focus}
-            >
-              {tr("Acercar destino")}
-            </button>
-            <button
-              type="button"
-              className="vehicle-3d-tab-btn"
-              onClick={()=>setViewMode(v=>v==='vehicle'?'map':'vehicle')}
-              aria-pressed={viewMode==='vehicle'}
-              title={tr("Visualizar nave o rover en 3D con giro automático")}
-            >
-              <Orbit size={13}/>{" "}{tr("Vehículo 3D")}
-            </button>
-            <button
-              type="button"
-              disabled={!plan}
-              onClick={()=>document.querySelector('.mission-operations')?.scrollIntoView({behavior:'smooth',block:'start'})}
-            >
-              {tr("Estudio de misión")}
-            </button>
-            <button
-              type="button"
-              onClick={()=>{setMapFullscreen(v=>!v);setTimeout(()=>setCameraRevision(r=>r+1),60)}}
-              aria-pressed={mapFullscreen}
-              title={tr(mapFullscreen?'Salir de pantalla grande (Esc)':'Ver vistazo de la Luna en pantalla grande')}
-            >
-              {mapFullscreen?<Minimize2 size={13}/>:<Maximize2 size={13}/>}
-              {tr(mapFullscreen?'Salir de pantalla grande':'Pantalla grande')}
-            </button>
-            <div className="workspace-panel-toggles" role="group" aria-label={tr("Ocultar o mostrar paneles")}>
-              <button
-                type="button"
-                className="panel-toggle-btn"
-                aria-pressed={!hideLeftPanel&&!mapFullscreen}
-                onClick={()=>{setMapFullscreen(false);setHideLeftPanel(v=>!v);setTimeout(()=>setCameraRevision(r=>r+1),60)}}
-                title={tr(hideLeftPanel?'Mostrar panel de chat izquierdo':'Ocultar panel de chat izquierdo')}
-                aria-label={tr("Alternar panel de chat")}
-              >
-                <PanelLeft size={14}/>
-              </button>
-              {plan&&<button
-                type="button"
-                className="panel-toggle-btn"
-                aria-pressed={!hideTimelinePanel}
-                onClick={()=>{setHideTimelinePanel(v=>!v);setTimeout(()=>setCameraRevision(r=>r+1),60)}}
-                title={tr(hideTimelinePanel?'Mostrar línea de tiempo':'Ocultar línea de tiempo')}
-                aria-label={tr("Alternar línea de tiempo")}
-              >
-                <PanelBottom size={14}/>
-              </button>}
-              <button
-                type="button"
-                className="panel-toggle-btn"
-                aria-pressed={!hideRightPanel&&!mapFullscreen}
-                onClick={()=>{setMapFullscreen(false);setHideRightPanel(v=>!v);setTimeout(()=>setCameraRevision(r=>r+1),60)}}
-                title={tr(hideRightPanel?'Mostrar panel derecho':'Ocultar panel derecho')}
-                aria-label={tr("Alternar panel derecho")}
-              >
-                <PanelRight size={14}/>
-              </button>
-            </div>
-          </div>
-        </div>
         {viewMode === 'vehicle' ? (
           <LunarObject3DViewer
             activeVehicle={vehicle}
