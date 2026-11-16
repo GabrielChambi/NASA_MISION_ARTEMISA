@@ -2,7 +2,7 @@ import {compactPhysicsEvidence} from './EngineeringPanel'
 import MissionVisibilityPanel from './MissionVisibilityPanel'
 import {useI18n} from '../../i18n/LanguageContext'
 import {assessVisibility} from '../../../worker/visibility.mjs'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowRight, Award, Ban, Bot, Check, CircleHelp, Compass, Cpu, Crosshair, Download, Globe2, Layers, LoaderCircle, MapPin, Maximize2, Minimize2, Orbit, PanelBottom, PanelLeft, PanelRight, Pause, Play, Plus, Rocket, Send, Settings2, Sun, X } from 'lucide-react'
 
 import { Tactical3DScene,type PlanMapMarker } from '../tactical/Tactical3DScene'
@@ -328,7 +328,27 @@ export default function UnifiedMissionPlanner(){
   const [visibilityModalTarget,setVisibilityModalTarget]=useState<'sun'|'earth'|null>(null)
   const [viewMode,setViewMode]=useState<'map'|'vehicle'>('map')
   const [mapFullscreen,setMapFullscreen]=useState(false)
-  const [chatExpanded,setChatExpanded]=useState(false)
+  const [chatWidth,setChatWidth]=useState<number>(()=>{try{const s=localStorage.getItem('lunar_oracle_chat_width');if(s){const v=Number(s);if(Number.isFinite(v)&&v>=260&&v<=850)return v}}catch{}return 340})
+  const isResizingChat=useRef(false),currentChatWidth=useRef(chatWidth)
+  currentChatWidth.current=chatWidth
+  const handleResizeStart=useCallback((e:React.MouseEvent|React.TouchEvent)=>{
+    e.preventDefault();isResizingChat.current=true;document.body.classList.add('is-resizing-chat')
+    const onMove=(evt:MouseEvent|TouchEvent)=>{
+      if(!isResizingChat.current)return
+      const clientX='touches' in evt?evt.touches[0].clientX:evt.clientX
+      const clamped=Math.max(260,Math.min(Math.min(window.innerWidth-380,850),clientX))
+      currentChatWidth.current=clamped;setChatWidth(clamped)
+    }
+    const onEnd=()=>{
+      if(!isResizingChat.current)return
+      isResizingChat.current=false;document.body.classList.remove('is-resizing-chat')
+      window.removeEventListener('mousemove',onMove);window.removeEventListener('mouseup',onEnd)
+      window.removeEventListener('touchmove',onMove);window.removeEventListener('touchend',onEnd)
+      try{localStorage.setItem('lunar_oracle_chat_width',String(currentChatWidth.current))}catch{}
+    }
+    window.addEventListener('mousemove',onMove);window.addEventListener('mouseup',onEnd)
+    window.addEventListener('touchmove',onMove);window.addEventListener('touchend',onEnd)
+  },[])
   const [hideLeftPanel,setHideLeftPanel]=useState(false),[hideRightPanel,setHideRightPanel]=useState(false),[hideTimelinePanel,setHideTimelinePanel]=useState(false)
   const [chatTurns,setChatTurns]=useState<ChatTurn[]>([])
   const fileInputRef=useRef<HTMLInputElement|null>(null)
@@ -961,7 +981,6 @@ export default function UnifiedMissionPlanner(){
 
   const layoutClass=[
     'unified-layout',
-    chatExpanded?'chat-is-expanded':'',
     (mapFullscreen||hideLeftPanel)?'hide-left':'',
     (mapFullscreen||hideRightPanel)?'hide-right':'',
     hideTimelinePanel?'hide-timeline':''
@@ -1061,20 +1080,11 @@ export default function UnifiedMissionPlanner(){
         <button className="help-button" onClick={()=>setHelp(true)}><CircleHelp size={15}/>{" "}{tr("Cómo funciona")}</button>
       </div>
     </header>
-    <div className={layoutClass}>
+    <div className={layoutClass} style={{'--chat-width':`${chatWidth}px`} as React.CSSProperties}>
       {!hideLeftPanel&&<aside className="trip-panel chat-linked-panel">
         <div className="chat-panel-top">
           <div className="chat-panel-top-bar">
             <span className="sr-only">{tr("Copiloto de misión")}</span>
-            <button
-              type="button"
-              className={'chat-settings-gear-btn'+(chatExpanded?' active':'')}
-              onClick={()=>setChatExpanded(v=>!v)}
-              aria-label={tr(chatExpanded?'Reducir ancho del chat':'Expandir ancho del chat')}
-              title={tr(chatExpanded?'Reducir ancho del chat':'Expandir ancho del chat')}
-            >
-              {chatExpanded ? <Minimize2 size={15}/> : <Maximize2 size={15}/>}
-            </button>
             <button
               type="button"
               className={'chat-settings-gear-btn'+(preferences?' active':'')}
@@ -1352,6 +1362,14 @@ export default function UnifiedMissionPlanner(){
         </form>
         {intent&&!busy&&<div className="mission-prompt-hints"><button type="button" onClick={()=>void submitMessage(tr('Busca alternativas conservando mis requisitos'))}>{tr("Buscar alternativas")}</button><button type="button" onClick={()=>{setMessage(tr('¿Qué pasa si mis paneles producen un 20% menos?'));document.querySelector<HTMLTextAreaElement>('#mission-request')?.focus()}}>{tr("Probar un fallo solar")}</button><button type="button" onClick={()=>void submitMessage(tr('Estudia la huella local del destino'))}>{tr("Estudiar huella")}</button></div>}
         {adopted&&<div className="adopted-alternative" data-testid="adopted-alternative"><Check size={14}/><div><strong>{tr("Alternativa aplicada")}</strong><span>{tr(adopted.original.date_kind==='landing'?'Alunizaje':'Salida')}{" "}{tr("original:")}{" "}{tr(localDate(adopted.original.departure_utc))}<br/>{tr("Nueva fecha:")}{" "}{tr(localDate(adopted.proposal.proposed_request.departure_utc))}</span><small>{tr("La solicitud original queda guardada en la comparación. La estancia y los requisitos no cambian.")}</small></div></div>}
+        <div
+          className="chat-resize-handle"
+          onMouseDown={handleResizeStart}
+          onTouchStart={handleResizeStart}
+          title={tr("Arrastra el borde para ajustar el ancho del panel")}
+          role="separator"
+          aria-orientation="vertical"
+        />
       </aside>}
 
 
