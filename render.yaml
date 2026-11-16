@@ -1,0 +1,22 @@
+# Review the paid compute plan in Render before applying this Blueprint.
+services:
+  - type: web
+    name: lunar-oracle
+    runtime: docker
+    repo: https://github.com/GabrielChambi/NASA_MISION_ARTEMISA
+    branch: main
+    plan: 1c-2g
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    autoDeployTrigger: 'off'
+    healthCheckPath: /api/ready
+    maxShutdownDelaySeconds: 60
+    envVars:
+      - key: AI_PROVIDER
+        value: gemini
+      - key: AI_MODEL
+        value: gemini-3.5-flash-lite
+      - key: LUNAR_REQUIRE_GEMINI
+        value: '1'
+      - key: GEMINI_API_KEY
+        sync: false

@@ -51,6 +51,10 @@ La vista **Relieve** conserva el terreno gris sin confundir elevación con aptit
 
 El algoritmo conserva la diferencia entre un **centro regional evaluado** y cada metro del sector. No declara toda una celda apta para apoyar la nave. Un P95 bajo el umbral puede coexistir con pendientes máximas mayores; ambas cifras se muestran.
 
+## Publicar el sistema completo
+
+El [despliegue completo con Docker y Render](docs/DEPLOYMENT.md) sirve la web y toda la API Python en una sola dirección pública, sin inicio de sesión para visitantes. Incluye los rasters NASA originales y los kernels SPICE verificados. La clave Gemini se configura como secreto del alojamiento. El archivo render.yaml propone recursos de pago: revisa el precio antes de aplicarlo.
+
 ## Ejecutar
 
 Requiere Node 22.12+ y Python 3.11+. En Windows, desde la raíz:
