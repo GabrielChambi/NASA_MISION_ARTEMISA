@@ -1,11 +1,13 @@
-# Free-only deployment. Do not upgrade compute or add paid resources.
+# Authorized target: one Starter web service (US$7/month base compute).
+# Upgrade the existing service; do not create duplicate resources.
 services:
   - type: web
     name: lunar-oracle
     runtime: docker
     repo: https://github.com/GabrielChambi/NASA_MISION_ARTEMISA
     branch: main
-    plan: free
+    plan: 0.5c-512mb
+    numInstances: 1
     dockerfilePath: ./Dockerfile
     dockerContext: .
     autoDeployTrigger: 'off'

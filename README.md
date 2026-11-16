@@ -1,6 +1,6 @@
 # LUNAR ORACLE · Lunar Landing Site Navigator
 
-**Demo pública:** [Abrir Lunar Oracle](https://lunar-oracle-7wcq.onrender.com/). Alojamiento Render Free, sin cuenta para visitantes; puede tardar en despertar tras inactividad.
+**Demo pública:** [Abrir Lunar Oracle](https://lunar-oracle-7wcq.onrender.com/). Acceso público sin cuenta para visitantes. Consulta el plan de alojamiento y su estado en la [guía de despliegue](docs/DEPLOYMENT.md).
 
 Escribe cuándo quieres viajar y el sistema calcula una **clasificación continua de toda la superficie del polo sur lunar, de 80°S a 90°S**. Una sola pantalla reúne la pregunta, el mapa 3D, los destinos, las condiciones durante la estancia y la duración estimada. Los visitantes entran directamente, sin iniciar sesión con ChatGPT ni Google.
 
@@ -55,7 +55,7 @@ El algoritmo conserva la diferencia entre un **centro regional evaluado** y cada
 
 ## Publicar el sistema completo
 
-El [despliegue completo con Docker y Render](docs/DEPLOYMENT.md) sirve la web y toda la API Python en una sola dirección pública, sin inicio de sesión para visitantes. Incluye los rasters NASA originales y los kernels SPICE verificados. La clave Gemini se configura como secreto del alojamiento. El archivo render.yaml usa exclusivamente Render Free, sin bases de datos ni discos de pago. El servicio gratuito se suspende por inactividad y conserva límites de uso.
+El [despliegue completo con Docker y Render](docs/DEPLOYMENT.md) sirve la web y toda la API Python en una sola dirección pública, sin inicio de sesión para visitantes. Incluye los rasters NASA originales y los kernels SPICE verificados. La clave Gemini se configura como secreto del alojamiento. El archivo render.yaml prepara una sola instancia Starter (0,5 CPU y 512 MB; US$7/mes de cómputo base), sin bases de datos ni discos adicionales. La activación se confirma en el servicio existente de Render; editar este archivo no cambia por sí solo el plan público.
 
 ## Ejecutar
 
